@@ -1,2 +1,3 @@
-import {NextResponse} from "next/server";import {leads,draftFor} from "../../../../../lib/data";
-export async function GET(_:Request,{params}:{params:{id:string}}){const lead=leads.find((l:any)=>String(l.id)===params.id);if(!lead)return NextResponse.json({error:"Not found"},{status:404});return NextResponse.json({lead,activity:[{id:1,actor_name:"Scout/Claire/Atlas",action:"PILOT_LEAD_QUALIFIED",detail:lead.qualification_reason},{id:2,actor_name:"Maven/Gatekeeper",action:"OUTREACH_DRAFTED",detail:"Personalized draft created and held for founder approval."}],outreach:[{id:lead.id,status:"PENDING_APPROVAL",draft_content:draftFor(lead)}]})}
+import {NextResponse} from "next/server";import {leadDetail} from "../../../../../lib/crm";
+export const dynamic="force-dynamic";
+export async function GET(_:Request,{params}:{params:{id:string}}){const data=await leadDetail(Number(params.id));return data?NextResponse.json(data):NextResponse.json({error:"Not found"},{status:404})}
