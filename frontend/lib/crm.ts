@@ -14,6 +14,7 @@ export async function seedPilot(){
    ON CONFLICT(educator_id,practice_name) DO UPDATE SET decision_maker=EXCLUDED.decision_maker,email=EXCLUDED.email,phone=EXCLUDED.phone,evidence=EXCLUDED.evidence,qualification_reason=EXCLUDED.qualification_reason,qualification_score=EXCLUDED.qualification_score
    RETURNING *`;
    const lead=rows[0];
+   // Never reset mutable workflow state during seed. Neon remains the source of truth.
    const existing=await q`SELECT id FROM outreach_jobs WHERE lead_id=${lead.id} LIMIT 1`;
    if(!existing.length){
      await q`INSERT INTO outreach_jobs(lead_id,status,draft_content) VALUES(${lead.id},'PENDING_APPROVAL',${draftFor(l)})`;
