@@ -1,0 +1,1 @@
+import {NextResponse} from "next/server";export async function PATCH(req:Request,{params}:{params:{id:string}}){const body=await req.json();return NextResponse.json({job_id:Number(params.id),status:"PENDING_APPROVAL",draft_content:body.draft_content})}

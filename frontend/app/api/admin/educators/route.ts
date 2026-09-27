@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";import {educator,leads} from "../../../../lib/data";
+export async function GET(){return NextResponse.json([{...educator,lead_count:leads.length,course_count:1,revenue_cents:0}])}

@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";import {educator,leads,draftFor} from "../../../../../../lib/data";
+export async function GET(){return NextResponse.json({educator,leads,courses:[{id:1,title:"Craniofacial Biodentistry & Advanced Airway Integration",course_status:"PLANNING"}],campaigns:[{id:1,name:"Dr. Timothy Adams — Phoenix Pilot 10",status:"RESEARCH"}],pending_approvals:leads.map((l:any)=>({id:l.id,lead_id:l.id,practice_name:l.practice_name,decision_maker:l.decision_maker,email:l.email,phone:l.phone,status:"PENDING_APPROVAL",draft_content:draftFor(l)}))})}
