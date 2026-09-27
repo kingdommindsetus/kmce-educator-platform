@@ -150,3 +150,65 @@ def reject_outreach(job_id: int, payload: Rejection):
                     "OUTREACH_REJECTED",payload.reason,"PENDING_APPROVAL","OUTREACH_READY",ts))
     conn.commit(); conn.close()
     return {"job_id":job_id,"status":"REJECTED","reason":payload.reason}
+
+
+class DraftEdit(BaseModel):
+    edited_by: str
+    draft_content: str = Field(min_length=10, max_length=10000)
+    note: str | None = None
+
+@app.get("/admin/educators")
+def admin_educators():
+    conn=get_connection()
+    rows=conn.execute("""SELECT e.*,
+      (SELECT COUNT(*) FROM leads l WHERE l.educator_id=e.id) lead_count,
+      (SELECT COUNT(*) FROM courses c WHERE c.educator_id=e.id) course_count,
+      (SELECT COALESCE(SUM(cv.revenue_cents),0) FROM conversions cv WHERE cv.educator_id=e.id) revenue_cents
+      FROM educators e ORDER BY e.public_name, e.legal_name""").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+@app.get("/admin/educators/{educator_id}/workspace")
+def educator_workspace(educator_id: int):
+    conn=get_connection()
+    educator=conn.execute("SELECT * FROM educators WHERE id=?",(educator_id,)).fetchone()
+    if not educator:
+        conn.close(); raise HTTPException(404,"Educator not found")
+    leads=conn.execute("SELECT * FROM leads WHERE educator_id=? ORDER BY updated_at DESC",(educator_id,)).fetchall()
+    courses=conn.execute("SELECT * FROM courses WHERE educator_id=? ORDER BY updated_at DESC",(educator_id,)).fetchall()
+    campaigns=conn.execute("SELECT * FROM campaigns WHERE educator_id=? ORDER BY updated_at DESC",(educator_id,)).fetchall()
+    pending=conn.execute("""SELECT o.*,l.practice_name,l.decision_maker,l.email,l.phone
+                            FROM outreach_jobs o JOIN leads l ON l.id=o.lead_id
+                            JOIN campaigns c ON c.id=o.campaign_id
+                            WHERE c.educator_id=? AND o.status='PENDING_APPROVAL'
+                            ORDER BY o.created_at""",(educator_id,)).fetchall()
+    conn.close()
+    return {"educator":dict(educator),"leads":[dict(r) for r in leads],"courses":[dict(r) for r in courses],
+            "campaigns":[dict(r) for r in campaigns],"pending_approvals":[dict(r) for r in pending]}
+
+@app.get("/admin/leads/{lead_id}")
+def admin_lead_detail(lead_id: int):
+    conn=get_connection()
+    lead=conn.execute("SELECT * FROM leads WHERE id=?",(lead_id,)).fetchone()
+    if not lead:
+        conn.close(); raise HTTPException(404,"Lead not found")
+    activity=conn.execute("SELECT * FROM lead_activities WHERE lead_id=? ORDER BY created_at DESC",(lead_id,)).fetchall()
+    outreach=conn.execute("SELECT * FROM outreach_jobs WHERE lead_id=? ORDER BY created_at DESC",(lead_id,)).fetchall()
+    conn.close()
+    return {"lead":dict(lead),"activity":[dict(r) for r in activity],"outreach":[dict(r) for r in outreach]}
+
+@app.patch("/outreach/{job_id}/draft")
+def edit_outreach_draft(job_id: int, payload: DraftEdit):
+    conn=get_connection()
+    job=conn.execute("""SELECT o.*,l.educator_id FROM outreach_jobs o JOIN leads l ON l.id=o.lead_id WHERE o.id=?""",(job_id,)).fetchone()
+    if not job:
+        conn.close(); raise HTTPException(404,"Outreach job not found")
+    if job["status"] != "PENDING_APPROVAL":
+        conn.close(); raise HTTPException(409,"Only pending drafts may be edited")
+    ts=now_iso()
+    conn.execute("UPDATE outreach_jobs SET draft_content=?,updated_at=? WHERE id=?",(payload.draft_content,ts,job_id))
+    conn.execute("""INSERT INTO lead_activities(lead_id,educator_id,actor_type,actor_name,action,detail,created_at)
+                    VALUES(?,?,?,?,?,?,?)""",(job["lead_id"],job["educator_id"],"human",payload.edited_by,"OUTREACH_DRAFT_EDITED",
+                    payload.note or "Founder edited pending outreach draft.",ts))
+    conn.commit(); conn.close()
+    return {"job_id":job_id,"status":"PENDING_APPROVAL","updated_at":ts}
