@@ -127,3 +127,26 @@ def approval_queue():
                          WHERE o.status='PENDING_APPROVAL' ORDER BY o.created_at""").fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+class Rejection(BaseModel):
+    rejected_by: str
+    reason: str = Field(min_length=2, max_length=500)
+
+@app.post("/outreach/{job_id}/reject")
+def reject_outreach(job_id: int, payload: Rejection):
+    conn=get_connection()
+    job=conn.execute("""SELECT o.*, l.educator_id FROM outreach_jobs o
+                        JOIN leads l ON l.id=o.lead_id WHERE o.id=?""",(job_id,)).fetchone()
+    if not job:
+        conn.close(); raise HTTPException(404,"Outreach job not found")
+    if job["status"] != "PENDING_APPROVAL":
+        conn.close(); raise HTTPException(409,"Only pending outreach can be rejected")
+    ts=now_iso()
+    conn.execute("UPDATE outreach_jobs SET status='REJECTED',updated_at=? WHERE id=?",(ts,job_id))
+    conn.execute("UPDATE leads SET approval_status='REJECTED',pipeline_stage='OUTREACH_READY',assigned_agent='Maven',updated_at=? WHERE id=?",(ts,job["lead_id"]))
+    conn.execute("""INSERT INTO lead_activities(lead_id,educator_id,actor_type,actor_name,action,detail,from_stage,to_stage,created_at)
+                    VALUES(?,?,?,?,?,?,?,?,?)""",(job["lead_id"],job["educator_id"],"human",payload.rejected_by,
+                    "OUTREACH_REJECTED",payload.reason,"PENDING_APPROVAL","OUTREACH_READY",ts))
+    conn.commit(); conn.close()
+    return {"job_id":job_id,"status":"REJECTED","reason":payload.reason}
