@@ -1,2 +1,3 @@
-import {NextResponse} from "next/server";import {educator,leads} from "../../../../lib/data";
-export async function GET(){return NextResponse.json([{...educator,lead_count:leads.length,course_count:1,revenue_cents:0}])}
+import {NextResponse} from "next/server";import {seedPilot} from "../../../../lib/crm";import {sql} from "../../../../lib/db";
+export const dynamic="force-dynamic";
+export async function GET(){await seedPilot();const q=sql();const rows=await q`SELECT e.*,COUNT(l.id)::int AS lead_count,0::int AS course_count,0::int AS revenue_cents FROM educators e LEFT JOIN leads l ON l.educator_id=e.id GROUP BY e.id ORDER BY e.id`;return NextResponse.json(rows)}
