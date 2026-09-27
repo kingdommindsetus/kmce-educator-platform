@@ -10,6 +10,7 @@ let initialized=false;
 export async function ensureSchema(){
   if(initialized) return;
   const q=sql();
+
   await q`CREATE TABLE IF NOT EXISTS educators (
     id BIGSERIAL PRIMARY KEY,
     public_name TEXT NOT NULL UNIQUE,
@@ -18,6 +19,7 @@ export async function ensureSchema(){
     status TEXT NOT NULL DEFAULT 'ACTIVE',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
+
   await q`CREATE TABLE IF NOT EXISTS leads (
     id BIGSERIAL PRIMARY KEY,
     educator_id BIGINT NOT NULL REFERENCES educators(id),
@@ -37,6 +39,7 @@ export async function ensureSchema(){
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE(educator_id, practice_name)
   )`;
+
   await q`CREATE TABLE IF NOT EXISTS outreach_jobs (
     id BIGSERIAL PRIMARY KEY,
     lead_id BIGINT NOT NULL REFERENCES leads(id),
@@ -49,6 +52,7 @@ export async function ensureSchema(){
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
+
   await q`CREATE TABLE IF NOT EXISTS lead_activities (
     id BIGSERIAL PRIMARY KEY,
     lead_id BIGINT NOT NULL REFERENCES leads(id),
@@ -57,5 +61,17 @@ export async function ensureSchema(){
     detail TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
-  await q`CREATE TABLE IF NOT EXISTS app_users (\n    id BIGSERIAL PRIMARY KEY,\n    email TEXT NOT NULL UNIQUE,\n    display_name TEXT,\n    role TEXT NOT NULL CHECK (role IN ('FOUNDER_ADMIN','EDUCATOR','STUDENT')),\n    educator_id BIGINT REFERENCES educators(id),\n    last_login_at TIMESTAMPTZ,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()\n  )`;\n  initialized=true;
+
+  await q`CREATE TABLE IF NOT EXISTS app_users (
+    id BIGSERIAL PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    display_name TEXT,
+    role TEXT NOT NULL CHECK (role IN ('FOUNDER_ADMIN','EDUCATOR','STUDENT')),
+    educator_id BIGINT REFERENCES educators(id),
+    last_login_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+
+  initialized=true;
 }
