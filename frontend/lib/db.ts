@@ -57,5 +57,5 @@ export async function ensureSchema(){
     detail TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
-  initialized=true;
+  await q`CREATE TABLE IF NOT EXISTS app_users (\n    id BIGSERIAL PRIMARY KEY,\n    email TEXT NOT NULL UNIQUE,\n    display_name TEXT,\n    role TEXT NOT NULL CHECK (role IN ('FOUNDER_ADMIN','EDUCATOR','STUDENT')),\n    educator_id BIGINT REFERENCES educators(id),\n    last_login_at TIMESTAMPTZ,\n    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),\n    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()\n  )`;\n  initialized=true;
 }
