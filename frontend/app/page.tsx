@@ -1,6 +1,6 @@
 "use client";
 import {useEffect,useMemo,useState} from "react";
-const API=process.env.NEXT_PUBLIC_API_URL||"http://localhost:8000";
+const API=process.env.NEXT_PUBLIC_API_URL||"/api";
 
 export default function Home(){
  const [educators,setEducators]=useState<any[]>([]),[workspace,setWorkspace]=useState<any>(null),[selected,setSelected]=useState<any>(null),[draft,setDraft]=useState("");
