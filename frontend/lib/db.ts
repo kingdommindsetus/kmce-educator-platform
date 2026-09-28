@@ -416,6 +416,62 @@ export async function ensureSchema(){
     UNIQUE(campaign_id,channel,metric_date)
   )`;
 
+  await q`CREATE TABLE IF NOT EXISTS knowledge_documents (
+    id BIGSERIAL PRIMARY KEY,
+    source_type TEXT NOT NULL,
+    source_path TEXT NOT NULL,
+    title TEXT,
+    content TEXT NOT NULL,
+    checksum TEXT NOT NULL,
+    is_canonical BOOLEAN NOT NULL DEFAULT true,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    source_updated_at TIMESTAMPTZ,
+    synced_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(source_type,source_path)
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS knowledge_documents_fts_idx ON knowledge_documents USING GIN (to_tsvector('english',coalesce(title,'')||' '||content))`;
+
+  await q`CREATE TABLE IF NOT EXISTS knowledge_edges (
+    id BIGSERIAL PRIMARY KEY,
+    subject TEXT NOT NULL,
+    predicate TEXT NOT NULL,
+    object TEXT NOT NULL,
+    confidence INTEGER NOT NULL DEFAULT 100 CHECK (confidence BETWEEN 0 AND 100),
+    relation_status TEXT NOT NULL DEFAULT 'EXTRACTED' CHECK (relation_status IN ('EXTRACTED','INFERRED','AMBIGUOUS')),
+    evidence_document_id BIGINT REFERENCES knowledge_documents(id) ON DELETE SET NULL,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_by TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS knowledge_edges_subject_idx ON knowledge_edges(subject,predicate)`;
+
+  await q`CREATE TABLE IF NOT EXISTS provider_registry (
+    id BIGSERIAL PRIMARY KEY,
+    capability TEXT NOT NULL,
+    provider_name TEXT NOT NULL,
+    priority INTEGER NOT NULL DEFAULT 100,
+    status TEXT NOT NULL DEFAULT 'DISABLED' CHECK (status IN ('DISABLED','CONFIGURED','HEALTHY','DEGRADED','ERROR')),
+    base_url TEXT,
+    credential_env TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(capability,provider_name)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS provider_calls (
+    id BIGSERIAL PRIMARY KEY,
+    capability TEXT NOT NULL,
+    provider_name TEXT NOT NULL,
+    status TEXT NOT NULL,
+    duration_ms INTEGER,
+    request_metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    result_metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    error_text TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS provider_calls_recent_idx ON provider_calls(provider_name,created_at DESC)`;
+
   await q`CREATE TABLE IF NOT EXISTS autonomy_runs (
     id BIGSERIAL PRIMARY KEY,
     worker_name TEXT NOT NULL,
