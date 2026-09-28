@@ -1,3 +1,4 @@
+import {createHash} from "node:crypto";
 import {NextResponse} from "next/server";
 import {ensureSchema,sql} from "../../../../../lib/db";
 import {requireFounder} from "../../../../../lib/auth";
@@ -38,6 +39,10 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   }
   if(!job.email || !job.contact_source_url || !job.contact_verified_at){
     return NextResponse.json({error:"Verified recipient, official source, and verification timestamp required",reason:"CONTACT_NOT_VERIFIED"},{status:409});
+  }
+  const currentHash=createHash("sha256").update(String(job.draft_content)).digest("hex");
+  if(!job.approved_sha256 || job.approved_sha256!==currentHash){
+    return NextResponse.json({error:"Approved draft no longer matches current content",reason:"APPROVED_DRAFT_MISMATCH"},{status:409});
   }
 
   const detail=`Provider-confirmed ${provider} send recorded with message id ${providerMessageId}; follow-up scheduled in 3 days.`;
