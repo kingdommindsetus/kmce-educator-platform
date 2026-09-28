@@ -1,3 +1,4 @@
+import {createHash} from "node:crypto";
 import {NextResponse} from "next/server";
 import {ensureSchema,sql} from "../../../../../lib/db";
 import {requireFounder} from "../../../../../lib/auth";
@@ -10,6 +11,10 @@ export async function POST(_:Request,{params}:{params:Promise<{id:string}>}){
  FROM outreach_jobs o JOIN leads l ON l.id=o.lead_id WHERE o.id=${id}`;
  if(!rows.length)return NextResponse.json({error:"Outreach job not found"},{status:404});
  const job=rows[0];
+ const currentHash=createHash("sha256").update(String(job.draft_content)).digest("hex");
+ if(!job.approved_sha256 || job.approved_sha256!==currentHash){
+  return NextResponse.json({error:"Approved draft no longer matches current content",reason:"APPROVED_DRAFT_MISMATCH"},{status:409});
+ }
  const gate=evaluateEchoSend({
   jobStatus:job.status,
   sentAt:job.sent_at,
