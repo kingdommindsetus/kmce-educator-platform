@@ -150,5 +150,12 @@ export async function ensureSchema(){
   await q`ALTER TABLE executive_briefs ADD COLUMN IF NOT EXISTS audio_url TEXT`;
   await q`ALTER TABLE executive_briefs ADD COLUMN IF NOT EXISTS audio_generated_at TIMESTAMPTZ`;
 
+  await q`CREATE TABLE IF NOT EXISTS simon_sessions (id BIGSERIAL PRIMARY KEY, founder_email TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'ACTIVE', created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now())`;
+  await q`CREATE TABLE IF NOT EXISTS simon_messages (id BIGSERIAL PRIMARY KEY, session_id BIGINT NOT NULL REFERENCES simon_sessions(id), role TEXT NOT NULL CHECK (role IN ('FOUNDER','SIMON')), content TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`;
+  await q`CREATE TABLE IF NOT EXISTS agent_tasks (id BIGSERIAL PRIMARY KEY, assigned_agent TEXT NOT NULL, title TEXT NOT NULL, instruction TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'QUEUED', source TEXT NOT NULL DEFAULT 'SIMON', requested_by TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), updated_at TIMESTAMPTZ NOT NULL DEFAULT now())`;
+  await q`CREATE TABLE IF NOT EXISTS simon_actions (id BIGSERIAL PRIMARY KEY, session_id BIGINT REFERENCES simon_sessions(id), action_type TEXT NOT NULL, target TEXT, payload JSONB NOT NULL DEFAULT '{}'::jsonb, status TEXT NOT NULL, requested_by TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now())`;
+  await q`CREATE INDEX IF NOT EXISTS simon_messages_session_idx ON simon_messages(session_id,created_at)`;
+  await q`CREATE INDEX IF NOT EXISTS agent_tasks_agent_idx ON agent_tasks(assigned_agent,status,created_at DESC)`;
+
   initialized=true;
 }
