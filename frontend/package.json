@@ -1,6 +1,7 @@
 {
   "scripts":{"dev":"next dev","test:echo":"node tests/echo-gate.test.mjs","build":"npm run test:echo && next build","start":"next start"},
   "dependencies":{
+    "@composio/core":"^0.18.1",
     "@neondatabase/auth":"0.5.0-beta",
     "@neondatabase/auth-ui":"0.3.0-beta",
     "@neondatabase/serverless":"^0.10.4",
