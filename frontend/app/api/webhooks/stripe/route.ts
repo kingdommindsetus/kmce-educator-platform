@@ -1,6 +1,7 @@
 import { NextRequest,NextResponse } from "next/server";
 import Stripe from "stripe";
 import { ensureSchema,sql } from "../../../../lib/db";
+import {recordStripeReceipt,ensurePaidEntitlement} from "../../../../lib/ledger";
 
 export const runtime="nodejs";
 function stripeClient(){const key=process.env.STRIPE_SECRET_KEY;if(!key)throw new Error("Stripe secret key missing");return new Stripe(key);}
@@ -12,7 +13,9 @@ function classify(meta:Record<string,string>={}){
   educator_name:meta.educator_name||null,
   course_name:meta.course_name||null,
   event_name:meta.event_name||null,
-  quantity:Number(meta.quantity||1)
+  quantity:Number(meta.quantity||1),
+  service_code:meta.service_code||null,
+  course_code:meta.course_code||null
  };
 }
 
@@ -31,6 +34,10 @@ export async function POST(req:NextRequest){
    const rows:any=await q`INSERT INTO commerce_transactions(provider,provider_transaction_id,provider_customer_id,status,amount_minor,currency,product_type,product_name,educator_name,course_name,event_name,quantity,customer_email,occurred_at,metadata)
    VALUES('stripe',${pi.id},${typeof pi.customer==="string"?pi.customer:null},${status},${pi.amount_received||pi.amount},${pi.currency},${m.product_type},${m.product_name},${m.educator_name},${m.course_name},${m.event_name},${m.quantity},${pi.receipt_email||null},to_timestamp(${event.created}),${JSON.stringify(pi.metadata||{})}::jsonb)
    ON CONFLICT(provider,provider_transaction_id) DO UPDATE SET status=EXCLUDED.status,amount_minor=EXCLUDED.amount_minor,metadata=EXCLUDED.metadata RETURNING id`; tx=rows[0]?.id||null;
+   if(status==="succeeded"){
+     await recordStripeReceipt(q,{transaction_id:pi.id,amount_minor:pi.amount_received||pi.amount,currency:pi.currency,metadata:pi.metadata||{}});
+     await ensurePaidEntitlement(q,{transaction_status:status,service_code:m.service_code,course_code:m.course_code,customer_email:pi.receipt_email||null,source_provider:"stripe",source_transaction_id:pi.id,metadata:pi.metadata||{}});
+   }
  }
  if(event.type==="charge.refunded"){
    const ch=event.data.object as Stripe.Charge; if(ch.payment_intent){const pid=typeof ch.payment_intent==="string"?ch.payment_intent:ch.payment_intent.id;await q`UPDATE commerce_transactions SET status='refunded',metadata=metadata||${JSON.stringify({refunded_amount:ch.amount_refunded})}::jsonb WHERE provider='stripe' AND provider_transaction_id=${pid}`;}
