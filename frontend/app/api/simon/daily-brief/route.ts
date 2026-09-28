@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireFounder } from "@/lib/auth";
-import { ensureSchema,sql } from "@/lib/db";
+import { requireFounder } from "../../../../lib/auth";
+import { ensureSchema,sql } from "../../../../lib/db";
 export async function GET(){
  const founder=await requireFounder(); if(!founder)return NextResponse.json({error:"Founder access required"},{status:403});
  await ensureSchema(); const q=sql();
