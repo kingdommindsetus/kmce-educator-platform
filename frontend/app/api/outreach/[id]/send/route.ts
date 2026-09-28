@@ -22,7 +22,7 @@ export async function POST(_:Request,{params}:{params:Promise<{id:string}>}){
   const error=gate.reason==="DUPLICATE_SEND"?"Already sent; duplicate send blocked":
    gate.reason==="NOT_APPROVED"?"Founder-approved outreach required":
    "Verified recipient, official source, and verification timestamp required";
-  return NextResponse.json({error,reason:gate.reason},{status:gate.status});
+  return NextResponse.json({error,reason:gate.reason},{status:409});
  }
  return NextResponse.json({ok:true,send_eligible:true,provider_configured:false,reason:gate.reason,message:"Echo gate passed. No external message was sent because a delivery provider is not configured."});
 }
