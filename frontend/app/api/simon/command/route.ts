@@ -2,7 +2,7 @@ import {NextResponse} from "next/server";
 import {requireFounder} from "../../../../lib/auth";
 import {ensureSchema,sql} from "../../../../lib/db";
 export const runtime="nodejs";
-const AGENTS=["Scout","Claire","Atlas","Maven","Gatekeeper","Echo","Booker","Ledger"];
+const AGENTS=["Marie","Scout","Claire","Atlas","Sofia","Maven","Gatekeeper","Echo","Booker","Flow","Ledger"];
 function agentFrom(s:string){return AGENTS.find(a=>new RegExp("\\b"+a+"\\b","i").test(s))||null}
 export async function POST(req:Request){
  const founder=await requireFounder(); if(!founder)return NextResponse.json({error:"Founder access required"},{status:403});
