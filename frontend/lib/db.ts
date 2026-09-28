@@ -55,6 +55,9 @@ export async function ensureSchema(){
     approved_at TIMESTAMPTZ,
     rejected_reason TEXT,
     send_token TEXT,
+    provider TEXT,
+    provider_message_id TEXT,
+    provider_thread_id TEXT,
     sent_at TIMESTAMPTZ,
     sent_by TEXT,
     delivery_status TEXT,
@@ -64,11 +67,15 @@ export async function ensureSchema(){
   )`;
 
   await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS send_token TEXT`;
+  await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS provider TEXT`;
+  await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS provider_message_id TEXT`;
+  await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS provider_thread_id TEXT`;
   await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS sent_at TIMESTAMPTZ`;
   await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS sent_by TEXT`;
   await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS delivery_status TEXT`;
   await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS follow_up_due_at TIMESTAMPTZ`;
   await q`CREATE UNIQUE INDEX IF NOT EXISTS outreach_jobs_send_token_uidx ON outreach_jobs(send_token) WHERE send_token IS NOT NULL`;
+  await q`CREATE UNIQUE INDEX IF NOT EXISTS outreach_jobs_provider_message_uidx ON outreach_jobs(provider,provider_message_id) WHERE provider_message_id IS NOT NULL`;
 
   await q`CREATE TABLE IF NOT EXISTS lead_activities (
     id BIGSERIAL PRIMARY KEY,
