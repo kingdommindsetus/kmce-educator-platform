@@ -44,6 +44,30 @@ export async function ensureSchema(){
 
   await q`ALTER TABLE leads ADD COLUMN IF NOT EXISTS contact_source_url TEXT`;
   await q`ALTER TABLE leads ADD COLUMN IF NOT EXISTS contact_verified_at TIMESTAMPTZ`;
+  await q`ALTER TABLE leads ADD COLUMN IF NOT EXISTS website TEXT`;
+  await q`ALTER TABLE leads ADD COLUMN IF NOT EXISTS website_host TEXT`;
+  await q`ALTER TABLE leads ADD COLUMN IF NOT EXISTS discovery_source TEXT`;
+  await q`ALTER TABLE leads ADD COLUMN IF NOT EXISTS research_confidence INTEGER NOT NULL DEFAULT 0`;
+  await q`ALTER TABLE leads ADD COLUMN IF NOT EXISTS last_researched_at TIMESTAMPTZ`;
+  await q`CREATE INDEX IF NOT EXISTS leads_website_host_idx ON leads(website_host) WHERE website_host IS NOT NULL`;
+
+  await q`CREATE TABLE IF NOT EXISTS lead_evidence (
+    id BIGSERIAL PRIMARY KEY,
+    lead_id BIGINT NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+    source_url TEXT NOT NULL,
+    source_type TEXT NOT NULL DEFAULT 'PUBLIC_WEB',
+    field_name TEXT NOT NULL,
+    observed_value TEXT,
+    confidence INTEGER NOT NULL DEFAULT 50 CHECK (confidence BETWEEN 0 AND 100),
+    discovered_by TEXT NOT NULL,
+    verified_by TEXT,
+    observed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    verified_at TIMESTAMPTZ,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS lead_evidence_lead_idx ON lead_evidence(lead_id,created_at DESC)`;
+  await q`CREATE INDEX IF NOT EXISTS lead_evidence_source_idx ON lead_evidence(source_url)`;
 
   await q`CREATE TABLE IF NOT EXISTS outreach_jobs (
     id BIGSERIAL PRIMARY KEY,
