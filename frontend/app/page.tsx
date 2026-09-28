@@ -15,8 +15,11 @@ export default function Home(){
  async function verifyContact(job:any){setNotice("Verifying official source…");const r=await fetch(API+`/outreach/${job.id}/verify`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({source_url:verifySource})});const d=await r.json().catch(()=>({}));if(!r.ok){setNotice(`ERROR ${r.status}: ${d.error||"Verification failed"}`);return;}await loadWorkspace(workspace.educator.id);await openLead(selected.lead.id);setNotice("CONTACT VERIFIED IN NEON — Echo gate can now be tested");}
  async function generateSimonVoice(event?:React.MouseEvent<HTMLButtonElement>){
   event?.preventDefault(); event?.stopPropagation();
-  setSimonVoiceStatus("GENERATING"); setNotice("Simon is rendering the frozen executive brief…");
-  const r=await fetch(API+"/simon/voice/render",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({})});
+  setSimonVoiceStatus("GENERATING"); setNotice("Simon is freezing the verified brief…");
+  const freeze=await fetch(API+"/simon/daily-brief",{method:"POST"}); const frozen=await freeze.json().catch(()=>({}));
+  if(!freeze.ok){setSimonVoiceStatus("ERROR");setNotice(`SIMON ERROR ${freeze.status}: ${frozen.error||"Brief freeze failed"}`);return;}
+  setNotice("Simon is rendering the frozen executive brief…");
+  const r=await fetch(API+"/simon/voice/render",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({brief_id:frozen.id})});
   const d=await r.json().catch(()=>({}));
   if(!r.ok){setSimonVoiceStatus("ERROR");setNotice(`SIMON ERROR ${r.status}: ${d.error||"Voice render failed"}`);return;}
   if(!d.audio_base64){setSimonVoiceStatus("ERROR");setNotice("SIMON ERROR: renderer returned no audio");return;}
