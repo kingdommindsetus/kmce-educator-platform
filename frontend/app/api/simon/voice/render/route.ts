@@ -1,6 +1,6 @@
 import { NextRequest,NextResponse } from "next/server";
-import { requireFounder } from "../../../../lib/auth";
-import { ensureSchema,sql } from "../../../../lib/db";
+import { requireFounder } from "../../../../../lib/auth";
+import { ensureSchema,sql } from "../../../../../lib/db";
 
 export const runtime="nodejs";
 
