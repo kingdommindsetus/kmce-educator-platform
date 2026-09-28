@@ -29,4 +29,14 @@ const exact=approve(job,h2);
 assert.equal(exact.status,200); assert.equal(exact.sent,false); assert.equal(exact.job.status,"APPROVED"); assert.equal(exact.job.approved_sha256,h2);
 assert.equal(exact.job.sent_at,null); assert.equal(exact.job.provider_message_id,null); assert.equal(exact.activity.action,"OUTREACH_APPROVED"); assert.match(exact.activity.detail,/No message was sent/);
 
-console.log("Simon approval proof PASS: missing hash blocked; stale H1 blocked; exact H2 approved; audit produced; zero send.");
+function sendIntegrity(job){
+  const currentHash=sha(job.draft_content);
+  if(!job.approved_sha256 || job.approved_sha256!==currentHash)return {ok:false,status:409,reason:"APPROVED_DRAFT_MISMATCH"};
+  return {ok:true,status:200};
+}
+const approvedIntegrity=sendIntegrity(exact.job);
+assert.deepEqual(approvedIntegrity,{ok:true,status:200});
+const tamperedIntegrity=sendIntegrity({...exact.job,draft_content:"Tampered after approval"});
+assert.deepEqual(tamperedIntegrity,{ok:false,status:409,reason:"APPROVED_DRAFT_MISMATCH"});
+
+console.log("Simon approval proof PASS: missing hash blocked; stale H1 blocked; exact H2 approved; audit produced; post-approval tamper blocked; zero send.");
