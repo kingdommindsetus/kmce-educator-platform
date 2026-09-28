@@ -1,6 +1,6 @@
 import {NextResponse} from "next/server";
-import {ensureSchema,sql} from "../../../../../../lib/db";
-import {requireFounder} from "../../../../../../lib/auth";
+import {ensureSchema,sql} from "../../../../../lib/db";
+import {requireFounder} from "../../../../../lib/auth";
 
 export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
  const u=await requireFounder(); if(!u)return NextResponse.json({error:"forbidden"},{status:403});
