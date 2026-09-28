@@ -5,7 +5,8 @@
     "build": "npm run test:gates && next build",
     "start": "next start",
     "test:simon-approval": "node tests/simon-approval-gate.test.mjs",
-    "test:gates": "npm run test:echo && npm run test:simon-approval"
+    "test:marie": "node tests/marie-v1.test.mjs",
+    "test:gates": "npm run test:echo && npm run test:simon-approval && npm run test:marie"
   },
   "dependencies": {
     "@composio/core": "^0.18.1",

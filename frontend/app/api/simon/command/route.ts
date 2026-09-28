@@ -1,8 +1,9 @@
 import {NextResponse} from "next/server";
 import {requireFounder} from "../../../../lib/auth";
 import {ensureSchema,sql} from "../../../../lib/db";
+import {triageWorkItem} from "../../../../lib/simon/marie";
 export const runtime="nodejs";
-const AGENTS=["Scout","Claire","Atlas","Maven","Gatekeeper","Echo","Booker","Ledger"];
+const AGENTS=["Marie","Scout","Claire","Atlas","Sofia","Maven","Gatekeeper","Echo","Booker","Flow","Ledger"];
 function agentFrom(s:string){return AGENTS.find(a=>new RegExp("\\b"+a+"\\b","i").test(s))||null}
 export async function POST(req:Request){
  const founder=await requireFounder(); if(!founder)return NextResponse.json({error:"Founder access required"},{status:403});
@@ -13,14 +14,32 @@ export async function POST(req:Request){
  let response="",action:any={type:"ASK",status:"COMPLETED"}; const a=agentFrom(input);
  if(a&&/(have|ask|tell|assign|task|work|put|give)/i.test(input)){
   const instruction=input.trim(),title=instruction.slice(0,90); const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,requested_by) VALUES(${a},${title},${instruction},${founder.email}) RETURNING id`;
-  action={type:"DELEGATE",status:"QUEUED",target:a,task_id:Number(rows[0].id)}; response=`Certainly. I've added that to ${a}'s workload as task ${rows[0].id}. I'll keep watch on it.`;
+  action={type:"DELEGATE",status:"QUEUED",target:a,task_id:Number(rows[0].id),routed_by:"FOUNDER_EXPLICIT"}; response=`Certainly. I've added that to ${a}'s workload as task ${rows[0].id}. I'll keep watch on it.`;
  }else if(/(draft|write|prepare).*(email|message)|email.*(draft|write|prepare)/i.test(input)){
   const draft="Subject: KMCE follow-up\n\nHello,\n\nI'm following up on behalf of Kingdom Mindset CE regarding the matter Kimberly referenced. Please let us know a convenient next step.\n\nBest,\nKingdom Mindset CE";
   action={type:"DRAFT",status:"DRAFT_ONLY",draft}; response="Of course. I've prepared a draft and recorded the request. I have not sent anything. The draft is ready for review.";
  }else{
-  const stages:any=await q`SELECT pipeline_stage,count(*)::int count FROM leads GROUP BY pipeline_stage`; const tasks:any=await q`SELECT assigned_agent,count(*)::int count FROM agent_tasks WHERE status IN ('QUEUED','IN_PROGRESS') GROUP BY assigned_agent`;
-  const total=stages.reduce((n:number,x:any)=>n+Number(x.count),0),pending=stages.find((x:any)=>x.pipeline_stage==="PENDING_APPROVAL")?.count||0,approved=stages.find((x:any)=>x.pipeline_stage==="APPROVED")?.count||0;
-  response=`KMCE currently has ${total} leads recorded. ${pending} are pending approval and ${approved} are approved for Echo. ${tasks.length?"I also have "+tasks.map((x:any)=>x.assigned_agent+" "+x.count).join(", ")+" active assignment(s).":"There are no Simon-created agent assignments waiting."} What would you like me to handle next?`;
+  const marie:any=triageWorkItem({text:input,source:"FOUNDER"});
+  if(marie.outcome==="DELEGATE"&&marie.agent){
+    const title=input.slice(0,90); const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES(${marie.agent},${title},${input},'MARIE',${founder.email}) RETURNING id`;
+    action={type:"DELEGATE",status:"QUEUED",target:marie.agent,task_id:Number(rows[0].id),routed_by:"MARIE",triage:marie};
+    response=`Marie routed this to ${marie.agent} as task ${rows[0].id}. Simon will receive the result, not the noise.`;
+  }else if(marie.outcome==="HANDLE"){
+    const title=input.slice(0,90); const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Marie',${title},${input},'MARIE',${founder.email}) RETURNING id`;
+    action={type:"HANDLE",status:"QUEUED",target:"Marie",task_id:Number(rows[0].id),routed_by:"MARIE",triage:marie};
+    response=`Marie has taken this as internal coordination task ${rows[0].id}.`;
+  }else if(marie.outcome==="ASK_SIMON"){
+    action={type:"ASK_SIMON",status:"NEEDS_SIMON",target:"Simon",routed_by:"MARIE",triage:marie};
+    response="Marie flagged this for Simon because it needs executive prioritization, policy evaluation, or clarification before action.";
+  }else if(marie.outcome==="ESCALATE_KIMBERLY"){
+    action={type:"ESCALATE_KIMBERLY",status:"REQUIRES_FOUNDER",target:"Kimberly",routed_by:"MARIE",triage:marie};
+    response="Marie stopped this at the Founder boundary. No financial, contractual, security, publishing, or external action was executed.";
+  }else{
+    const stages:any=await q`SELECT pipeline_stage,count(*)::int count FROM leads GROUP BY pipeline_stage`; const tasks:any=await q`SELECT assigned_agent,count(*)::int count FROM agent_tasks WHERE status IN ('QUEUED','IN_PROGRESS') GROUP BY assigned_agent`;
+    const total=stages.reduce((n:number,x:any)=>n+Number(x.count),0),pending=stages.find((x:any)=>x.pipeline_stage==="PENDING_APPROVAL")?.count||0,approved=stages.find((x:any)=>x.pipeline_stage==="APPROVED")?.count||0;
+    response=`KMCE currently has ${total} leads recorded. ${pending} are pending approval and ${approved} are approved for Echo. ${tasks.length?"I also have "+tasks.map((x:any)=>x.assigned_agent+" "+x.count).join(", ")+" active assignment(s).":"There are no Simon-created agent assignments waiting."} What would you like me to handle next?`;
+    action={type:"ASK",status:"COMPLETED",routed_by:"MARIE",triage:marie};
+  }
  }
  await q`INSERT INTO simon_actions(session_id,action_type,target,payload,status,requested_by) VALUES(${sessionId},${action.type},${action.target||null},${JSON.stringify(action)}::jsonb,${action.status},${founder.email})`;
  await q`INSERT INTO simon_messages(session_id,role,content) VALUES(${sessionId},'SIMON',${response})`; return NextResponse.json({session_id:sessionId,response,action});
