@@ -59,3 +59,18 @@ export function claireReadiness(candidate,evidence=[]){
     checks:{hasIdentity,hasReachableContact,hasOfficialSource,sourceCount}
   };
 }
+
+export function claireNextState(currentStage,currentAgent,readiness,hasApprovedOutreach=false){
+  const stage=String(currentStage||"ENRICHING").toUpperCase();
+  if(hasApprovedOutreach){
+    return {stage:"APPROVED",agent:"Echo",preserved:true,reason:"Approved outreach exists; preserve downstream Echo state."};
+  }
+  const enrichmentStages=new Set(["DISCOVERED","ENRICHING","ENRICHED"]);
+  if(!enrichmentStages.has(stage)){
+    return {stage,agent:currentAgent||null,preserved:true,reason:"Claire enrichment cannot regress a downstream workflow stage."};
+  }
+  if(readiness?.ready_for_atlas){
+    return {stage:"ENRICHED",agent:"Atlas",preserved:false,reason:"Claire enrichment complete; ready for Atlas qualification."};
+  }
+  return {stage:"ENRICHING",agent:"Claire",preserved:false,reason:"Claire enrichment incomplete; more verified evidence/contact data required."};
+}

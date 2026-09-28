@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import {normalizeUrl,websiteHost,normalizeCandidate,evidenceConfidence,claireReadiness} from "../lib/simon/lead-intelligence.mjs";
+import {normalizeUrl,websiteHost,normalizeCandidate,evidenceConfidence,claireReadiness,claireNextState} from "../lib/simon/lead-intelligence.mjs";
 
 assert.equal(normalizeUrl("example.com/"),"https://example.com");
 assert.equal(websiteHost("https://www.Example.com/contact"),"example.com");
@@ -27,9 +27,18 @@ assert.equal(r.ready_for_atlas,true);
 assert.equal(r.confidence,85);
 assert.equal(r.checks.sourceCount,2);
 
+let next=claireNextState("ENRICHING","Claire",r,false);
+assert.deepEqual({stage:next.stage,agent:next.agent,preserved:next.preserved},{stage:"ENRICHED",agent:"Atlas",preserved:false});
+
+next=claireNextState("APPROVED","Echo",r,false);
+assert.deepEqual({stage:next.stage,agent:next.agent,preserved:next.preserved},{stage:"APPROVED",agent:"Echo",preserved:true});
+
+next=claireNextState("ENRICHED","Atlas",r,true);
+assert.deepEqual({stage:next.stage,agent:next.agent,preserved:next.preserved},{stage:"APPROVED",agent:"Echo",preserved:true});
+
 r=claireReadiness({practice_name:"No Contact",website:"nocontact.example"},[
   {source_url:"https://nocontact.example",source_type:"OFFICIAL",confidence:90}
 ]);
 assert.equal(r.ready_for_atlas,false);
 
-console.log("Scout + Claire v1 PASS: normalization, host dedupe key, evidence confidence, and Atlas readiness work.");
+console.log("Scout + Claire v1 PASS: normalization, evidence readiness, and downstream state preservation work.");

@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
 import {requireFounder} from "../../../../lib/auth";
 import {ensureSchema,sql} from "../../../../lib/db";
-import {claireReadiness,normalizeUrl} from "../../../../lib/simon/lead-intelligence";
+import {claireReadiness,claireNextState,normalizeUrl} from "../../../../lib/simon/lead-intelligence";
 
 export const runtime="nodejs";
 
@@ -16,7 +16,6 @@ export async function POST(req:Request){
 
   const rows:any=await q`SELECT * FROM leads WHERE id=${leadId} LIMIT 1`;
   if(!rows.length)return NextResponse.json({error:"Lead not found"},{status:404});
-  const lead=rows[0];
 
   const evidence=Array.isArray(body.evidence)?body.evidence.slice(0,50):[];
   for(const item of evidence){
@@ -54,19 +53,27 @@ export async function POST(req:Request){
     FROM lead_evidence WHERE lead_id=${leadId}
     ORDER BY created_at ASC
   `;
+  const approved:any=await q`
+    SELECT id FROM outreach_jobs
+    WHERE lead_id=${leadId} AND status='APPROVED'
+    ORDER BY approved_at DESC NULLS LAST,id DESC
+    LIMIT 1
+  `;
 
   const readiness:any=claireReadiness(refreshed[0],allEvidence);
-  const nextStage=readiness.ready_for_atlas?"ENRICHED":"ENRICHING";
-  const nextAgent=readiness.ready_for_atlas?"Atlas":"Claire";
+  const routing:any=claireNextState(
+    refreshed[0].pipeline_stage,
+    refreshed[0].assigned_agent,
+    readiness,
+    approved.length>0
+  );
 
   await q`
     UPDATE leads SET
       research_confidence=${readiness.confidence},
-      pipeline_stage=${nextStage},
-      assigned_agent=${nextAgent},
-      qualification_reason=${readiness.ready_for_atlas
-        ? "Claire enrichment complete; ready for Atlas qualification."
-        : "Claire enrichment incomplete; more verified evidence/contact data required."},
+      pipeline_stage=${routing.stage},
+      assigned_agent=${routing.agent},
+      qualification_reason=${routing.reason},
       updated_at=now()
     WHERE id=${leadId}
   `;
@@ -75,19 +82,18 @@ export async function POST(req:Request){
     INSERT INTO lead_activities(lead_id,actor_name,action,detail)
     VALUES(
       ${leadId},'Claire',
-      ${readiness.ready_for_atlas ? "ENRICHED" : "ENRICHMENT_UPDATED"},
-      ${readiness.ready_for_atlas
-        ? "Evidence threshold met. Lead handed to Atlas."
-        : "Evidence updated. Claire retains ownership until readiness threshold is met."}
+      ${routing.preserved ? "ENRICHMENT_UPDATED_STATE_PRESERVED" : readiness.ready_for_atlas ? "ENRICHED" : "ENRICHMENT_UPDATED"},
+      ${routing.reason}
     )
   `;
 
   return NextResponse.json({
     lead_id:leadId,
-    stage:nextStage,
-    assigned_agent:nextAgent,
+    stage:routing.stage,
+    assigned_agent:routing.agent,
     readiness,
     evidence_count:allEvidence.length,
+    downstream_state_preserved:Boolean(routing.preserved),
     external_actions_executed:false
   });
 }
