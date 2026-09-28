@@ -1,18 +1,24 @@
 {
-  "scripts":{"dev":"next dev","test:echo":"node tests/echo-gate.test.mjs","build":"npm run test:echo && next build","start":"next start"},
-  "dependencies":{
-    "@composio/core":"^0.18.1",
-    "@neondatabase/auth":"0.5.0-beta",
-    "@neondatabase/auth-ui":"0.3.0-beta",
-    "@neondatabase/serverless":"^0.10.4",
-    "next":"16.3.6",
-    "react":"19.2.0",
-    "react-dom":"19.2.0"
+  "scripts": {
+    "dev": "next dev",
+    "test:echo": "node tests/echo-gate.test.mjs",
+    "build": "npm run test:echo && next build",
+    "start": "next start"
   },
-  "devDependencies":{
-    "typescript":"5.5.4",
-    "@types/node":"20.14.12",
-    "@types/react":"19.0.10",
-    "@types/react-dom":"19.0.4"
+  "dependencies": {
+    "@composio/core": "^0.18.1",
+    "@neondatabase/auth": "0.5.0-beta",
+    "@neondatabase/auth-ui": "0.3.0-beta",
+    "@neondatabase/serverless": "^0.10.4",
+    "next": "16.3.6",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "stripe": "^18.5.0"
+  },
+  "devDependencies": {
+    "typescript": "5.5.4",
+    "@types/node": "20.14.12",
+    "@types/react": "19.0.10",
+    "@types/react-dom": "19.0.4"
   }
 }
