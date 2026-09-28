@@ -40,49 +40,55 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
     return NextResponse.json({error:"Verified recipient, official source, and verification timestamp required",reason:"CONTACT_NOT_VERIFIED"},{status:409});
   }
 
-  const finalized=await q.transaction(async(tx)=>{
-    const updated=await tx`
-      UPDATE outreach_jobs
-      SET status='SENT',
-          send_token=${providerMessageId},
-          provider=${provider},
-          provider_message_id=${providerMessageId},
-          provider_thread_id=${providerThreadId||null},
-          sent_at=now(),
-          sent_by=${actor},
-          delivery_status='SUBMITTED',
-          follow_up_due_at=now()+interval '3 days',
-          updated_at=now()
-      WHERE id=${id}
-        AND status='APPROVED'
-        AND sent_at IS NULL
-      RETURNING *
-    `;
+  const detail=`Provider-confirmed ${provider} send recorded with message id ${providerMessageId}; follow-up scheduled in 3 days.`;
 
-    if(!updated.length)throw new Error("SEND_STATE_TRANSITION_BLOCKED");
+  try{
+    const [updated]=await q.transaction([
+      q`
+        UPDATE outreach_jobs
+        SET status='SENT',
+            send_token=${providerMessageId},
+            provider=${provider},
+            provider_message_id=${providerMessageId},
+            provider_thread_id=${providerThreadId||null},
+            sent_at=now(),
+            sent_by=${actor},
+            delivery_status='SUBMITTED',
+            follow_up_due_at=now()+interval '3 days',
+            updated_at=now()
+        WHERE id=${id}
+          AND status='APPROVED'
+          AND sent_at IS NULL
+        RETURNING *
+      `,
+      q`
+        UPDATE leads
+        SET pipeline_stage='CONTACTED',
+            assigned_agent='Echo',
+            updated_at=now()
+        WHERE id=${job.lead_id}
+          AND pipeline_stage='APPROVED'
+      `,
+      q`
+        INSERT INTO lead_activities(lead_id,actor_name,action,detail)
+        VALUES(${job.lead_id},${actor},'OUTREACH_SENT',${detail})
+      `
+    ]);
 
-    const sent=updated[0];
+    if(!updated.length){
+      return NextResponse.json({error:"Send state transition blocked",reason:"SEND_STATE_TRANSITION_BLOCKED"},{status:409});
+    }
 
-    await tx`
-      UPDATE leads
-      SET pipeline_stage='CONTACTED',
-          assigned_agent='Echo',
-          updated_at=now()
-      WHERE id=${sent.lead_id}
-    `;
-
-    await tx`
-      INSERT INTO lead_activities(lead_id,actor_name,action,detail)
-      VALUES(
-        ${sent.lead_id},
-        ${actor},
-        'OUTREACH_SENT',
-        ${`Provider-confirmed ${provider} send recorded with message id ${providerMessageId}; follow-up scheduled in 3 days.`}
-      )
-    `;
-
-    return sent;
-  });
-
-  return NextResponse.json({ok:true,job:finalized,provider_message_id:providerMessageId,provider_thread_id:providerThreadId||null});
+    return NextResponse.json({
+      ok:true,
+      job:updated[0],
+      provider_message_id:providerMessageId,
+      provider_thread_id:providerThreadId||null
+    });
+  }catch(error){
+    if(String(error).includes("outreach_jobs_provider_message_uidx") || String(error).includes("outreach_jobs_send_token_uidx")){
+      return NextResponse.json({error:"Provider message already recorded",reason:"DUPLICATE_PROVIDER_MESSAGE"},{status:409});
+    }
+    throw error;
+  }
 }
