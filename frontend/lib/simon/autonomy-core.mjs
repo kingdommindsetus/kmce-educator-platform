@@ -5,6 +5,7 @@ export const AUTONOMY_CAPABILITIES=Object.freeze({
   "lead.follow_up.review":{owner:"Echo",authority:"CONTROLLED"},
   "onboarding.review":{owner:"Flow",authority:"CONTROLLED"},
   "executive.brief.queue":{owner:"Marie",authority:"CONTROLLED"},
+  "growth.campaign.review":{owner:"Sofia",authority:"CONTROLLED"},
   "outreach.send":{owner:"Echo",authority:"APPROVAL"},
   "social.publish":{owner:"Sofia",authority:"APPROVAL"},
   "calendar.book.external":{owner:"Booker",authority:"POLICY"},
