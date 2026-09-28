@@ -35,10 +35,15 @@ export async function ensureSchema(){
     pipeline_stage TEXT NOT NULL DEFAULT 'QUALIFIED',
     assigned_agent TEXT,
     approval_status TEXT NOT NULL DEFAULT 'PENDING',
+    contact_source_url TEXT,
+    contact_verified_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE(educator_id, practice_name)
   )`;
+
+  await q`ALTER TABLE leads ADD COLUMN IF NOT EXISTS contact_source_url TEXT`;
+  await q`ALTER TABLE leads ADD COLUMN IF NOT EXISTS contact_verified_at TIMESTAMPTZ`;
 
   await q`CREATE TABLE IF NOT EXISTS outreach_jobs (
     id BIGSERIAL PRIMARY KEY,
@@ -49,9 +54,21 @@ export async function ensureSchema(){
     approved_by TEXT,
     approved_at TIMESTAMPTZ,
     rejected_reason TEXT,
+    send_token TEXT,
+    sent_at TIMESTAMPTZ,
+    sent_by TEXT,
+    delivery_status TEXT,
+    follow_up_due_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
+
+  await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS send_token TEXT`;
+  await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS sent_at TIMESTAMPTZ`;
+  await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS sent_by TEXT`;
+  await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS delivery_status TEXT`;
+  await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS follow_up_due_at TIMESTAMPTZ`;
+  await q`CREATE UNIQUE INDEX IF NOT EXISTS outreach_jobs_send_token_uidx ON outreach_jobs(send_token) WHERE send_token IS NOT NULL`;
 
   await q`CREATE TABLE IF NOT EXISTS lead_activities (
     id BIGSERIAL PRIMARY KEY,
