@@ -2,6 +2,7 @@ import {NextResponse} from "next/server";
 import {ensureSchema,sql} from "../../../../lib/db";
 import {requireFounder} from "../../../../lib/auth";
 import {executionDisposition,retryDelaySeconds,idempotencyKey} from "../../../../lib/simon/autonomy-core";
+import {SERVICE_CATALOG} from "../../../../lib/simon/service-catalog";
 
 export const runtime="nodejs";
 
@@ -12,6 +13,15 @@ async function authorized(req:Request){
   const founder=await requireFounder();
   if(founder) return {ok:true,actor:founder.email};
   return {ok:false,actor:null};
+}
+
+async function seedServiceCatalog(q:any){
+  for(const item of SERVICE_CATALOG as any[]){
+    await q`INSERT INTO service_catalog(service_code,service_name,fulfillment_type,payment_mode,responsible_agent,onboarding_requirements,entitlement_rules,metadata)
+      VALUES(${item.service_code},${item.service_name},${item.fulfillment_type},${item.payment_mode},${item.responsible_agent},${JSON.stringify(item.onboarding_requirements||[])}::jsonb,${JSON.stringify(item.entitlement_rules||{})}::jsonb,${JSON.stringify(item.metadata||{})}::jsonb)
+      ON CONFLICT(service_code) DO UPDATE SET service_name=EXCLUDED.service_name,fulfillment_type=EXCLUDED.fulfillment_type,payment_mode=EXCLUDED.payment_mode,responsible_agent=EXCLUDED.responsible_agent,onboarding_requirements=EXCLUDED.onboarding_requirements,entitlement_rules=EXCLUDED.entitlement_rules,metadata=EXCLUDED.metadata,updated_at=now()`;
+  }
+  return SERVICE_CATALOG.length;
 }
 
 async function seedDueJobs(q:any){
@@ -84,6 +94,7 @@ export async function POST(req:Request){
   const gate=await authorized(req); if(!gate.ok)return NextResponse.json({error:"Unauthorized"},{status:403});
   await ensureSchema(); const q=sql(); const worker="simon-autonomy-v1";
   const runs:any=await q`INSERT INTO autonomy_runs(worker_name) VALUES(${worker}) RETURNING id`; const runId=Number(runs[0].id);
+  const catalog_count=await seedServiceCatalog(q);
   const seeded=await seedDueJobs(q);
   let claimed=0,succeeded=0,failed=0,waiting=0; const results:any[]=[];
   for(let i=0;i<20;i++){
@@ -99,10 +110,12 @@ export async function POST(req:Request){
     }catch(e:any){
       const attempts=Number(job.attempts||1); const max=Number(job.max_attempts||3); const message=String(e?.message||e);
       if(attempts>=max){failed++;await q`UPDATE autonomy_jobs SET status='DEAD',error_text=${message},locked_at=null,locked_by=null,updated_at=now() WHERE id=${job.id}`;}
-      else{const delay=retryDelaySeconds(attempts);await q`UPDATE autonomy_jobs SET status='PENDING',error_text=${message},run_after=now()+(${delay}||' seconds')::interval,locked_at=null,locked_by=null,updated_at=now() WHERE id=${job.id}`;}
+      else{const delay=retryDelaySeconds(attempts);await q`UPDATE autonomy_jobs SET status='PENDING',error_text=${message},run_after=now()+make_interval(secs => ${delay}),locked_at=null,locked_by=null,updated_at=now() WHERE id=${job.id}`;}
       results.push({id:Number(job.id),capability:job.capability,status:"ERROR",error:message});
     }
   }
   await q`UPDATE autonomy_runs SET finished_at=now(),claimed_count=${claimed},succeeded_count=${succeeded},failed_count=${failed},waiting_approval_count=${waiting},summary=${JSON.stringify({seeded,results})}::jsonb WHERE id=${runId}`;
-  return NextResponse.json({ok:true,run_id:runId,seeded,claimed,succeeded,failed,waiting_approval:waiting,results});
+  return NextResponse.json({ok:true,run_id:runId,catalog_count,seeded,claimed,succeeded,failed,waiting_approval:waiting,results});
 }
+
+export async function GET(req:Request){return POST(req)}
