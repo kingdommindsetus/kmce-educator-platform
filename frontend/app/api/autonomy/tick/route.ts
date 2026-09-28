@@ -35,10 +35,23 @@ async function seedDueJobs(q:any){
     const key=idempotencyKey(["onboarding-ready",row.id]);
     await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by) VALUES(${key},'onboarding.review','Flow','CONTROLLED','onboarding_case',${String(row.id)},${JSON.stringify({lead_id:Number(row.lead_id),onboarding_case_id:Number(row.id)})}::jsonb,'Simon') ON CONFLICT(idempotency_key) DO NOTHING`;
   }
+  const campaigns:any=await q`SELECT c.id,c.name,
+    count(a.id) FILTER (WHERE a.status='DRAFT')::int AS draft_count,
+    count(a.id) FILTER (WHERE a.status='APPROVED')::int AS approved_count
+    FROM growth_campaigns c LEFT JOIN content_assets a ON a.campaign_id=c.id
+    WHERE c.status='ACTIVE' GROUP BY c.id,c.name LIMIT 100`;
+  for(const row of campaigns){
+    if(Number(row.draft_count||0)===0 && Number(row.approved_count||0)===0){
+      const key=idempotencyKey(["growth-review",row.id,new Date().toISOString().slice(0,10)]);
+      await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by)
+        VALUES(${key},'growth.campaign.review','Sofia','CONTROLLED','growth_campaign',${String(row.id)},${JSON.stringify({campaign_id:Number(row.id),campaign_name:row.name})}::jsonb,'Simon')
+        ON CONFLICT(idempotency_key) DO NOTHING`;
+    }
+  }
   const day=new Date().toISOString().slice(0,10);
   const briefKey=idempotencyKey(["executive-brief",day]);
   await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by) VALUES(${briefKey},'executive.brief.queue','Marie','CONTROLLED','company','KMCE',${JSON.stringify({brief_date:day})}::jsonb,'Simon') ON CONFLICT(idempotency_key) DO NOTHING`;
-  return {followups:followups.length,onboarding_ready:ready.length,brief_date:day};
+  return {followups:followups.length,onboarding_ready:ready.length,active_campaigns:campaigns.length,brief_date:day};
 }
 
 async function handleJob(q:any,job:any){
@@ -75,6 +88,18 @@ async function handleJob(q:any,job:any){
     const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Ledger' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
     if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true}};
     const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Ledger',${title},${"Onboarding case "+caseId+" is complete. Prepare payment path for service "+cases[0].service_code+". Do not charge or send a payment request without approval."},'AUTONOMY','Simon') RETURNING id`;
+    return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false}};
+  }
+
+  if(job.capability==="growth.campaign.review"){
+    const campaignId=Number(job.payload?.campaign_id||job.entity_id||0);
+    const campaigns:any=await q`SELECT id,name,status FROM growth_campaigns WHERE id=${campaignId} LIMIT 1`;
+    if(!campaigns.length)return {status:"DEAD",result:{reason:"CAMPAIGN_NOT_FOUND"}};
+    if(campaigns[0].status!=="ACTIVE")return {status:"SUCCEEDED",result:{skipped:true,reason:"CAMPAIGN_NOT_ACTIVE"}};
+    const title="Growth campaign needs content: "+campaigns[0].name;
+    const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Sofia' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
+    if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true}};
+    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Sofia',${title},'Create or refresh the approved-channel content plan. Draft only; external publishing remains approval-gated.','AUTONOMY','Simon') RETURNING id`;
     return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false}};
   }
 
