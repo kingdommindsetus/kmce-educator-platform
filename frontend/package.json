@@ -6,8 +6,9 @@
     "start": "next start",
     "test:simon-approval": "node tests/simon-approval-gate.test.mjs",
     "test:marie": "node tests/marie-v1.test.mjs",
-    "test:gates": "npm run test:echo && npm run test:simon-approval && npm run test:marie && npm run test:scout-claire",
-    "test:scout-claire": "node tests/scout-claire-v1.test.mjs"
+    "test:gates": "npm run test:echo && npm run test:simon-approval && npm run test:marie && npm run test:scout-claire && npm run test:atlas",
+    "test:scout-claire": "node tests/scout-claire-v1.test.mjs",
+    "test:atlas": "node tests/atlas-v1.test.mjs"
   },
   "dependencies": {
     "@composio/core": "^0.18.1",

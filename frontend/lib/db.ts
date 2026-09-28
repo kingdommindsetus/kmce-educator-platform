@@ -69,6 +69,19 @@ export async function ensureSchema(){
   await q`CREATE INDEX IF NOT EXISTS lead_evidence_lead_idx ON lead_evidence(lead_id,created_at DESC)`;
   await q`CREATE INDEX IF NOT EXISTS lead_evidence_source_idx ON lead_evidence(source_url)`;
 
+  await q`CREATE TABLE IF NOT EXISTS lead_qualification_runs (
+    id BIGSERIAL PRIMARY KEY,
+    lead_id BIGINT NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+    score INTEGER NOT NULL CHECK (score BETWEEN 0 AND 100),
+    decision TEXT NOT NULL CHECK (decision IN ('QUALIFY','HOLD','REJECT')),
+    score_breakdown JSONB NOT NULL,
+    reasons JSONB NOT NULL,
+    next_action TEXT NOT NULL,
+    qualified_by TEXT NOT NULL DEFAULT 'Atlas',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS lead_qualification_runs_lead_idx ON lead_qualification_runs(lead_id,created_at DESC)`;
+
   await q`CREATE TABLE IF NOT EXISTS outreach_jobs (
     id BIGSERIAL PRIMARY KEY,
     lead_id BIGINT NOT NULL REFERENCES leads(id),
