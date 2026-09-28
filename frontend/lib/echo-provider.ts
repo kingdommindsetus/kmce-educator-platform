@@ -24,7 +24,8 @@ export async function sendWithEcho(message:EchoEmail){
       recipient_email:message.recipient,
       subject:message.subject,
       body:message.body,
-      is_html:false
+      is_html:false,
+      user_id:"me"
     },
     dangerouslySkipVersionCheck:true
   });

@@ -114,7 +114,11 @@ export async function ensureSchema(){
   await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS draft_sha256 TEXT`;
   await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS draft_version INTEGER NOT NULL DEFAULT 1`;
   await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS approved_sha256 TEXT`;
+  await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS send_attempt_id TEXT`;
+  await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS send_attempted_at TIMESTAMPTZ`;
+  await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS send_error TEXT`;
   await q`CREATE UNIQUE INDEX IF NOT EXISTS outreach_jobs_send_token_uidx ON outreach_jobs(send_token) WHERE send_token IS NOT NULL`;
+  await q`CREATE UNIQUE INDEX IF NOT EXISTS outreach_jobs_send_attempt_uidx ON outreach_jobs(send_attempt_id) WHERE send_attempt_id IS NOT NULL`;
   await q`CREATE UNIQUE INDEX IF NOT EXISTS outreach_jobs_provider_message_uidx ON outreach_jobs(provider,provider_message_id) WHERE provider_message_id IS NOT NULL`;
 
   await q`CREATE TABLE IF NOT EXISTS discovery_appointments (
