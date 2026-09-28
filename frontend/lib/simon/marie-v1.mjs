@@ -5,7 +5,7 @@ export const MARIE_OUTCOMES = Object.freeze([
 ]);
 
 const AGENT_HINTS = [
-  ["Scout", /(lead|prospect|practice|dentist|find businesses|find offices)/i],
+  // Put specialist intent ahead of generic lead/practice discovery.
   ["Claire", /(research|verify|enrich|evidence|background|source)/i],
   ["Atlas", /(qualif|score|fit|opportunity|priority lead)/i],
   ["Sofia", /(instagram|facebook|linkedin|youtube|google business|seo|social)/i],
@@ -15,7 +15,8 @@ const AGENT_HINTS = [
   ["Booker", /(schedule|calendar|discovery call|meeting|book)/i],
   ["Flow", /(document|onboard|application|form|missing item)/i],
   ["Ledger", /(payment|invoice|stripe|refund|reconcile|revenue)/i],
-  ["Delivery/CE", /(certificate|ce credit|course complete|attendance|fulfillment|entitlement)/i]
+  ["Delivery/CE", /(certificate|ce credit|course complete|attendance|fulfillment|entitlement)/i],
+  ["Scout", /(lead|prospect|practice|dentist|find businesses|find offices)/i]
 ];
 
 const HIGH_RISK = /(send money|refund|charge|pay\b|payment link|change bank|bank account|routing number|password|credential|api key|sign (the )?(agreement|contract)|delete audit|delete ledger|grant permission|increase authority)/i;
