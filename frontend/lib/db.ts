@@ -120,6 +120,13 @@ export async function ensureSchema(){
 
   await q`CREATE INDEX IF NOT EXISTS commerce_transactions_occurred_idx ON commerce_transactions(occurred_at DESC)`;
   await q`CREATE INDEX IF NOT EXISTS commerce_transactions_product_idx ON commerce_transactions(product_type,product_name)`;
+  await q`CREATE TABLE IF NOT EXISTS stripe_webhook_events (
+    event_id TEXT PRIMARY KEY,
+    event_type TEXT NOT NULL,
+    livemode BOOLEAN NOT NULL DEFAULT true,
+    processed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    payload JSONB NOT NULL
+  )`;
 
   await q`CREATE TABLE IF NOT EXISTS executive_briefs (
     id BIGSERIAL PRIMARY KEY,
