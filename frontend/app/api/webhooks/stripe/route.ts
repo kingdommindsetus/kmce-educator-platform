@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { ensureSchema,sql } from "../../../../lib/db";
 
 export const runtime="nodejs";
-const stripe=new Stripe(process.env.STRIPE_SECRET_KEY||"");
+function stripeClient(){const key=process.env.STRIPE_SECRET_KEY;if(!key)throw new Error("Stripe secret key missing");return new Stripe(key);}
 
 function classify(meta:Record<string,string>={}){
  return {
@@ -21,7 +21,7 @@ export async function POST(req:NextRequest){
  if(!secret||!process.env.STRIPE_SECRET_KEY)return NextResponse.json({error:"Stripe webhook is not configured"},{status:503});
  const sig=req.headers.get("stripe-signature"); if(!sig)return NextResponse.json({error:"Missing Stripe signature"},{status:400});
  const raw=await req.text(); let event:Stripe.Event;
- try{event=stripe.webhooks.constructEvent(raw,sig,secret)}catch{return NextResponse.json({error:"Invalid Stripe signature"},{status:400})}
+ try{event=stripeClient().webhooks.constructEvent(raw,sig,secret)}catch{return NextResponse.json({error:"Invalid Stripe signature"},{status:400})}
  await ensureSchema(); const q=sql();
  const seen:any=await q`SELECT event_id FROM stripe_webhook_events WHERE event_id=${event.id} LIMIT 1`; if(seen[0])return NextResponse.json({ok:true,duplicate:true});
  let tx:any=null;
