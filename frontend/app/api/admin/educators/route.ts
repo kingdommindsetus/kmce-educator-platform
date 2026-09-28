@@ -1,3 +1,3 @@
-import {NextResponse} from "next/server";import {seedPilot} from "../../../../lib/crm";import {sql} from "../../../../lib/db";
+import {NextResponse} from "next/server";import {seedPilot} from "../../../../lib/crm";import {sql} from "../../../../lib/db";import {requireFounder} from "../../../../lib/auth";
 export const dynamic="force-dynamic";export const revalidate=0;
-export async function GET(){await seedPilot();const q=sql();const rows=await q`SELECT e.*,COUNT(l.id)::int AS lead_count,0::int AS course_count,0::int AS revenue_cents FROM educators e LEFT JOIN leads l ON l.educator_id=e.id GROUP BY e.id ORDER BY e.id`;return NextResponse.json(rows)}
+export async function GET(){const u=await requireFounder();if(!u)return NextResponse.json({error:"forbidden"},{status:403});await seedPilot();const q=sql();const rows=await q`SELECT e.*,COUNT(l.id)::int AS lead_count,0::int AS course_count,0::int AS revenue_cents FROM educators e LEFT JOIN leads l ON l.educator_id=e.id GROUP BY e.id ORDER BY e.id`;return NextResponse.json(rows)}
