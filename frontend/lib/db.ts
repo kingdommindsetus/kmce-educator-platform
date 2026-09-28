@@ -74,6 +74,9 @@ export async function ensureSchema(){
   await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS sent_by TEXT`;
   await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS delivery_status TEXT`;
   await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS follow_up_due_at TIMESTAMPTZ`;
+  await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS draft_sha256 TEXT`;
+  await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS draft_version INTEGER NOT NULL DEFAULT 1`;
+  await q`ALTER TABLE outreach_jobs ADD COLUMN IF NOT EXISTS approved_sha256 TEXT`;
   await q`CREATE UNIQUE INDEX IF NOT EXISTS outreach_jobs_send_token_uidx ON outreach_jobs(send_token) WHERE send_token IS NOT NULL`;
   await q`CREATE UNIQUE INDEX IF NOT EXISTS outreach_jobs_provider_message_uidx ON outreach_jobs(provider,provider_message_id) WHERE provider_message_id IS NOT NULL`;
 

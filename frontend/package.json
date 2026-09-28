@@ -2,8 +2,10 @@
   "scripts": {
     "dev": "next dev",
     "test:echo": "node tests/echo-gate.test.mjs",
-    "build": "npm run test:echo && next build",
-    "start": "next start"
+    "build": "npm run test:gates && next build",
+    "start": "next start",
+    "test:simon-approval": "node tests/simon-approval-gate.test.mjs",
+    "test:gates": "npm run test:echo && npm run test:simon-approval"
   },
   "dependencies": {
     "@composio/core": "^0.18.1",
