@@ -279,6 +279,95 @@ export async function ensureSchema(){
   )`;
   await q`CREATE INDEX IF NOT EXISTS autonomy_events_entity_idx ON autonomy_events(entity_type,entity_id,created_at DESC)`;
 
+  await q`CREATE TABLE IF NOT EXISTS ledger_accounts (
+    code TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    account_type TEXT NOT NULL CHECK (account_type IN ('ASSET','LIABILITY','EQUITY','REVENUE','EXPENSE')),
+    active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS ledger_journals (
+    id BIGSERIAL PRIMARY KEY,
+    source_provider TEXT NOT NULL,
+    source_transaction_id TEXT NOT NULL,
+    journal_type TEXT NOT NULL,
+    description TEXT NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'usd',
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    posted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(source_provider,source_transaction_id,journal_type)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS ledger_entries (
+    id BIGSERIAL PRIMARY KEY,
+    journal_id BIGINT NOT NULL REFERENCES ledger_journals(id) ON DELETE CASCADE,
+    account_code TEXT NOT NULL REFERENCES ledger_accounts(code),
+    direction TEXT NOT NULL CHECK (direction IN ('DEBIT','CREDIT')),
+    amount_minor BIGINT NOT NULL CHECK (amount_minor > 0),
+    currency TEXT NOT NULL DEFAULT 'usd',
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS ledger_entries_journal_idx ON ledger_entries(journal_id,id)`;
+
+  await q`CREATE TABLE IF NOT EXISTS entitlements (
+    id BIGSERIAL PRIMARY KEY,
+    customer_email TEXT,
+    service_code TEXT NOT NULL,
+    source_provider TEXT NOT NULL DEFAULT 'stripe',
+    source_transaction_id TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','ACTIVE','COMPLETED','REVOKED')),
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    granted_at TIMESTAMPTZ,
+    fulfilled_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(source_provider,source_transaction_id,service_code)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS learning_enrollments (
+    id BIGSERIAL PRIMARY KEY,
+    entitlement_id BIGINT REFERENCES entitlements(id) ON DELETE SET NULL,
+    learner_email TEXT NOT NULL,
+    course_code TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'ENROLLED' CHECK (status IN ('ENROLLED','IN_PROGRESS','COMPLETED','CANCELLED')),
+    enrolled_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    completed_at TIMESTAMPTZ,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    UNIQUE(learner_email,course_code,entitlement_id)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS ce_completion_records (
+    id BIGSERIAL PRIMARY KEY,
+    enrollment_id BIGINT NOT NULL REFERENCES learning_enrollments(id) ON DELETE CASCADE,
+    ce_hours NUMERIC(6,2) NOT NULL CHECK (ce_hours >= 0),
+    attendance_verified BOOLEAN NOT NULL DEFAULT false,
+    assessment_passed BOOLEAN NOT NULL DEFAULT false,
+    evaluation_completed BOOLEAN NOT NULL DEFAULT false,
+    eligibility_status TEXT NOT NULL DEFAULT 'PENDING' CHECK (eligibility_status IN ('PENDING','ELIGIBLE','INELIGIBLE')),
+    evidence JSONB NOT NULL DEFAULT '{}'::jsonb,
+    verified_by TEXT,
+    verified_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(enrollment_id)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS ce_certificates (
+    id BIGSERIAL PRIMARY KEY,
+    completion_id BIGINT NOT NULL UNIQUE REFERENCES ce_completion_records(id) ON DELETE CASCADE,
+    certificate_number TEXT NOT NULL UNIQUE,
+    issued_to_email TEXT NOT NULL,
+    course_code TEXT NOT NULL,
+    ce_hours NUMERIC(6,2) NOT NULL,
+    issued_by TEXT NOT NULL,
+    issued_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    status TEXT NOT NULL DEFAULT 'ISSUED' CHECK (status IN ('ISSUED','REVOKED')),
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb
+  )`;
+
   await q`CREATE TABLE IF NOT EXISTS autonomy_runs (
     id BIGSERIAL PRIMARY KEY,
     worker_name TEXT NOT NULL,
