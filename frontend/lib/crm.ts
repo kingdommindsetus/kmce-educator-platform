@@ -28,7 +28,8 @@ export async function workspace(){
  const educator=await seedPilot(); const q=sql();
  const leads=await q`SELECT * FROM leads WHERE educator_id=${educator.id} ORDER BY id`;
  const pending=await q`SELECT o.*,l.practice_name,l.decision_maker,l.email,l.phone FROM outreach_jobs o JOIN leads l ON l.id=o.lead_id WHERE l.educator_id=${educator.id} AND o.status='PENDING_APPROVAL' ORDER BY o.id`;
- return {educator,leads,courses:[{id:1,title:"Craniofacial Biodentistry & Advanced Airway Integration",course_status:"PLANNING"}],campaigns:[{id:1,name:"Dr. Timothy Adams — Phoenix Pilot 10",status:"RESEARCH"}],pending_approvals:pending};
+ const activity=await q`SELECT a.*,l.practice_name,l.pipeline_stage FROM lead_activities a JOIN leads l ON l.id=a.lead_id WHERE l.educator_id=${educator.id} ORDER BY a.created_at DESC,a.id DESC LIMIT 250`;
+ return {educator,leads,courses:[{id:1,title:"Craniofacial Biodentistry & Advanced Airway Integration",course_status:"PLANNING"}],campaigns:[{id:1,name:"Dr. Timothy Adams — Phoenix Pilot 10",status:"RESEARCH"}],pending_approvals:pending,agent_activity:activity};
 }
 
 export async function leadDetail(id:number){
