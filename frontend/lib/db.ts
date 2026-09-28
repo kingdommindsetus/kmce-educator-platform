@@ -229,5 +229,67 @@ export async function ensureSchema(){
   await q`CREATE INDEX IF NOT EXISTS simon_messages_session_idx ON simon_messages(session_id,created_at)`;
   await q`CREATE INDEX IF NOT EXISTS agent_tasks_agent_idx ON agent_tasks(assigned_agent,status,created_at DESC)`;
 
+  await q`CREATE TABLE IF NOT EXISTS service_catalog (
+    service_code TEXT PRIMARY KEY,
+    service_name TEXT NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT true,
+    fulfillment_type TEXT NOT NULL,
+    payment_mode TEXT NOT NULL DEFAULT 'MANUAL_OR_STRIPE',
+    responsible_agent TEXT NOT NULL,
+    onboarding_requirements JSONB NOT NULL DEFAULT '[]'::jsonb,
+    entitlement_rules JSONB NOT NULL DEFAULT '{}'::jsonb,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS autonomy_jobs (
+    id BIGSERIAL PRIMARY KEY,
+    idempotency_key TEXT NOT NULL UNIQUE,
+    capability TEXT NOT NULL,
+    owner_agent TEXT NOT NULL,
+    authority TEXT NOT NULL CHECK (authority IN ('AUTO','CONTROLLED','POLICY','APPROVAL','FORBIDDEN')),
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','RUNNING','WAITING_APPROVAL','SUCCEEDED','FAILED','DEAD','CANCELLED')),
+    entity_type TEXT,
+    entity_id TEXT,
+    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    result JSONB,
+    error_text TEXT,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    max_attempts INTEGER NOT NULL DEFAULT 3,
+    run_after TIMESTAMPTZ NOT NULL DEFAULT now(),
+    locked_at TIMESTAMPTZ,
+    locked_by TEXT,
+    created_by TEXT NOT NULL DEFAULT 'Simon',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS autonomy_jobs_due_idx ON autonomy_jobs(status,run_after,id)`;
+  await q`CREATE INDEX IF NOT EXISTS autonomy_jobs_owner_idx ON autonomy_jobs(owner_agent,status,created_at DESC)`;
+
+  await q`CREATE TABLE IF NOT EXISTS autonomy_events (
+    id BIGSERIAL PRIMARY KEY,
+    event_type TEXT NOT NULL,
+    entity_type TEXT,
+    entity_id TEXT,
+    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    source TEXT NOT NULL,
+    correlation_id TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS autonomy_events_entity_idx ON autonomy_events(entity_type,entity_id,created_at DESC)`;
+
+  await q`CREATE TABLE IF NOT EXISTS autonomy_runs (
+    id BIGSERIAL PRIMARY KEY,
+    worker_name TEXT NOT NULL,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    finished_at TIMESTAMPTZ,
+    claimed_count INTEGER NOT NULL DEFAULT 0,
+    succeeded_count INTEGER NOT NULL DEFAULT 0,
+    failed_count INTEGER NOT NULL DEFAULT 0,
+    waiting_approval_count INTEGER NOT NULL DEFAULT 0,
+    summary JSONB NOT NULL DEFAULT '{}'::jsonb
+  )`;
+
   initialized=true;
 }

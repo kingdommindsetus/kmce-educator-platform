@@ -1,0 +1,10 @@
+export const SERVICE_CATALOG=Object.freeze([
+  {service_code:"DSM_ON_DEMAND",service_name:"Dental Sleep Medicine On-Demand Education",fulfillment_type:"COURSE",payment_mode:"MANUAL_OR_STRIPE",responsible_agent:"Delivery/CE",onboarding_requirements:["SERVICE_SELECTION","CONTACT_CONFIRMATION","AGREEMENT_STATUS","PAYMENT_PATH"],metadata:{price_status:"CONFIG_REQUIRED"}},
+  {service_code:"IN_OFFICE_TRAINING",service_name:"In-Office Team Training",fulfillment_type:"IN_OFFICE",payment_mode:"MANUAL_OR_STRIPE",responsible_agent:"Flow",onboarding_requirements:["SERVICE_SELECTION","CONTACT_CONFIRMATION","AGREEMENT_STATUS","PAYMENT_PATH","PRACTICE_ADDRESS","TEAM_SIZE","PREFERRED_DATE"],metadata:{price_status:"CONFIG_REQUIRED"}},
+  {service_code:"EDUCATOR_90_DAY",service_name:"90-Day Educator Launch",fulfillment_type:"PROJECT",payment_mode:"MANUAL_OR_STRIPE",responsible_agent:"Flow",onboarding_requirements:["SERVICE_SELECTION","CONTACT_CONFIRMATION","AGREEMENT_STATUS","PAYMENT_PATH","FACULTY_PROFILE","COURSE_STATUS","BRAND_ASSETS"],metadata:{price_status:"CONFIG_REQUIRED"}},
+  {service_code:"ANNUAL_EDUCATOR",service_name:"Annual Educator Program",fulfillment_type:"SUBSCRIPTION_SERVICE",payment_mode:"MANUAL_OR_STRIPE",responsible_agent:"Flow",onboarding_requirements:["SERVICE_SELECTION","CONTACT_CONFIRMATION","AGREEMENT_STATUS","PAYMENT_PATH","FACULTY_PROFILE","COURSE_STATUS"],metadata:{price_status:"CONFIG_REQUIRED"}},
+  {service_code:"LIVE_SEMINAR",service_name:"Live Seminar / Event Registration",fulfillment_type:"EVENT",payment_mode:"MANUAL_OR_STRIPE",responsible_agent:"Delivery/CE",onboarding_requirements:["SERVICE_SELECTION","CONTACT_CONFIRMATION","PAYMENT_PATH"],metadata:{price_status:"CONFIG_REQUIRED"}},
+  {service_code:"CUSTOM_PROGRAM",service_name:"Custom Education Program",fulfillment_type:"CUSTOM",payment_mode:"MANUAL_OR_STRIPE",responsible_agent:"Flow",onboarding_requirements:["SERVICE_SELECTION","CONTACT_CONFIRMATION","AGREEMENT_STATUS","PAYMENT_PATH"],metadata:{price_status:"CONFIG_REQUIRED"}}
+]);
+
+export function getService(code){return SERVICE_CATALOG.find(x=>x.service_code===String(code||"").toUpperCase())||null}
