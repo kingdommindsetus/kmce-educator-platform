@@ -18,8 +18,8 @@ const AGENT_HINTS = [
   ["Delivery/CE", /(certificate|ce credit|course complete|attendance|fulfillment|entitlement)/i]
 ];
 
-const HIGH_RISK = /(send money|refund|charge|pay|payment link|change bank|bank account|routing number|password|credential|api key|sign (the )?(agreement|contract)|delete audit|delete ledger|grant permission|increase authority)/i;
-const EXTERNAL_CONTACT = /(send|publish|post|message|email|dm|contact)/i;
+const HIGH_RISK = /(send money|refund|charge|pay\b|payment link|change bank|bank account|routing number|password|credential|api key|sign (the )?(agreement|contract)|delete audit|delete ledger|grant permission|increase authority)/i;
+const EXTERNAL_CONTACT = /(send|publish|post|message|email|dm|contact)\b/i;
 const NOISE = /^(thanks|thank you|ok|okay|got it|noted|cool|lol|😂|🔥)[!. ]*$/i;
 
 export function inferAgent(text){
@@ -65,7 +65,7 @@ export function triageWorkItem(input){
     return {outcome:"HANDLE",reason:"reversible internal coordination",source,agent:"Marie"};
   }
 
-  if(/(decision|priority|which should|what should we do|conflict|exception)/i.test(text)){
+  if(/(decision|priorit|which should|what should we do|conflict|exception)/i.test(text)){
     return {outcome:"ASK_SIMON",reason:"executive prioritization or ambiguity",source};
   }
 
