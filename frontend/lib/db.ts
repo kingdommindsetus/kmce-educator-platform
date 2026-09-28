@@ -117,6 +117,38 @@ export async function ensureSchema(){
   await q`CREATE UNIQUE INDEX IF NOT EXISTS outreach_jobs_send_token_uidx ON outreach_jobs(send_token) WHERE send_token IS NOT NULL`;
   await q`CREATE UNIQUE INDEX IF NOT EXISTS outreach_jobs_provider_message_uidx ON outreach_jobs(provider,provider_message_id) WHERE provider_message_id IS NOT NULL`;
 
+  await q`CREATE TABLE IF NOT EXISTS discovery_appointments (
+    id BIGSERIAL PRIMARY KEY,
+    lead_id BIGINT NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+    status TEXT NOT NULL CHECK (status IN ('PROPOSED','BOOKED','COMPLETED','CANCELLED','NO_SHOW')),
+    scheduled_start TIMESTAMPTZ,
+    scheduled_end TIMESTAMPTZ,
+    timezone TEXT NOT NULL DEFAULT 'America/New_York',
+    booking_source TEXT NOT NULL DEFAULT 'FOUNDER',
+    outcome TEXT,
+    notes TEXT,
+    created_by TEXT NOT NULL,
+    completed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS discovery_appointments_lead_idx ON discovery_appointments(lead_id,created_at DESC)`;
+
+  await q`CREATE TABLE IF NOT EXISTS onboarding_cases (
+    id BIGSERIAL PRIMARY KEY,
+    lead_id BIGINT NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+    service_code TEXT NOT NULL DEFAULT 'UNASSIGNED',
+    status TEXT NOT NULL DEFAULT 'OPEN' CHECK (status IN ('OPEN','IN_PROGRESS','READY_FOR_PAYMENT','BLOCKED','COMPLETED','CANCELLED')),
+    required_items JSONB NOT NULL DEFAULT '[]'::jsonb,
+    completed_items JSONB NOT NULL DEFAULT '[]'::jsonb,
+    missing_items JSONB NOT NULL DEFAULT '[]'::jsonb,
+    notes TEXT,
+    opened_by TEXT NOT NULL DEFAULT 'Flow',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE UNIQUE INDEX IF NOT EXISTS onboarding_cases_active_lead_uidx ON onboarding_cases(lead_id) WHERE status NOT IN ('COMPLETED','CANCELLED')`;
+
   await q`CREATE TABLE IF NOT EXISTS lead_activities (
     id BIGSERIAL PRIMARY KEY,
     lead_id BIGINT NOT NULL REFERENCES leads(id),

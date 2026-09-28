@@ -6,10 +6,11 @@
     "start": "next start",
     "test:simon-approval": "node tests/simon-approval-gate.test.mjs",
     "test:marie": "node tests/marie-v1.test.mjs",
-    "test:gates": "npm run test:echo && npm run test:simon-approval && npm run test:marie && npm run test:scout-claire && npm run test:atlas && npm run test:maven-echo",
+    "test:gates": "npm run test:echo && npm run test:simon-approval && npm run test:marie && npm run test:scout-claire && npm run test:atlas && npm run test:maven-echo && npm run test:booker-flow",
     "test:scout-claire": "node tests/scout-claire-v1.test.mjs",
     "test:atlas": "node tests/atlas-v1.test.mjs",
-    "test:maven-echo": "node tests/maven-echo-v1.test.mjs"
+    "test:maven-echo": "node tests/maven-echo-v1.test.mjs",
+    "test:booker-flow": "node tests/booker-flow-v1.test.mjs"
   },
   "dependencies": {
     "@composio/core": "^0.18.1",
