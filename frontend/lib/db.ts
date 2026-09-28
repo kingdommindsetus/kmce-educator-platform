@@ -368,6 +368,54 @@ export async function ensureSchema(){
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb
   )`;
 
+  await q`CREATE TABLE IF NOT EXISTS growth_campaigns (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    objective TEXT NOT NULL,
+    audience TEXT,
+    service_code TEXT,
+    channels JSONB NOT NULL DEFAULT '[]'::jsonb,
+    status TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','ACTIVE','PAUSED','COMPLETED','CANCELLED')),
+    created_by TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS content_assets (
+    id BIGSERIAL PRIMARY KEY,
+    campaign_id BIGINT NOT NULL REFERENCES growth_campaigns(id) ON DELETE CASCADE,
+    channel TEXT NOT NULL,
+    asset_type TEXT NOT NULL,
+    title TEXT,
+    body TEXT NOT NULL,
+    source_asset_id BIGINT REFERENCES content_assets(id) ON DELETE SET NULL,
+    status TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','PENDING_APPROVAL','APPROVED','PUBLISHED','REJECTED')),
+    approved_by TEXT,
+    approved_at TIMESTAMPTZ,
+    published_at TIMESTAMPTZ,
+    provider_reference TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS content_assets_campaign_idx ON content_assets(campaign_id,status,channel)`;
+
+  await q`CREATE TABLE IF NOT EXISTS growth_metrics (
+    id BIGSERIAL PRIMARY KEY,
+    campaign_id BIGINT NOT NULL REFERENCES growth_campaigns(id) ON DELETE CASCADE,
+    channel TEXT NOT NULL,
+    metric_date DATE NOT NULL,
+    impressions BIGINT NOT NULL DEFAULT 0,
+    clicks BIGINT NOT NULL DEFAULT 0,
+    leads BIGINT NOT NULL DEFAULT 0,
+    conversions BIGINT NOT NULL DEFAULT 0,
+    spend_minor BIGINT NOT NULL DEFAULT 0,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(campaign_id,channel,metric_date)
+  )`;
+
   await q`CREATE TABLE IF NOT EXISTS autonomy_runs (
     id BIGSERIAL PRIMARY KEY,
     worker_name TEXT NOT NULL,
