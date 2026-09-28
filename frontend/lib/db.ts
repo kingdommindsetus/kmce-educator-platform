@@ -97,5 +97,44 @@ export async function ensureSchema(){
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
 
+  await q`CREATE TABLE IF NOT EXISTS commerce_transactions (
+    id BIGSERIAL PRIMARY KEY,
+    provider TEXT NOT NULL DEFAULT 'stripe',
+    provider_transaction_id TEXT NOT NULL,
+    provider_customer_id TEXT,
+    status TEXT NOT NULL,
+    amount_minor BIGINT NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'usd',
+    product_type TEXT NOT NULL DEFAULT 'UNCLASSIFIED',
+    product_name TEXT,
+    educator_name TEXT,
+    course_name TEXT,
+    event_name TEXT,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    customer_email TEXT,
+    occurred_at TIMESTAMPTZ NOT NULL,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(provider,provider_transaction_id)
+  )`;
+
+  await q`CREATE INDEX IF NOT EXISTS commerce_transactions_occurred_idx ON commerce_transactions(occurred_at DESC)`;
+  await q`CREATE INDEX IF NOT EXISTS commerce_transactions_product_idx ON commerce_transactions(product_type,product_name)`;
+
+  await q`CREATE TABLE IF NOT EXISTS executive_briefs (
+    id BIGSERIAL PRIMARY KEY,
+    brief_date DATE NOT NULL UNIQUE,
+    timezone TEXT NOT NULL DEFAULT 'America/New_York',
+    period_start TIMESTAMPTZ NOT NULL,
+    period_end TIMESTAMPTZ NOT NULL,
+    metrics JSONB NOT NULL,
+    written_brief TEXT NOT NULL,
+    voice_script TEXT NOT NULL,
+    source_snapshot JSONB NOT NULL,
+    status TEXT NOT NULL DEFAULT 'FROZEN',
+    created_by TEXT NOT NULL DEFAULT 'Simon',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+
   initialized=true;
 }
