@@ -137,11 +137,18 @@ export async function ensureSchema(){
     metrics JSONB NOT NULL,
     written_brief TEXT NOT NULL,
     voice_script TEXT NOT NULL,
+    audio_status TEXT NOT NULL DEFAULT 'SCRIPT_READY',
+    audio_url TEXT,
+    audio_generated_at TIMESTAMPTZ,
     source_snapshot JSONB NOT NULL,
     status TEXT NOT NULL DEFAULT 'FROZEN',
     created_by TEXT NOT NULL DEFAULT 'Simon',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
+
+  await q`ALTER TABLE executive_briefs ADD COLUMN IF NOT EXISTS audio_status TEXT NOT NULL DEFAULT 'SCRIPT_READY'`;
+  await q`ALTER TABLE executive_briefs ADD COLUMN IF NOT EXISTS audio_url TEXT`;
+  await q`ALTER TABLE executive_briefs ADD COLUMN IF NOT EXISTS audio_generated_at TIMESTAMPTZ`;
 
   initialized=true;
 }
