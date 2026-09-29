@@ -310,7 +310,7 @@ export async function ensureSchema(){
     VALUES
       ('Simon','Simon','Executive','elevenlabs','pqHfZKP75CvOlQylNhV4','READY','{"voice_name":"Bill - Wise, Mature, Balanced"}'::jsonb),
       ('Marie','Marie','Operations','elevenlabs','EXAVITQu4vr4xnSDxMaL','READY','{"voice_name":"Sarah - Mature, Reassuring, Confident"}'::jsonb),
-      ('Eyes','Eyes','Intelligence','elevenlabs','SAz9YHcvj6GT2YYXdXww','READY','{"voice_name":"River - Relaxed, Neutral, Informative"}'::jsonb),
+      ('Eyes','Eyes','Intelligence','elevenlabs','CwhRBWXzGAHq8TQ4Fs17','READY','{"voice_name":"Roger - Laid-Back, Casual, Resonant"}'::jsonb),
       ('Mark','Mark','Marketing','elevenlabs','IKne3meq5aSn9XLyUdCD','READY','{"voice_name":"Charlie - Deep, Confident, Energetic"}'::jsonb),
       ('Cammy','Cammy','Campaigns','elevenlabs','XrExE9yKIg1WjnnlVkGX','READY','{"voice_name":"Matilda - Knowledgable, Professional"}'::jsonb),
       ('Eve','Eve','Brand','elevenlabs','pFZP5JQG7iQjIQuC4Bku','READY','{"voice_name":"Lily - Velvety Actress"}'::jsonb),
