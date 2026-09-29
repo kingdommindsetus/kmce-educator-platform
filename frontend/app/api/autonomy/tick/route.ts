@@ -47,6 +47,19 @@ async function seedDueJobs(q:any){
       ON CONFLICT(idempotency_key) DO NOTHING`;
   }
 
+  const interested:any=await q`SELECT id,practice_name,email,contact_verified_at
+    FROM leads
+    WHERE pipeline_stage='INTERESTED' AND assigned_agent='Booker'
+    ORDER BY updated_at DESC
+    LIMIT 100`;
+  for(const row of interested){
+    const key=idempotencyKey(["discovery-prepare",row.id]);
+    await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by)
+      VALUES(${key},'discovery.prepare','Booker','CONTROLLED','lead',${String(row.id)},
+      ${JSON.stringify({lead_id:Number(row.id),practice_name:row.practice_name,email:row.email,contact_verified_at:row.contact_verified_at})}::jsonb,'Simon')
+      ON CONFLICT(idempotency_key) DO NOTHING`;
+  }
+
   const ready:any=await q`SELECT id,lead_id FROM onboarding_cases WHERE status='READY_FOR_PAYMENT' LIMIT 100`;
   for(const row of ready){
     const key=idempotencyKey(["onboarding-ready",row.id]);
@@ -68,7 +81,7 @@ async function seedDueJobs(q:any){
   const day=new Date().toISOString().slice(0,10);
   const briefKey=idempotencyKey(["executive-brief",day]);
   await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by) VALUES(${briefKey},'executive.brief.queue','Marie','CONTROLLED','company','KMCE',${JSON.stringify({brief_date:day})}::jsonb,'Simon') ON CONFLICT(idempotency_key) DO NOTHING`;
-  return {followups:followups.length,reply_sync_candidates:replyCandidates.length,onboarding_ready:ready.length,active_campaigns:campaigns.length,brief_date:day};
+  return {followups:followups.length,reply_sync_candidates:replyCandidates.length,interested_for_booker:interested.length,onboarding_ready:ready.length,active_campaigns:campaigns.length,brief_date:day};
 }
 
 async function handleJob(q:any,job:any){
@@ -156,6 +169,33 @@ async function handleJob(q:any,job:any){
       pipeline_stage:routing.pipeline_stage,
       assigned_agent:routing.assigned_agent
     }};
+  }
+
+  if(job.capability==="discovery.prepare"){
+    const leadId=Number(job.payload?.lead_id||job.entity_id||0);
+    const leads:any=await q`SELECT id,practice_name,email,contact_verified_at,pipeline_stage,assigned_agent
+      FROM leads WHERE id=${leadId} LIMIT 1`;
+    if(!leads.length)return {status:"DEAD",result:{reason:"LEAD_NOT_FOUND"}};
+    const lead=leads[0];
+    if(lead.pipeline_stage!=="INTERESTED" || lead.assigned_agent!=="Booker"){
+      return {status:"SUCCEEDED",result:{skipped:true,reason:"LEAD_NOT_READY_FOR_BOOKER"}};
+    }
+    if(!lead.contact_verified_at){
+      return {status:"WAITING_APPROVAL",result:{reason:"CONTACT_NOT_VERIFIED"}};
+    }
+    const title=`Prepare discovery scheduling: ${lead.practice_name}`;
+    const existing:any=await q`SELECT id FROM agent_tasks
+      WHERE assigned_agent='Booker' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS')
+      LIMIT 1`;
+    if(existing.length){
+      return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true,lead_id:leadId}};
+    }
+    const instruction=`Prepare discovery scheduling for ${lead.practice_name}. Confirm appropriate meeting length, gather available Founder calendar slots, and prepare the scheduling handoff. Do not send external messages or create a calendar event without policy approval.`;
+    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by)
+      VALUES('Booker',${title},${instruction},'AUTONOMY','Simon') RETURNING id`;
+    await q`INSERT INTO lead_activities(lead_id,actor_name,action,detail)
+      VALUES(${leadId},'Booker','DISCOVERY_PREPARED','Autonomy queued internal discovery scheduling preparation. No external action executed.')`;
+    return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false,lead_id:leadId,external_actions_executed:false}};
   }
 
   if(job.capability==="lead.follow_up.review"){
