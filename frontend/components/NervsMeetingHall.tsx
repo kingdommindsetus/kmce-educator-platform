@@ -2,6 +2,7 @@
 
 import {useRef,useState} from "react";
 import {NERVS_AVATAR_PACK_V1,avatarMediaUrl} from "../lib/nervs-avatar-registry";
+import NervsRoomConversation from "./NervsRoomConversation";
 
 type DailyReport={
   agent_id:string;
@@ -223,6 +224,8 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
         <span className="pill">Notes: {notesStatus}</span>
       </div>
     </div>
+
+    <NervsRoomConversation onResponder={setActiveAgentId}/>
 
     <div style={{display:"flex",gap:8,flexWrap:"wrap",margin:"14px 0"}}>
       <button className="btn" onClick={()=>prepareMeeting().catch(error=>setMeetingStatus(error instanceof Error?error.message:"PREPARE FAILED"))}>Prepare Meeting</button>
