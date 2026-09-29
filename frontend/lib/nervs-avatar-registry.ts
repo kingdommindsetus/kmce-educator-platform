@@ -21,7 +21,7 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
     personality:"Calm, executive, decisive, systems-focused; polished British chief-of-staff delivery",
   },
   {
-    id:"marie", name:"Marie", role:"Executive Operations", voiceId:"DODLEQrClDo8wCz460ld", voiceName:"Marie canonical ElevenLabs voice",
+    id:"marie", name:"Marie", role:"Executive Operations", voiceId:"21m00Tcm4TlvDq8ikWAM", voiceName:"Rachel - warm executive operations",
     referenceFile:"marie.mp4", mediaUrl:"https://resource2.heygen.ai/video/6e099264853744ee98105fc377c0167b/original.mp4", durationSeconds:10,
     liveTalkingAvatarId:"kmce_marie_v1",
     liveTalkingModel:"musetalk",
