@@ -308,7 +308,7 @@ export async function ensureSchema(){
 
   await q`INSERT INTO agent_voice_profiles(agent_name,display_name,department,provider,provider_voice_id,voice_status,metadata)
     VALUES
-      ('Simon','Simon','Executive','elevenlabs','pqHfZKP75CvOlQylNhV4','READY','{"voice_name":"Bill - Wise, Mature, Balanced"}'::jsonb),
+      ('Simon','Simon','Executive','elevenlabs',NULL,'READY','{"voice_name":"Sir Michael Caine™","voice_resolution":"account_lookup_or_env"}'::jsonb),
       ('Marie','Marie','Operations','elevenlabs','EXAVITQu4vr4xnSDxMaL','READY','{"voice_name":"Sarah - Mature, Reassuring, Confident"}'::jsonb),
       ('Eyes','Eyes','Intelligence','elevenlabs','CwhRBWXzGAHq8TQ4Fs17','READY','{"voice_name":"Roger - Laid-Back, Casual, Resonant"}'::jsonb),
       ('Mark','Mark','Marketing','elevenlabs','IKne3meq5aSn9XLyUdCD','READY','{"voice_name":"Charlie - Deep, Confident, Energetic"}'::jsonb),
