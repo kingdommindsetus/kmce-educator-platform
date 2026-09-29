@@ -6,6 +6,7 @@ import {SERVICE_CATALOG} from "../../../../lib/simon/service-catalog";
 import {fetchEchoThread} from "../../../../lib/echo-provider";
 import {classifyReply,inboundMessages,normalizeThreadMessages} from "../../../../lib/echo-replies";
 import {evaluateStorePulse,storePulseTaskSpec} from "../../../../lib/simon/store-pulse.mjs";
+import {createPrintifyProduct,publishPrintifyProduct,printifyReadiness} from "../../../../lib/printify-provider";
 
 export const runtime="nodejs";
 
@@ -245,6 +246,24 @@ async function handleJob(q:any,job:any){
     if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true}};
     const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Ledger',${title},${"Onboarding case "+caseId+" is complete. Prepare payment path for service "+cases[0].service_code+". Do not charge or send a payment request without approval."},'AUTONOMY','Simon') RETURNING id`;
     return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false}};
+  }
+
+  if(job.capability==="store.merch.printify.create"){
+    const readiness=printifyReadiness();
+    if(!readiness.ready)return {status:"WAITING_APPROVAL",result:{reason:"PRINTIFY_NOT_CONFIGURED",readiness}};
+    const spec:any=job.payload?.product_spec||job.payload||{};
+    const product:any=await createPrintifyProduct(spec);
+    return {status:"SUCCEEDED",result:{printify_product_id:product?.id||null,title:product?.title||spec.title||null,created:true,published:false,external_actions_executed:false}};
+  }
+
+  if(job.capability==="store.merch.printify.publish"){
+    if(!job.payload?.alice_approved)return {status:"WAITING_APPROVAL",result:{reason:"ALICE_REVIEW_REQUIRED"}};
+    const productId=String(job.payload?.printify_product_id||job.entity_id||"");
+    if(!productId)return {status:"DEAD",result:{reason:"PRINTIFY_PRODUCT_ID_REQUIRED"}};
+    const readiness=printifyReadiness();
+    if(!readiness.ready)return {status:"WAITING_APPROVAL",result:{reason:"PRINTIFY_NOT_CONFIGURED",readiness}};
+    const published:any=await publishPrintifyProduct(productId,job.payload?.publish_fields||{});
+    return {status:"SUCCEEDED",result:{printify_product_id:productId,published:true,alice_approved:true,provider_result:published||null}};
   }
 
   if(job.capability==="store.maintenance.audit"){
