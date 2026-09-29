@@ -20,12 +20,21 @@ export async function GET(){
 
   const ids=(meetings as any[]).map(row=>row.id);
   let reports:any[]=[];
+  let actions:any[]=[];
   if(ids.length){
     reports=await q`
       SELECT meeting_id,agent_name,department,speaking_order,win,blocker,next_action,ask_of_team,evidence,voice_script,audio_status,created_at
       FROM nervs_meeting_reports
       WHERE meeting_id = ANY(${ids})
       ORDER BY meeting_id DESC,speaking_order ASC,id ASC
+    `;
+    actions=await q`
+      SELECT id,meeting_id,source_agent,assigned_agent,title,instruction,priority,authority,status,metadata,created_at,updated_at
+      FROM nervs_meeting_actions
+      WHERE meeting_id = ANY(${ids})
+      ORDER BY meeting_id DESC,
+        CASE priority WHEN 'URGENT' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'NORMAL' THEN 3 ELSE 4 END,
+        id ASC
     `;
   }
 
@@ -37,11 +46,20 @@ export async function GET(){
     grouped.set(id,list);
   }
 
+  const groupedActions=new Map<number,any[]>();
+  for(const action of actions as any[]){
+    const id=Number(action.meeting_id);
+    const list=groupedActions.get(id)||[];
+    list.push(action);
+    groupedActions.set(id,list);
+  }
+
   return NextResponse.json({
     meetings:(meetings as any[]).map(meeting=>({
       ...meeting,
       id:Number(meeting.id),
       reports:grouped.get(Number(meeting.id))||[],
+      actions:groupedActions.get(Number(meeting.id))||[],
     })),
   });
 }
