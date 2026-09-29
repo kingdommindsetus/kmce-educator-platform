@@ -252,6 +252,97 @@ export async function ensureSchema(){
   await q`CREATE INDEX IF NOT EXISTS simon_messages_session_idx ON simon_messages(session_id,created_at)`;
   await q`CREATE INDEX IF NOT EXISTS agent_tasks_agent_idx ON agent_tasks(assigned_agent,status,created_at DESC)`;
 
+
+  await q`CREATE TABLE IF NOT EXISTS agent_voice_profiles (
+    agent_name TEXT PRIMARY KEY,
+    provider TEXT NOT NULL DEFAULT 'elevenlabs',
+    provider_voice_id TEXT,
+    display_name TEXT NOT NULL,
+    department TEXT,
+    voice_status TEXT NOT NULL DEFAULT 'MISSING' CHECK (voice_status IN ('MISSING','READY','DISABLED','ERROR')),
+    settings JSONB NOT NULL DEFAULT '{}'::jsonb,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+
+
+  await q`INSERT INTO agent_voice_profiles(agent_name,display_name,department,provider,provider_voice_id,voice_status,metadata)
+    VALUES
+      ('Simon','Simon','Executive','elevenlabs','pqHfZKP75CvOlQylNhV4','READY','{"voice_name":"Bill - Wise, Mature, Balanced"}'::jsonb),
+      ('Marie','Marie','Operations','elevenlabs','EXAVITQu4vr4xnSDxMaL','READY','{"voice_name":"Sarah - Mature, Reassuring, Confident"}'::jsonb),
+      ('Eyes','Eyes','Intelligence','elevenlabs','SAz9YHcvj6GT2YYXdXww','READY','{"voice_name":"River - Relaxed, Neutral, Informative"}'::jsonb),
+      ('Mark','Mark','Marketing','elevenlabs','IKne3meq5aSn9XLyUdCD','READY','{"voice_name":"Charlie - Deep, Confident, Energetic"}'::jsonb),
+      ('Cammy','Cammy','Campaigns','elevenlabs','XrExE9yKIg1WjnnlVkGX','READY','{"voice_name":"Matilda - Knowledgable, Professional"}'::jsonb),
+      ('Eve','Eve','Brand','elevenlabs','pFZP5JQG7iQjIQuC4Bku','READY','{"voice_name":"Lily - Velvety Actress"}'::jsonb),
+      ('Tube','Tube','Video','elevenlabs','TX3LPaxmHKxFdv7VOQHJ','READY','{"voice_name":"Liam - Energetic, Social Media Creator"}'::jsonb),
+      ('Lucy','Lucy','Social','elevenlabs','cgSgspJ2msm6clMCkdW9','READY','{"voice_name":"Jessica - Playful, Bright, Warm"}'::jsonb),
+      ('Snake','Snake','Growth','elevenlabs','k5eu7V3cPJkEA7D2irmP','READY','{"voice_name":"Zadok - Confident, Clear and Natural"}'::jsonb),
+      ('Alice','Alice','Store','elevenlabs','Xb7hH8MSUJpSbSDYk0k2','READY','{"voice_name":"Alice - Clear, Engaging Educator"}'::jsonb),
+      ('Echo','Echo','Sales Outreach','elevenlabs','cjVigY5qzO86Huf0OWal','READY','{"voice_name":"Eric - Smooth, Trustworthy"}'::jsonb),
+      ('Booker','Booker','Sales Scheduling','elevenlabs','CwhRBWXzGAHq8TQ4Fs17','READY','{"voice_name":"Roger - Laid-Back, Casual, Resonant"}'::jsonb)
+    ON CONFLICT(agent_name) DO UPDATE SET
+      display_name=EXCLUDED.display_name,
+      department=EXCLUDED.department,
+      provider=EXCLUDED.provider,
+      provider_voice_id=EXCLUDED.provider_voice_id,
+      voice_status=EXCLUDED.voice_status,
+      metadata=EXCLUDED.metadata,
+      updated_at=now()`;
+
+  await q`CREATE TABLE IF NOT EXISTS nervs_meeting_runs (
+    id BIGSERIAL PRIMARY KEY,
+    meeting_date DATE NOT NULL,
+    meeting_type TEXT NOT NULL DEFAULT 'DAILY_8AM',
+    timezone TEXT NOT NULL DEFAULT 'America/New_York',
+    status TEXT NOT NULL DEFAULT 'PREPARING' CHECK (status IN ('PREPARING','READY','RUNNING','COMPLETED','FAILED','CANCELLED')),
+    agenda JSONB NOT NULL DEFAULT '[]'::jsonb,
+    source_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
+    summary TEXT,
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    created_by TEXT NOT NULL DEFAULT 'NERVS',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(meeting_date,meeting_type)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS nervs_meeting_reports (
+    id BIGSERIAL PRIMARY KEY,
+    meeting_id BIGINT NOT NULL REFERENCES nervs_meeting_runs(id) ON DELETE CASCADE,
+    agent_name TEXT NOT NULL,
+    department TEXT,
+    speaking_order INTEGER,
+    win TEXT,
+    blocker TEXT,
+    next_action TEXT,
+    ask_of_team TEXT,
+    evidence JSONB NOT NULL DEFAULT '{}'::jsonb,
+    voice_script TEXT,
+    audio_status TEXT NOT NULL DEFAULT 'SCRIPT_READY' CHECK (audio_status IN ('SCRIPT_READY','GENERATING','AUDIO_READY','ERROR','SKIPPED')),
+    audio_url TEXT,
+    provider_audio_ref TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(meeting_id,agent_name)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS nervs_meeting_actions (
+    id BIGSERIAL PRIMARY KEY,
+    meeting_id BIGINT NOT NULL REFERENCES nervs_meeting_runs(id) ON DELETE CASCADE,
+    source_agent TEXT,
+    assigned_agent TEXT NOT NULL,
+    title TEXT NOT NULL,
+    instruction TEXT NOT NULL,
+    priority TEXT NOT NULL DEFAULT 'NORMAL' CHECK (priority IN ('LOW','NORMAL','HIGH','URGENT')),
+    authority TEXT NOT NULL DEFAULT 'CONTROLLED' CHECK (authority IN ('AUTO','CONTROLLED','POLICY','APPROVAL','FORBIDDEN')),
+    status TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','QUEUED','IN_PROGRESS','WAITING_APPROVAL','DONE','CANCELLED')),
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+
+  await q`CREATE INDEX IF NOT EXISTS nervs_meeting_reports_meeting_idx ON nervs_meeting_reports(meeting_id,speaking_order,id)`;
+  await q`CREATE INDEX IF NOT EXISTS nervs_meeting_actions_meeting_idx ON nervs_meeting_actions(meeting_id,status,priority)`;
+
   await q`CREATE TABLE IF NOT EXISTS service_catalog (
     service_code TEXT PRIMARY KEY,
     service_name TEXT NOT NULL,
