@@ -131,7 +131,6 @@ export async function POST(req:Request){
       voice_id:activeVoiceId,
       provider_status:r.status,
       detail:detail.slice(0,600),
-      shared_voice_provision:sharedVoiceProvision,
     },{status:502});
   }
 
@@ -142,7 +141,6 @@ export async function POST(req:Request){
     voice_name:resolved.voiceName,
     voice_id:activeVoiceId,
     voice_source:voiceSource,
-    shared_voice_provision:sharedVoiceProvision,
     content_type:"audio/mpeg",
     audio_base64:audio,
   });
