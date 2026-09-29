@@ -49,7 +49,7 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
     personality:"Professional, numbers-aware, campaign-focused",
   },
   {
-    id:"eve", name:"Eve", role:"Brand / Catalog Curator", voiceId:"pFZP5JQG7iQjIQuC4Bku",
+    id:"eve", name:"Eve", role:"Brand / Catalog Curator", voiceId:"yj30vwTGJxSHezdAGsv9", voiceName:"Eve canonical ElevenLabs voice",
     referenceFile:"eve.mp4", mediaUrl:"https://resource2.heygen.ai/video/c989ddbe118c41988c8b36c54d70e51c/original.mp4", durationSeconds:10,
     liveTalkingAvatarId:"kmce_eve_v1",
     liveTalkingModel:"musetalk",
