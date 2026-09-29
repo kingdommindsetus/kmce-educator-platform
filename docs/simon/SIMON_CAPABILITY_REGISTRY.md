@@ -41,6 +41,7 @@ Permanent forbidden actions:
 | Sofia | Digital presence & SEO | SEO, Google presence, site discoverability, analytics support |
 | Maven | Legacy campaign support | existing campaign/copy procedures retained while Mark becomes accountable marketing owner |
 | Mark | Marketing Director | campaign strategy, blog, KMCE Marketing Show, editorial calendar, offers, messaging |
+| Cammy | Campaign Generation & Economics | campaign packages, audience scoring, cost estimates, break-even analysis, controlled variants |
 | Lucy | Social Distribution & Publishing | channel adaptation, social calendar, comment triage, reply drafts, publishing workflow, performance collection |
 | Tube | Video / YouTube Creator | video strategy, scripts, production packages, Shorts/repurposing, YouTube workflow |
 | Helios | Visual generation engine | text-to-video, image-to-video, video-to-video motion generation under Tube/Eve direction |
@@ -77,7 +78,11 @@ Permanent forbidden actions:
 | lead.enrich | Claire | research providers + provenance | CONTROLLED |
 | lead.qualify | Atlas | deterministic scoring + evidence | CONTROLLED |
 | campaign.plan | Mark | NERVS + KMCE marketing skills | AUTO |
-| campaign.prepare | Mark | NERVS campaign workflow | CONTROLLED |
+| marketing.campaign.prepare | Mark | NERVS campaign workflow | CONTROLLED |
+| campaign.generate | Cammy | KMCE campaign generation engine | CONTROLLED |
+| campaign.cost.estimate | Cammy | KMCE campaign economics model | CONTROLLED |
+| campaign.target.score | Cammy | KMCE audience scoring model | CONTROLLED |
+| campaign.variant.generate | Cammy | KMCE campaign experiment engine | CONTROLLED |
 | campaign.email.prepare | Mark | Listmonk-compatible adapter | CONTROLLED |
 | blog.prepare | Mark | KMCE marketing skills | CONTROLLED |
 | marketing.show.plan | Mark | KMCE editorial workflow | CONTROLLED |
@@ -87,7 +92,7 @@ Permanent forbidden actions:
 | social.comment.triage | Lucy | approved social connectors | CONTROLLED |
 | social.reply.draft | Lucy | NERVS social adapter layer | CONTROLLED |
 | social.reply.send | Lucy | approved social connectors | APPROVAL |
-| social.performance.collect | Lucy | approved social analytics connectors | AUTO |
+| social.performance.collect | Lucy | approved social analytics connectors | CONTROLLED |
 | social.publish | Lucy | approved platform connectors | APPROVAL |
 | video.plan | Tube | AgentTube-derived workflow | CONTROLLED |
 | video.package.prepare | Tube | Tube production workflow | CONTROLLED |
@@ -190,8 +195,19 @@ The Printify token and shop ID are server-only environment variables. Mercedes m
 
 ## NERVS marketing/content operating loop
 
-EYES signal → MARK campaign brief → EVE visual/brand rules → TUBE/MERCEDES/DEVON asset production → LUCY channel adaptation/calendar → ALICE/GATEKEEPER validation where applicable → FOUNDER/POLICY GATE → LUCY/TUBE approved publish → SNAKE measurement → EYES/MARK learning loop.
+EYES signal → MARK campaign brief → CAMMY campaign generation/economics → EVE visual/brand rules → TUBE/MERCEDES/DEVON asset production → LUCY channel adaptation/calendar → ALICE/GATEKEEPER validation where applicable → FOUNDER/POLICY GATE → LUCY/TUBE approved publish → SNAKE measurement → EYES/MARK learning loop.
 
 Lucy is the social distribution operator. She may adapt approved content, prepare calendars, triage comments, draft replies, and collect performance evidence as internal reversible work. Public posting and sending replies remain approval-gated until a later deterministic policy explicitly authorizes specific low-risk channels/content classes.
 
 Helios is a visual-generation engine, not an independent business decision-maker. Tube owns the video deliverable; Eve owns brand direction; factual/clinical claims must retain evidence and review gates.
+
+
+## Cammy campaign-generation contract
+
+Cammy turns Mark's strategic brief into an executable internal campaign package and adds the economics Mark needs before approving the plan. Her v1 implementation is built from KMCE-owned rules and data rather than copied external repository code.
+
+Cammy may generate campaign concepts and structured campaign packages; score audience segments using non-sensitive business and behavioral evidence; estimate production, distribution, acquisition, break-even, contribution, and downside economics; and create controlled test variants with hypotheses and stopping rules.
+
+Cammy may not authorize advertising spend, publish or send externally, change live pricing or discounts, target or exclude people using protected or sensitive traits, or present modeled assumptions as guaranteed outcomes.
+
+MARK owns strategy and campaign accountability. CAMMY owns campaign construction and economics. LUCY owns social distribution. SNAKE owns performance measurement and growth operations.
