@@ -12,17 +12,17 @@ export type NervsAvatarAgent = {
 export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
   {
     id:"simon", name:"Simon", role:"Executive / Orchestrator", voiceId:"pqHfZKP75CvOlQylNhV4",
-    referenceFile:null, mediaUrl:null, durationSeconds:null,
+    referenceFile:"simon.mp4", mediaUrl:"https://resource2.heygen.ai/video/f55d6cfb26d84479836f9bba79d80170/original.mp4", durationSeconds:10,
     personality:"Calm, executive, decisive, systems-focused",
   },
   {
     id:"marie", name:"Marie", role:"Executive Operations", voiceId:"EXAVITQu4vr4xnSDxMaL",
-    referenceFile:null, mediaUrl:null, durationSeconds:null,
+    referenceFile:"marie.mp4", mediaUrl:"https://resource2.heygen.ai/video/6e099264853744ee98105fc377c0167b/original.mp4", durationSeconds:10,
     personality:"Reassuring, organized, operationally disciplined",
   },
   {
     id:"eyes", name:"Eyes", role:"Market Intelligence", voiceId:"SAz9YHcvj6GT2YYXdXww",
-    referenceFile:null, mediaUrl:null, durationSeconds:null,
+    referenceFile:"eyes.mp4", mediaUrl:"https://resource2.heygen.ai/video/2667f12ff04e4352b445177f24ddc370/original.mp4", durationSeconds:10,
     personality:"Analytical, observant, evidence-first",
   },
   {
@@ -37,7 +37,7 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
   },
   {
     id:"eve", name:"Eve", role:"Brand / Catalog Curator", voiceId:"pFZP5JQG7iQjIQuC4Bku",
-    referenceFile:null, mediaUrl:null, durationSeconds:null,
+    referenceFile:"eve.mp4", mediaUrl:"https://resource2.heygen.ai/video/c989ddbe118c41988c8b36c54d70e51c/original.mp4", durationSeconds:10,
     personality:"Polished, visual, brand-protective",
   },
   {
@@ -62,7 +62,7 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
   },
   {
     id:"echo", name:"Echo", role:"Sales Outreach", voiceId:"cjVigY5qzO86Huf0OWal",
-    referenceFile:null, mediaUrl:null, durationSeconds:null,
+    referenceFile:"echo.mp4", mediaUrl:"https://resource2.heygen.ai/video/889b48b78e0b4c14aad5157955441ac1/original.mp4", durationSeconds:10,
     personality:"Clear, trustworthy, professional",
   },
   {
