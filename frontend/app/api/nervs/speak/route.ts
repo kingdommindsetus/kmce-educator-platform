@@ -31,7 +31,7 @@ const OPENAI_VOICES={
   snake:"ash",
   alice:"marin",
   echo:"cedar",
-  booker:"sage",
+  booker:"coral",
 } as const;
 
 const FORCE_OPENAI=new Set<keyof typeof VOICES>(["eyes","mark","alice","echo","booker"]);
@@ -48,7 +48,7 @@ const OPENAI_STYLE={
   snake:"Speak dry, controlled, and analytical.",
   alice:"Speak clearly and professionally like an educator.",
   echo:"Speak smoothly and confidently like a trusted sales professional.",
-  booker:"Speak warmly, clearly, and efficiently like a scheduling coordinator.",
+  booker:"Speak in a clearly feminine, warm, polished scheduling-coordinator voice. Sound friendly, organized, upbeat, and professional with clear projection.",
 } as const;
 
 const AGENT_ORDER=[
