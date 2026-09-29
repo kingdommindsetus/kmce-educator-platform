@@ -4,27 +4,22 @@ import {requireFounder} from "../../../../lib/auth";
 export const runtime="nodejs";
 
 const VOICES={
-  simon:"3WqHLnw80rOZqJzW9YRB",
+  simon:"pNInz6obpgDQGcFmaJgB",
   marie:"21m00Tcm4TlvDq8ikWAM",
-  eyes:"jRAAK67SEFE9m7ci5DhD",
+  eyes:"EXAVITQu4vr4xnSDxMaL",
   mark:"IKne3meq5aSn9XLyUdCD",
   cammy:"XrExE9yKIg1WjnnlVkGX",
-  eve:"yj30vwTGJxSHezdAGsv9",
+  eve:"AZnzlk1XvdvUeBnXmlld",
   tube:"TX3LPaxmHKxFdv7VOQHJ",
-  lucy:"XlDdozLmuTofIxK4BjPD",
-  snake:"jHprmvvyQreWpRuutdmV",
+  lucy:"MF3mGyEYCl7XYWbV9V6O",
+  snake:"TxGEqnHWrfWFTfGW9XjX",
   alice:"Xb7hH8MSUJpSbSDYk0k2",
   echo:"cjVigY5qzO86Huf0OWal",
-  booker:"Cz0K1kOv9tD8l0b5Qu53",
+  booker:"yoZ06aMxZJJ28mfd3POQ",
 } as const;
 
 async function resolveVoiceId(agentId:keyof typeof VOICES){
-  if(agentId==="simon"){
-    const envId=String(process.env.SIMON_ELEVENLABS_VOICE_ID||process.env.ELEVENLABS_VOICE_ID||"IKne3meq5aSn9XLyUdCD").trim();
-    return {voiceId:envId,voiceName:"Simon voice",source:process.env.SIMON_ELEVENLABS_VOICE_ID?"env_simon":process.env.ELEVENLABS_VOICE_ID?"env_default":"builtin_fallback"};
-  }
-
-  return {voiceId:VOICES[agentId],voiceName:agentId,source:"agent_registry"};
+  return {voiceId:VOICES[agentId],voiceName:agentId,source:"fixed_agent_voice"};
 }
 
 export async function POST(req:Request){
@@ -77,7 +72,7 @@ export async function POST(req:Request){
   let r=await synthesize(activeVoiceId);
 
   if(!r.ok){
-    const fallbackId=String(process.env.ELEVENLABS_VOICE_ID||"IKne3meq5aSn9XLyUdCD").trim();
+    const fallbackId="pNInz6obpgDQGcFmaJgB";
     if(fallbackId && fallbackId!==activeVoiceId){
       r=await synthesize(fallbackId);
       if(r.ok){
