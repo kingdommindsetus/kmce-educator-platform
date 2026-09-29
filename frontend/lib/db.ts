@@ -310,7 +310,7 @@ export async function ensureSchema(){
     VALUES
       ('Simon','Simon','Executive','elevenlabs',NULL,'READY','{"voice_name":"Sir Michael Caine™","voice_resolution":"account_lookup_or_env"}'::jsonb),
       ('Marie','Marie','Operations','elevenlabs','EXAVITQu4vr4xnSDxMaL','READY','{"voice_name":"Sarah - Mature, Reassuring, Confident"}'::jsonb),
-      ('Eyes','Eyes','Intelligence','elevenlabs','CwhRBWXzGAHq8TQ4Fs17','READY','{"voice_name":"Roger - Laid-Back, Casual, Resonant"}'::jsonb),
+      ('Eyes','Eyes','Intelligence','elevenlabs','jRAAK67SEFE9m7ci5DhD','READY','{"voice_name":"Eyes canonical ElevenLabs voice"}'::jsonb),
       ('Mark','Mark','Marketing','elevenlabs','IKne3meq5aSn9XLyUdCD','READY','{"voice_name":"Charlie - Deep, Confident, Energetic"}'::jsonb),
       ('Cammy','Cammy','Campaigns','elevenlabs','XrExE9yKIg1WjnnlVkGX','READY','{"voice_name":"Matilda - Knowledgable, Professional"}'::jsonb),
       ('Eve','Eve','Brand','elevenlabs','pFZP5JQG7iQjIQuC4Bku','READY','{"voice_name":"Lily - Velvety Actress"}'::jsonb),
