@@ -6,7 +6,8 @@ export const PROVIDERS=Object.freeze([
   {capability:"web.search",provider_name:"Firecrawl",priority:10,base_url:"https://api.firecrawl.dev/v2",credential_env:"FIRECRAWL_API_KEY",mode:"EXTERNAL"},
   {capability:"website.inspect",provider_name:"Firecrawl",priority:10,base_url:"https://api.firecrawl.dev/v2",credential_env:"FIRECRAWL_API_KEY",mode:"EXTERNAL"},
   {capability:"llm.generate",provider_name:"OmniRoute",priority:10,base_url_env:"OMNIROUTE_BASE_URL",credential_env:"OMNIROUTE_API_KEY",mode:"EXTERNAL"},
-  {capability:"procedure.lookup",provider_name:"ECC",priority:10,base_url_env:"ECC_BASE_URL",credential_env:null,mode:"EXTERNAL_OR_SYNC"}
+  {capability:"procedure.lookup",provider_name:"ECC",priority:10,base_url_env:"ECC_BASE_URL",credential_env:null,mode:"EXTERNAL_OR_SYNC"},
+  {capability:"avatar.render.realtime",provider_name:"LiveTalking",priority:10,base_url_env:"LIVETALKING_BASE_URL",credential_env:null,mode:"EXTERNAL"}
 ]);
 
 export function providerConfigured(provider,env={}){
