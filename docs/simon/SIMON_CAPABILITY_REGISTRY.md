@@ -71,6 +71,7 @@ Permanent forbidden actions:
 | social.publish | Sofia | approved platform connectors | APPROVAL |
 | seo.audit | Sofia | ECC SEO + approved data providers | AUTO |
 | outreach.draft | Echo/Maven | internal draft engine | AUTO |
+| outreach.reply.sync | Echo | Gmail thread read + Neon CRM routing | CONTROLLED |
 | outreach.send | Echo | controlled Gmail/provider connector | APPROVAL |
 | calendar.find_slots | Booker/Marie | calendar connector | AUTO |
 | calendar.book | Booker/Marie | calendar connector | POLICY |

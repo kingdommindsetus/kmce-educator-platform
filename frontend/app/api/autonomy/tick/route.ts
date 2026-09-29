@@ -3,6 +3,9 @@ import {ensureSchema,sql} from "../../../../lib/db";
 import {requireFounder} from "../../../../lib/auth";
 import {executionDisposition,retryDelaySeconds,idempotencyKey} from "../../../../lib/simon/autonomy-core";
 import {SERVICE_CATALOG} from "../../../../lib/simon/service-catalog";
+import {fetchEchoThread} from "../../../../lib/echo-provider";
+import {classifyReply,inboundMessages,normalizeThreadMessages} from "../../../../lib/echo-replies";
+import {parseApprovedDraft} from "../../../../lib/echo-delivery";
 
 export const runtime="nodejs";
 
@@ -30,6 +33,21 @@ async function seedDueJobs(q:any){
     const key=idempotencyKey(["followup",row.id,new Date().toISOString().slice(0,10)]);
     await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by) VALUES(${key},'lead.follow_up.review','Echo','CONTROLLED','lead',${String(row.lead_id)},${JSON.stringify({lead_id:Number(row.lead_id),practice_name:row.practice_name,outreach_job_id:Number(row.id)})}::jsonb,'Simon') ON CONFLICT(idempotency_key) DO NOTHING`;
   }
+  const replyHour=new Date().toISOString().slice(0,13);
+  const replyCandidates:any=await q`SELECT o.id,o.lead_id,o.provider_thread_id
+    FROM outreach_jobs o
+    WHERE o.provider='gmail'
+      AND o.provider_thread_id IS NOT NULL
+      AND o.status IN ('SENT','REPLIED')
+    ORDER BY o.updated_at DESC
+    LIMIT 100`;
+  for(const row of replyCandidates){
+    const key=idempotencyKey(["reply-sync",row.id,replyHour]);
+    await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by)
+      VALUES(${key},'outreach.reply.sync','Echo','CONTROLLED','outreach_job',${String(row.id)},${JSON.stringify({lead_id:Number(row.lead_id),outreach_job_id:Number(row.id),provider_thread_id:row.provider_thread_id})}::jsonb,'Simon')
+      ON CONFLICT(idempotency_key) DO NOTHING`;
+  }
+
   const ready:any=await q`SELECT id,lead_id FROM onboarding_cases WHERE status='READY_FOR_PAYMENT' LIMIT 100`;
   for(const row of ready){
     const key=idempotencyKey(["onboarding-ready",row.id]);
@@ -51,7 +69,7 @@ async function seedDueJobs(q:any){
   const day=new Date().toISOString().slice(0,10);
   const briefKey=idempotencyKey(["executive-brief",day]);
   await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by) VALUES(${briefKey},'executive.brief.queue','Marie','CONTROLLED','company','KMCE',${JSON.stringify({brief_date:day})}::jsonb,'Simon') ON CONFLICT(idempotency_key) DO NOTHING`;
-  return {followups:followups.length,onboarding_ready:ready.length,active_campaigns:campaigns.length,brief_date:day};
+  return {followups:followups.length,reply_sync_candidates:replyCandidates.length,onboarding_ready:ready.length,active_campaigns:campaigns.length,brief_date:day};
 }
 
 async function handleJob(q:any,job:any){
@@ -65,6 +83,83 @@ async function handleJob(q:any,job:any){
     if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true}};
     const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES(${agent},${title},${instruction},'AUTONOMY','Simon') RETURNING id`;
     return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false}};
+  }
+
+  if(job.capability==="outreach.reply.sync"){
+    const outreachId=Number(job.payload?.outreach_job_id||job.entity_id||0);
+    const rows:any=await q`SELECT o.*,l.pipeline_stage,l.assigned_agent
+      FROM outreach_jobs o
+      JOIN leads l ON l.id=o.lead_id
+      WHERE o.id=${outreachId}
+      LIMIT 1`;
+    if(!rows.length)return {status:"DEAD",result:{reason:"OUTREACH_NOT_FOUND"}};
+
+    const outreach=rows[0];
+    if(outreach.provider!=="gmail" || !outreach.provider_thread_id){
+      return {status:"SUCCEEDED",result:{skipped:true,reason:"THREAD_NOT_AVAILABLE"}};
+    }
+    if(!["SENT","REPLIED"].includes(String(outreach.status))){
+      return {status:"SUCCEEDED",result:{skipped:true,reason:"OUTREACH_NOT_ELIGIBLE"}};
+    }
+
+    const parsed:any=parseApprovedDraft(outreach.draft_content);
+    if(!parsed.ok)return {status:"DEAD",result:{reason:"SUBJECT_REQUIRED"}};
+
+    const providerResult:any=await fetchEchoThread(String(outreach.provider_thread_id),parsed.subject);
+    const messages:any[]=normalizeThreadMessages(providerResult?.result||providerResult)
+      .filter((m:any)=>String(m.threadId||"")===String(outreach.provider_thread_id));
+
+    const founderEmail=process.env.FOUNDER_EMAIL||"kingdommindsetus@gmail.com";
+    const inbound:any[]=inboundMessages(messages,founderEmail,outreach.sent_at);
+    const inserted:any[]=[];
+
+    for(const message of inbound){
+      const classified:any=classifyReply(message.body);
+      const saved:any=await q`INSERT INTO inbound_replies(
+        outreach_job_id,lead_id,provider,provider_message_id,provider_thread_id,
+        sender,recipient,subject,body,message_at,classification
+      ) VALUES(
+        ${outreachId},${outreach.lead_id},'gmail',${message.messageId},${outreach.provider_thread_id},
+        ${message.sender||null},${message.recipient||null},${message.subject||null},
+        ${classified.body||message.body||null},${message.timestamp||null},${classified.classification}
+      )
+      ON CONFLICT(provider,provider_message_id) DO NOTHING
+      RETURNING *`;
+      if(saved.length)inserted.push({...saved[0],routing:classified});
+    }
+
+    if(!inserted.length){
+      return {status:"SUCCEEDED",result:{
+        outreach_job_id:outreachId,
+        thread_message_count:messages.length,
+        inbound_message_count:inbound.length,
+        new_replies:0
+      }};
+    }
+
+    const latest=inserted[inserted.length-1];
+    const routing=latest.routing;
+    const allowedStages=["CONTACTED","FOLLOW_UP","REPLIED","INTERESTED"];
+    if(allowedStages.includes(String(outreach.pipeline_stage))){
+      await q`UPDATE leads
+        SET pipeline_stage=${routing.pipeline_stage},assigned_agent=${routing.assigned_agent},updated_at=now()
+        WHERE id=${outreach.lead_id}`;
+    }
+
+    await q`UPDATE outreach_jobs
+      SET status='REPLIED',delivery_status='REPLIED',follow_up_due_at=NULL,updated_at=now()
+      WHERE id=${outreachId} AND status IN ('SENT','REPLIED')`;
+
+    await q`INSERT INTO lead_activities(lead_id,actor_name,action,detail)
+      VALUES(${outreach.lead_id},'Echo','INBOUND_REPLY_RECEIVED',${`Gmail reply ${latest.provider_message_id} classified ${routing.classification}; routed to ${routing.assigned_agent}.`})`;
+
+    return {status:"SUCCEEDED",result:{
+      outreach_job_id:outreachId,
+      new_replies:inserted.length,
+      classification:routing.classification,
+      pipeline_stage:routing.pipeline_stage,
+      assigned_agent:routing.assigned_agent
+    }};
   }
 
   if(job.capability==="lead.follow_up.review"){
