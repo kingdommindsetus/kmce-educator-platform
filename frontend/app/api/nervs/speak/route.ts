@@ -50,6 +50,15 @@ async function resolveVoiceId(agentId:keyof typeof VOICES,apiKey:string){
     };
   }
 
+  if(agentId==="marie"){
+    return {
+      voiceId:"9BWtsMINqrJLrRacOk9x",
+      voiceName:"Marie",
+      source:"locked_marie",
+      alternatives:[] as AvailableVoice[],
+    };
+  }
+
   const available=await getAvailableVoices(apiKey);
   const nonSimon=available.filter(v=>v.voice_id!=="pNInz6obpgDQGcFmaJgB");
   const index=AGENT_ORDER.indexOf(agentId as typeof AGENT_ORDER[number]);
@@ -114,7 +123,7 @@ export async function POST(req:Request){
   let voiceSource=resolved.source;
   let r=await synthesize(activeVoiceId);
 
-  if(!r.ok && agentId!=="simon"){
+  if(!r.ok && agentId!=="simon" && agentId!=="marie"){
     for(const candidate of resolved.alternatives){
       if(candidate.voice_id===activeVoiceId) continue;
       const retry=await synthesize(candidate.voice_id);
