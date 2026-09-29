@@ -46,7 +46,7 @@ Permanent forbidden actions:
 | Ledger | Finance | Stripe handoff, transaction state, double-entry ledger, reconciliation |
 | Delivery/CE | Fulfillment | entitlement, attendance/completion, CE/certificate evidence |
 | Eyes | Market intelligence | external trends, search demand, visual/product opportunity signals |
-| Alice | Kingdom Mindset Store manager | catalog health, merchandising, store operations, review queue |
+| Alice | Kingdom Mindset Store manager | storefront freshness, catalog health, images, copy, SEO, collections, merchandising, review queue |
 | Devon | Digital product agent | downloadable products, toolkits, templates, product packaging |
 | Mercedes | Merchandise designer | apparel/merch concepts, creative direction, mockup requirements |
 | Snake | Store growth operations | Store Pulse, marketing cadence, outreach planning, conversion recovery |
@@ -91,6 +91,9 @@ Permanent forbidden actions:
 | store.trend.research | Eyes/Snake | public trend/search intelligence providers | AUTO |
 | store.pulse.review | Snake | Shopify telemetry + Neon pulse reports | CONTROLLED |
 | store.catalog.review | Alice | Shopify + KMCE store operations | CONTROLLED |
+| store.maintenance.audit | Alice | Shopify storefront + catalog telemetry | CONTROLLED |
+| store.content.optimize | Alice | product copy, imagery, SEO, merchandising workflow | CONTROLLED |
+| store.live.edit | Alice | Shopify | APPROVAL |
 | store.product.digital.prepare | Devon | KMCE product workflow | CONTROLLED |
 | store.product.merch.prepare | Mercedes | KMCE merchandise workflow | CONTROLLED |
 | store.campaign.prepare | Snake | store growth engine | CONTROLLED |
@@ -142,3 +145,8 @@ This registry is the contract. Providers can change without changing the employe
 EYES → SNAKE → DEVON/MERCEDES → ALICE → FOUNDER GATE → SNAKE DISTRIBUTION → EYES MEASUREMENT → SNAKE STORE PULSE.
 
 Snake is cross-functional for store growth health. He may create internal tasks and pulse reports, but he may not publish products, send campaigns, spend ad budget, create discounts, or change live pricing without the relevant approval/policy gate.
+
+
+## Alice storefront stewardship
+
+Alice owns continuous storefront maintenance. Simon seeds a daily freshness audit and a Monday deep-clean audit. Alice checks product imagery, titles/descriptions, SEO metadata, collections, listing status, accessibility/alt text, duplicates/stale inventory presentation, visual consistency, and merchandising opportunities. Internal audits and optimization drafts are CONTROLLED; live publishing, destructive changes, live price changes, and theme/settings changes remain Founder-approval gated.
