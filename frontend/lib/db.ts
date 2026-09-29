@@ -267,21 +267,28 @@ export async function ensureSchema(){
   )`;
 
 
-  await q`INSERT INTO agent_voice_profiles(agent_name,display_name,department,voice_status)
+  await q`INSERT INTO agent_voice_profiles(agent_name,display_name,department,provider,provider_voice_id,voice_status,metadata)
     VALUES
-      ('Simon','Simon','Executive','MISSING'),
-      ('Marie','Marie','Operations','MISSING'),
-      ('Eyes','Eyes','Intelligence','MISSING'),
-      ('Mark','Mark','Marketing','MISSING'),
-      ('Cammy','Cammy','Campaigns','MISSING'),
-      ('Eve','Eve','Brand','MISSING'),
-      ('Tube','Tube','Video','MISSING'),
-      ('Lucy','Lucy','Social','MISSING'),
-      ('Snake','Snake','Growth','MISSING'),
-      ('Alice','Alice','Store','MISSING'),
-      ('Echo','Echo','Sales Outreach','MISSING'),
-      ('Booker','Booker','Sales Scheduling','MISSING')
-    ON CONFLICT(agent_name) DO NOTHING`;
+      ('Simon','Simon','Executive','elevenlabs','pqHfZKP75CvOlQylNhV4','READY','{"voice_name":"Bill - Wise, Mature, Balanced"}'::jsonb),
+      ('Marie','Marie','Operations','elevenlabs','EXAVITQu4vr4xnSDxMaL','READY','{"voice_name":"Sarah - Mature, Reassuring, Confident"}'::jsonb),
+      ('Eyes','Eyes','Intelligence','elevenlabs','SAz9YHcvj6GT2YYXdXww','READY','{"voice_name":"River - Relaxed, Neutral, Informative"}'::jsonb),
+      ('Mark','Mark','Marketing','elevenlabs','IKne3meq5aSn9XLyUdCD','READY','{"voice_name":"Charlie - Deep, Confident, Energetic"}'::jsonb),
+      ('Cammy','Cammy','Campaigns','elevenlabs','XrExE9yKIg1WjnnlVkGX','READY','{"voice_name":"Matilda - Knowledgable, Professional"}'::jsonb),
+      ('Eve','Eve','Brand','elevenlabs','pFZP5JQG7iQjIQuC4Bku','READY','{"voice_name":"Lily - Velvety Actress"}'::jsonb),
+      ('Tube','Tube','Video','elevenlabs','TX3LPaxmHKxFdv7VOQHJ','READY','{"voice_name":"Liam - Energetic, Social Media Creator"}'::jsonb),
+      ('Lucy','Lucy','Social','elevenlabs','cgSgspJ2msm6clMCkdW9','READY','{"voice_name":"Jessica - Playful, Bright, Warm"}'::jsonb),
+      ('Snake','Snake','Growth','elevenlabs','k5eu7V3cPJkEA7D2irmP','READY','{"voice_name":"Zadok - Confident, Clear and Natural"}'::jsonb),
+      ('Alice','Alice','Store','elevenlabs','Xb7hH8MSUJpSbSDYk0k2','READY','{"voice_name":"Alice - Clear, Engaging Educator"}'::jsonb),
+      ('Echo','Echo','Sales Outreach','elevenlabs','cjVigY5qzO86Huf0OWal','READY','{"voice_name":"Eric - Smooth, Trustworthy"}'::jsonb),
+      ('Booker','Booker','Sales Scheduling','elevenlabs','CwhRBWXzGAHq8TQ4Fs17','READY','{"voice_name":"Roger - Laid-Back, Casual, Resonant"}'::jsonb)
+    ON CONFLICT(agent_name) DO UPDATE SET
+      display_name=EXCLUDED.display_name,
+      department=EXCLUDED.department,
+      provider=EXCLUDED.provider,
+      provider_voice_id=EXCLUDED.provider_voice_id,
+      voice_status=EXCLUDED.voice_status,
+      metadata=EXCLUDED.metadata,
+      updated_at=now()`;
 
   await q`CREATE TABLE IF NOT EXISTS nervs_meeting_runs (
     id BIGSERIAL PRIMARY KEY,
