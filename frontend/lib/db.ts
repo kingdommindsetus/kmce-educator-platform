@@ -313,7 +313,7 @@ export async function ensureSchema(){
       ('Eyes','Eyes','Intelligence','elevenlabs','jRAAK67SEFE9m7ci5DhD','READY','{"voice_name":"Eyes canonical ElevenLabs voice"}'::jsonb),
       ('Mark','Mark','Marketing','elevenlabs','IKne3meq5aSn9XLyUdCD','READY','{"voice_name":"Charlie - Deep, Confident, Energetic"}'::jsonb),
       ('Cammy','Cammy','Campaigns','elevenlabs','XrExE9yKIg1WjnnlVkGX','READY','{"voice_name":"Matilda - Knowledgable, Professional"}'::jsonb),
-      ('Eve','Eve','Brand','elevenlabs','pFZP5JQG7iQjIQuC4Bku','READY','{"voice_name":"Lily - Velvety Actress"}'::jsonb),
+      ('Eve','Eve','Brand','elevenlabs','yj30vwTGJxSHezdAGsv9','READY','{"voice_name":"Eve canonical ElevenLabs voice"}'::jsonb),
       ('Tube','Tube','Video','elevenlabs','TX3LPaxmHKxFdv7VOQHJ','READY','{"voice_name":"Liam - Energetic, Social Media Creator"}'::jsonb),
       ('Lucy','Lucy','Social','elevenlabs','XlDdozLmuTofIxK4BjPD','READY','{"voice_name":"Lucy canonical ElevenLabs voice"}'::jsonb),
       ('Snake','Snake','Growth','elevenlabs','jHprmvvyQreWpRuutdmV','READY','{"voice_name":"Snake canonical ElevenLabs voice"}'::jsonb),
