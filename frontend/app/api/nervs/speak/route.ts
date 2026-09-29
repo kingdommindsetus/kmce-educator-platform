@@ -43,18 +43,18 @@ async function getAvailableVoices(apiKey:string):Promise<AvailableVoice[]>{
 async function resolveVoiceId(agentId:keyof typeof VOICES,apiKey:string){
   if(agentId==="simon"){
     return {
-      voiceId:"pNInz6obpgDQGcFmaJgB",
-      voiceName:"Simon",
-      source:"locked_simon",
+      voiceId:"3WqHLnw80rOZqJzW9YRB",
+      voiceName:"Daniel - Radio news host",
+      source:"locked_simon_original",
       alternatives:[] as AvailableVoice[],
     };
   }
 
   if(agentId==="marie"){
     return {
-      voiceId:"9BWtsMINqrJLrRacOk9x",
-      voiceName:"Marie",
-      source:"locked_marie",
+      voiceId:"EXAVITQu4vr4xnSDxMaL",
+      voiceName:"Sarah - Mature, Reassuring, Confident",
+      source:"locked_marie_verified",
       alternatives:[] as AvailableVoice[],
     };
   }
