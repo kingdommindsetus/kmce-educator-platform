@@ -20,10 +20,10 @@ export default function NervsRoom(){
   const [speechText,setSpeechText]=useState("Give your NERVS DAILY update: one win, one blocker, and your next move.");
   const [speechStatus,setSpeechStatus]=useState("READY");
   const [dailyReports,setDailyReports]=useState<DailyReport[]>([]);
-  const [meetingStatus,setMeetingStatus]=useState("NOT PREPARED");
+  const [meetingStatus,setMeetingStatus]=useState("NOT PREPARED");\n  const [meetingId,setMeetingId]=useState<number|null>(null);
   const videoRef=useRef<HTMLVideoElement|null>(null);
   const audioRef=useRef<HTMLAudioElement|null>(null);
-  const stopRequestedRef=useRef(false);
+  const stopRequestedRef=useRef(false);\n  const playbackResolveRef=useRef<(()=>void)|null>(null);
 
   const active=NERVS_AVATAR_PACK_V1[activeIndex];
   const mediaUrl=useMemo(()=>avatarMediaUrl(active.id),[active.id]);
@@ -73,7 +73,7 @@ export default function NervsRoom(){
     const target=NERVS_AVATAR_PACK_V1[index];
     const data=await requestSpeech(target.id,text);
 
-    return new Promise<void>((resolve,reject)=>{
+    return new Promise<void>((resolve,reject)=>{\n      playbackResolveRef.current=resolve;
       const audio=new Audio(`data:${data.content_type||"audio/mpeg"};base64,${data.audio_base64}`);
       audioRef.current=audio;
       audio.onplay=()=>{
@@ -128,6 +128,17 @@ export default function NervsRoom(){
     return reports;
   }
 
+  async function updateMeetingStatus(status:"RUNNING"|"COMPLETED"|"FAILED"|"CANCELLED",id=meetingId){
+    if(!id) return;
+    const r=await fetch("/api/nervs/daily/status",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({meeting_id:id,status}),
+    });
+    const data=await r.json();
+    if(!r.ok) throw new Error(data?.error||"Could not update meeting status");
+  }
+
   async function prepareDaily(){
     try{
       await loadDailyReports();
@@ -149,7 +160,7 @@ export default function NervsRoom(){
         await playAgent(index,report.script);
       }
 
-      setMeetingStatus(stopRequestedRef.current?"STOPPED":"COMPLETED");
+      if(stopRequestedRef.current){\n        if(meetingId) await updateMeetingStatus("CANCELLED");\n        setMeetingStatus("STOPPED");\n      }else{\n        if(meetingId) await updateMeetingStatus("COMPLETED");\n        setMeetingStatus("COMPLETED");\n      }
     }catch(error){
       setMeetingStatus(error instanceof Error?error.message:"MEETING FAILED");
       setRunning(false);
@@ -167,10 +178,10 @@ export default function NervsRoom(){
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         <button className="btn" onClick={prepareDaily}>Prepare Daily</button>
         <button className="btn primary" onClick={runDaily} disabled={meetingStatus==="RUNNING"}>Run Daily</button>
-        <button className="btn" onClick={()=>{stopPlayback();setMeetingStatus("STOPPED");}}>Stop Meeting</button>
+        <button className="btn" onClick={async()=>{stopPlayback();if(meetingId)await updateMeetingStatus("CANCELLED").catch(()=>{});setMeetingStatus("STOPPED");}}>Stop Meeting</button>
       </div>
       {dailyReports.length>0&&<div className="muted" style={{fontSize:12,marginTop:8}}>
-        {dailyReports.length} reports prepared from internal task evidence. Spoken reports do not create external effects.
+        {dailyReports.length} reports prepared from internal task evidence{meetingId?` · Meeting #${meetingId}`:""}. Spoken reports do not create external effects.
       </div>}
     </div>
 
