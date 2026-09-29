@@ -23,12 +23,21 @@ export const CAPABILITIES = Object.freeze({
   "task.follow_up": {owner:"Marie", provider:"Neon", authority:AUTHORITY.CONTROLLED},
   "executive.brief": {owner:"Marie", provider:"Neon + Simon", authority:AUTHORITY.AUTO},
 
-  "business.search": {owner:"Scout", provider:"KMCE Tool Registry", authority:AUTHORITY.AUTO},\n  "lead.dentist_discovery": {owner:"Scout", provider:"Apify DentalPlans", authority:AUTHORITY.AUTO},\n  "lead.contact_enrich": {owner:"Claire", provider:"Apify Contact Info Scraper", authority:AUTHORITY.CONTROLLED},\n  "lead.email_verify": {owner:"Claire", provider:"Apify Email Verifier", authority:AUTHORITY.CONTROLLED},\n  "lead.phone_verify": {owner:"Claire", provider:"Apify Phone Validator", authority:AUTHORITY.CONTROLLED},
+  "business.search": {owner:"Scout", provider:"KMCE Tool Registry", authority:AUTHORITY.AUTO},
+  "lead.dentist_discovery": {owner:"Scout", provider:"Apify DentalPlans", authority:AUTHORITY.AUTO},
+  "lead.contact_enrich": {owner:"Claire", provider:"Apify Contact Info Scraper", authority:AUTHORITY.CONTROLLED},
+  "lead.email_verify": {owner:"Claire", provider:"Apify Email Verifier", authority:AUTHORITY.CONTROLLED},
+  "lead.phone_verify": {owner:"Claire", provider:"Apify Phone Validator", authority:AUTHORITY.CONTROLLED},
   "web.search": {owner:"Scout", provider:"Firecrawl", authority:AUTHORITY.AUTO},
   "website.inspect": {owner:"Scout", provider:"Firecrawl", authority:AUTHORITY.AUTO},
   "browser.inspect": {owner:"Scout", provider:"Controlled Playwright MCP", authority:AUTHORITY.AUTO},
 
-  "research.deep": {owner:"Claire", provider:"Academic Research MCP + KMCE knowledge", authority:AUTHORITY.AUTO},\n  "media.youtube_research": {owner:"Tube", provider:"YouTube MCP", authority:AUTHORITY.AUTO},\n  "commerce.shopify_intelligence": {owner:"Eve", provider:"E-Commerce MCP", authority:AUTHORITY.AUTO},\n  "website.quality_audit": {owner:"Alice", provider:"KMCE Tool Registry", authority:AUTHORITY.AUTO},\n  "course.quiz_generate": {owner:"Delivery/CE", provider:"KMCE Tool Registry", authority:AUTHORITY.CONTROLLED},\n  "code.sandbox": {owner:"Simon", provider:"Sandboxed execution provider", authority:AUTHORITY.CONTROLLED},
+  "research.deep": {owner:"Claire", provider:"Academic Research MCP + KMCE knowledge", authority:AUTHORITY.AUTO},
+  "media.youtube_research": {owner:"Tube", provider:"YouTube MCP", authority:AUTHORITY.AUTO},
+  "commerce.shopify_intelligence": {owner:"Eve", provider:"E-Commerce MCP", authority:AUTHORITY.AUTO},
+  "website.quality_audit": {owner:"Alice", provider:"KMCE Tool Registry", authority:AUTHORITY.AUTO},
+  "course.quiz_generate": {owner:"Delivery/CE", provider:"KMCE Tool Registry", authority:AUTHORITY.CONTROLLED},
+  "code.sandbox": {owner:"Simon", provider:"Sandboxed execution provider", authority:AUTHORITY.CONTROLLED},
   "lead.enrich": {owner:"Claire", provider:"Research providers", authority:AUTHORITY.CONTROLLED},
   "lead.qualify": {owner:"Atlas", provider:"KMCE scoring", authority:AUTHORITY.CONTROLLED},
 
