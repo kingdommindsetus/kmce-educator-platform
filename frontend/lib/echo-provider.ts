@@ -32,15 +32,25 @@ export async function sendWithEcho(message:EchoEmail){
 }
 
 
-export async function fetchEchoThread(threadId:string){
+export async function fetchEchoThread(threadId:string,subject:string){
   const readiness=echoProviderReadiness();
   if(!readiness.apiKeyConfigured) throw new Error("COMPOSIO_API_KEY is not configured");
   if(!readiness.connectedAccountConfigured) throw new Error("COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID is not configured");
+  if(!subject) throw new Error("Subject is required to fetch Gmail thread safely");
   const composio=new Composio({apiKey:process.env.COMPOSIO_API_KEY!});
-  return composio.tools.execute("GMAIL_FETCH_MESSAGE_BY_THREAD_ID",{
+  const escaped=subject.replace(/"/g,'');
+  const result:any=await composio.tools.execute("GMAIL_FETCH_EMAILS",{
     userId:"kmce-founder",
     connectedAccountId:process.env.COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID!,
-    arguments:{thread_id:threadId,user_id:"me"},
+    arguments:{
+      user_id:"me",
+      query:`subject:"${escaped}"`,
+      max_results:50,
+      verbose:true,
+      include_payload:true,
+      include_spam_trash:false
+    },
     dangerouslySkipVersionCheck:true
   });
+  return {result,threadId};
 }

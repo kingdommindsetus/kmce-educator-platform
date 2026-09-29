@@ -3,6 +3,7 @@ import {requireFounder} from "../../../../lib/auth";
 import {ensureSchema,sql} from "../../../../lib/db";
 import {fetchEchoThread} from "../../../../lib/echo-provider";
 import {classifyReply,inboundMessages,normalizeThreadMessages} from "../../../../lib/echo-replies";
+import {parseApprovedDraft} from "../../../../lib/echo-delivery";
 export const runtime="nodejs";
 
 export async function POST(req:Request){
@@ -29,14 +30,18 @@ export async function POST(req:Request){
     return NextResponse.json({error:"Outreach must be sent before replies can be synced",reason:"OUTREACH_NOT_SENT"},{status:409});
   }
 
+  const parsed:any=parseApprovedDraft(job.draft_content);
+  if(!parsed.ok)return NextResponse.json({error:"Approved outreach subject unavailable",reason:"SUBJECT_REQUIRED"},{status:409});
+
   let providerResult:any;
   try{
-    providerResult=await fetchEchoThread(String(job.provider_thread_id));
+    providerResult=await fetchEchoThread(String(job.provider_thread_id),parsed.subject);
   }catch(error){
     return NextResponse.json({error:"Gmail thread fetch failed",reason:"PROVIDER_READ_FAILED",detail:String(error instanceof Error?error.message:error).slice(0,300)},{status:502});
   }
 
-  const messages:any[]=normalizeThreadMessages(providerResult);
+  const messages:any[]=normalizeThreadMessages(providerResult?.result||providerResult)
+    .filter((m:any)=>String(m.threadId||"")===String(job.provider_thread_id));
   const founderEmail=process.env.FOUNDER_EMAIL||"kingdommindsetus@gmail.com";
   const inbound:any[]=inboundMessages(messages,founderEmail,job.sent_at);
   const inserted:any[]=[];
