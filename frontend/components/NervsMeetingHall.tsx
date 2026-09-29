@@ -15,8 +15,17 @@ type DailyReport={
   evidence_task_ids:Array<number|string>;
 };
 
+type QueueItem={
+  key:string;
+  agent_id:string;
+  agent_name:string;
+  script:string;
+  closing?:boolean;
+};
+
 type TurnState="QUEUED"|"GENERATING"|"PLAYING"|"COMPLETE"|"SKIPPED"|"INTERRUPTED";
 type TurnResult="complete"|"skipped"|"interrupted";
+type AudioPayload={audio_base64:string;content_type?:string};
 
 type Props={
   onOpenHistory?:()=>void;
@@ -24,6 +33,28 @@ type Props={
 
 const SPEAK_TIMEOUT_MS=27000;
 const PLAYBACK_WATCHDOG_MS=120000;
+
+function buildQueue(list:DailyReport[]):QueueItem[]{
+  const roleOf=(id:string)=>NERVS_AVATAR_PACK_V1.find(a=>a.id===id)?.role||"";
+  const items:QueueItem[]=list.map((r,i)=>{
+    const next=list[i+1];
+    let script=r.script.trim();
+    if(next){
+      if(!script.toLowerCase().includes(next.agent_name.toLowerCase())){
+        const role=roleOf(next.agent_id);
+        script+=` Next up is ${next.agent_name}${role?`, our ${role} lead`:""}. ${next.agent_name}, the floor is yours.`;
+      }
+    }else if(r.agent_id!=="simon"){
+      script+=` Simon, back to you.`;
+    }
+    return {key:`${i}:${r.agent_id}`,agent_id:r.agent_id,agent_name:r.agent_name,script};
+  });
+  const last=list[list.length-1];
+  if(!last||last.agent_id!=="simon"){
+    items.push({key:`closing:simon`,agent_id:"simon",agent_name:"Simon",script:"",closing:true});
+  }
+  return items;
+}
 
 export default function NervsMeetingHall({onOpenHistory}:Props){
   const [reports,setReports]=useState<DailyReport[]>([]);
@@ -38,20 +69,21 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
   const audioRef=useRef<HTMLAudioElement|null>(null);
   const stopRequestedRef=useRef(false);
   const stopCurrentRef=useRef<(()=>void)|null>(null);
-  const activeFetchAbortRef=useRef<AbortController|null>(null);
+  const fetchAbortRefs=useRef<Set<AbortController>>(new Set());
+  const meetingIdRef=useRef<number|null>(null);
 
   const activeReport=reports.find(report=>report.agent_id===activeAgentId)||null;
   const activeAgent=NERVS_AVATAR_PACK_V1.find(agent=>agent.id===activeAgentId)||NERVS_AVATAR_PACK_V1[0];
 
-  function setTurnState(turnId:string,state:TurnState){
+  function setTurn(turnId:string,state:TurnState){
     setTurnStates(current=>({...current,[turnId]:state}));
     setSpeechStatus(state);
   }
 
   function stopPlayback(){
     stopRequestedRef.current=true;
-    activeFetchAbortRef.current?.abort();
-    activeFetchAbortRef.current=null;
+    for(const controller of fetchAbortRefs.current) controller.abort();
+    fetchAbortRefs.current.clear();
     stopCurrentRef.current?.();
     stopCurrentRef.current=null;
     if(audioRef.current){
@@ -63,11 +95,10 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
     setSpeechStatus("INTERRUPTED");
   }
 
-  async function requestSpeech(agentId:string,text:string,currentMeetingId:number|null,turnId:string){
-    let lastError="Voice generation failed";
+  async function fetchAudio(agentId:string,text:string,turnId:string):Promise<AudioPayload|null>{
     for(let attempt=1;attempt<=2;attempt++){
       const controller=new AbortController();
-      activeFetchAbortRef.current=controller;
+      fetchAbortRefs.current.add(controller);
       const timer=setTimeout(()=>controller.abort(),SPEAK_TIMEOUT_MS);
       try{
         const r=await fetch("/api/nervs/speak",{
@@ -77,22 +108,25 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
           body:JSON.stringify({
             agent_id:agentId,
             text,
-            meeting_id:currentMeetingId,
+            meeting_id:meetingIdRef.current,
             turn_id:turnId,
           }),
         });
         const data=await r.json().catch(()=>null);
-        if(r.ok&&data?.audio_base64) return data;
-        lastError=String(data?.error||`Voice generation failed (${r.status})`);
-      }catch(error){
-        if(stopRequestedRef.current) throw new Error("INTERRUPTED");
-        lastError=error instanceof Error?error.message:"Voice generation failed";
+        if(r.ok&&data?.audio_base64){
+          return {
+            audio_base64:String(data.audio_base64),
+            content_type:data.content_type?String(data.content_type):undefined,
+          };
+        }
+      }catch{
+        if(stopRequestedRef.current) return null;
       }finally{
         clearTimeout(timer);
-        if(activeFetchAbortRef.current===controller) activeFetchAbortRef.current=null;
+        fetchAbortRefs.current.delete(controller);
       }
     }
-    throw new Error(lastError);
+    return null;
   }
 
   async function updateMeetingStatus(status:"RUNNING"|"COMPLETED"|"FAILED"|"CANCELLED",id:number|null=meetingId){
@@ -128,6 +162,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
     setReports(nextReports);
     const nextMeetingId=Number(data.meeting_id)||null;
     setMeetingId(nextMeetingId);
+    meetingIdRef.current=nextMeetingId;
     setMeetingStatus("READY");
     setNotesStatus("NOT FINALIZED");
     setTurnStates({});
@@ -135,30 +170,24 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
     return {reports:nextReports,meetingId:nextMeetingId};
   }
 
-  async function playTurn(report:DailyReport,currentMeetingId:number|null,turnId:string):Promise<TurnResult>{
+  async function playTurn(item:QueueItem,script:string,pre?:Promise<AudioPayload|null>):Promise<TurnResult>{
     if(stopRequestedRef.current){
-      setTurnState(turnId,"INTERRUPTED");
+      setTurn(item.key,"INTERRUPTED");
       return "interrupted";
     }
 
-    setActiveAgentId(report.agent_id);
-    setTurnState(turnId,"GENERATING");
+    setActiveAgentId(item.agent_id);
+    setTurn(item.key,"GENERATING");
+    setSpeechStatus("GENERATING");
+    const data=pre?await pre:await fetchAudio(item.agent_id,script,item.key);
 
-    let data:any;
-    try{
-      data=await requestSpeech(report.agent_id,report.script,currentMeetingId,turnId);
-    }catch(error){
-      if(stopRequestedRef.current||String(error instanceof Error?error.message:error)==="INTERRUPTED"){
-        setTurnState(turnId,"INTERRUPTED");
-        return "interrupted";
-      }
-      setTurnState(turnId,"SKIPPED");
+    if(stopRequestedRef.current){
+      setTurn(item.key,"INTERRUPTED");
+      return "interrupted";
+    }
+    if(!data){
+      setTurn(item.key,"SKIPPED");
       return "skipped";
-    }
-
-    if(stopRequestedRef.current){
-      setTurnState(turnId,"INTERRUPTED");
-      return "interrupted";
     }
 
     return new Promise<TurnResult>(resolve=>{
@@ -177,7 +206,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
         if(audioRef.current===audio) audioRef.current=null;
         stopCurrentRef.current=null;
         setRunning(false);
-        setTurnState(turnId,result==="complete"?"COMPLETE":result==="interrupted"?"INTERRUPTED":"SKIPPED");
+        setTurn(item.key,result==="complete"?"COMPLETE":result==="interrupted"?"INTERRUPTED":"SKIPPED");
         resolve(result);
       };
 
@@ -186,25 +215,12 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
 
       audio.onplay=()=>{
         setRunning(true);
-        setTurnState(turnId,"PLAYING");
+        setTurn(item.key,"PLAYING");
       };
       audio.onended=()=>finish("complete");
       audio.onerror=()=>finish("skipped");
       audio.play().catch(()=>finish("skipped"));
     });
-  }
-
-  function closingReport():DailyReport{
-    return {
-      agent_id:"simon",
-      agent_name:"Simon",
-      win:"Meeting closeout",
-      blocker:"No new blocker in the closing turn.",
-      next:"Carry the recorded actions into execution.",
-      ask:"No additional ask.",
-      script:"Kimberly, that completes today’s NERVS meeting. The team’s updates, blockers, and next actions are on record. We’ll carry the work forward from here. Meeting closed.",
-      evidence_task_ids:[],
-    };
   }
 
   async function startMeeting(){
@@ -216,25 +232,36 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
         const prepared=await prepareMeeting();
         activeReports=prepared.reports;
         activeMeetingId=prepared.meetingId;
+      }else{
+        meetingIdRef.current=activeMeetingId;
       }
 
       await updateMeetingStatus("RUNNING",activeMeetingId);
       setMeetingStatus("RUNNING");
 
+      const activeQueue=buildQueue(activeReports);
       const queued:Record<string,TurnState>={};
-      activeReports.forEach((report,index)=>{queued[`report-${index+1}-${report.agent_id}`]="QUEUED";});
-      queued["closing-simon"]="QUEUED";
+      activeQueue.forEach(item=>{queued[item.key]="QUEUED";});
       setTurnStates(queued);
 
-      for(let index=0;index<activeReports.length;index++){
+      let skipped=0;
+      const prefetch:Record<string,Promise<AudioPayload|null>>={};
+      const warm=(it?:QueueItem)=>{
+        if(!it||it.closing||prefetch[it.key]) return;
+        prefetch[it.key]=fetchAudio(it.agent_id,it.script,it.key);
+      };
+      for(let i=0;i<activeQueue.length;i++){
+        const item=activeQueue[i];
         if(stopRequestedRef.current) break;
-        const report=activeReports[index];
-        const result=await playTurn(report,activeMeetingId,`report-${index+1}-${report.agent_id}`);
+        let script=item.script;
+        if(item.closing){
+          script=`That concludes today's NERVS Daily. ${skipped?`${skipped} report${skipped===1?"":"s"} could not be voiced and ${skipped===1?"was":"were"} skipped, but the written notes are saved. `:""}Thank you, team. Meeting adjourned.`;
+        }
+        warm(item);
+        warm(activeQueue[i+1]);
+        const result=await playTurn(item,script,prefetch[item.key]);
+        if(result==="skipped") skipped++;
         if(result==="interrupted") break;
-      }
-
-      if(!stopRequestedRef.current){
-        await playTurn(closingReport(),activeMeetingId,"closing-simon");
       }
 
       if(stopRequestedRef.current){
@@ -292,7 +319,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10}}>
           {NERVS_AVATAR_PACK_V1.map(agent=>{
             const isActive=agent.id===activeAgentId;
-            const matchingTurn=Object.entries(turnStates).find(([key])=>key.endsWith(`-${agent.id}`)||key===`closing-${agent.id}`);
+            const matchingTurn=Object.entries(turnStates).find(([key])=>key.endsWith(`:${agent.id}`));
             const state=matchingTurn?.[1]||"QUEUED";
             return <button
               key={agent.id}

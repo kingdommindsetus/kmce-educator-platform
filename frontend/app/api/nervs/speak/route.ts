@@ -13,13 +13,13 @@ const OPENAI_VOICES={
   eyes:"nova",
   mark:"onyx",
   cammy:"coral",
-  eve:"shimmer",
+  eve:"alloy",
   tube:"verse",
-  lucy:"alloy",
-  snake:"ash",
+  lucy:"shimmer",
+  snake:"onyx",
   alice:"ballad",
   echo:"echo",
-  booker:"coral",
+  booker:"ash",
 } as const;
 
 type AgentId=keyof typeof OPENAI_VOICES;
@@ -36,7 +36,7 @@ const OPENAI_STYLE:Record<AgentId,string>={
   snake:"Speak analytical, controlled, precise, and confident like a growth-measurement lead.",
   alice:"Speak clearly, professionally, and confidently like a storefront and website quality lead.",
   echo:"Speak smoothly, confidently, and persuasively like a trusted sales-outreach professional.",
-  booker:"Speak in a clearly feminine, warm, polished scheduling-coordinator voice. Sound friendly, organized, upbeat, professional, and easy to hear.",
+  booker:"Speak in a clearly male, warm, polished scheduling-coordinator voice. Sound friendly, organized, upbeat, professional, and easy to hear.",
 };
 
 const SPEED:Record<AgentId,number>={
@@ -66,7 +66,7 @@ const ELEVENLABS_VOICES:Record<AgentId,string|null>={
   snake:"k5eu7V3cPJkEA7D2irmP",
   alice:"Xb7hH8MSUJpSbSDYk0k2",
   echo:"cjVigY5qzO86Huf0OWal",
-  booker:"CwhRBWXzGAHq8TQ4Fs17",
+  booker:"Cz0K1kOv9tD8l0b5Qu53",
 };
 
 type Attempt={
