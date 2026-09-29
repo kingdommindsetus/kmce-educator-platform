@@ -461,6 +461,42 @@ export async function ensureSchema(){
   )`;
   await q`CREATE INDEX IF NOT EXISTS store_metrics_snapshots_recent_idx ON store_metrics_snapshots(store_code,snapshot_date DESC,created_at DESC)`;
 
+  await q`CREATE TABLE IF NOT EXISTS store_catalog_favorites (
+    id BIGSERIAL PRIMARY KEY,
+    store_code TEXT NOT NULL DEFAULT 'KINGDOM_MINDSET_STORE',
+    provider TEXT NOT NULL DEFAULT 'PRINTIFY',
+    provider_item_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    brand TEXT,
+    model TEXT,
+    image_url TEXT,
+    source TEXT NOT NULL DEFAULT 'EVE_SCAN',
+    favorite_status TEXT NOT NULL DEFAULT 'SHORTLISTED' CHECK (favorite_status IN ('SHORTLISTED','SELECTED','REJECTED','ARCHIVED')),
+    fit_score INTEGER NOT NULL DEFAULT 0 CHECK (fit_score BETWEEN 0 AND 100),
+    rationale TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_by TEXT NOT NULL DEFAULT 'Eve',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(store_code,provider,provider_item_id)
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS store_catalog_favorites_status_idx ON store_catalog_favorites(store_code,favorite_status,fit_score DESC)`;
+
+  await q`CREATE TABLE IF NOT EXISTS store_brand_briefs (
+    id BIGSERIAL PRIMARY KEY,
+    store_code TEXT NOT NULL DEFAULT 'KINGDOM_MINDSET_STORE',
+    status TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','REVIEW','APPROVED','ARCHIVED')),
+    brand_name TEXT,
+    positioning TEXT,
+    audience TEXT,
+    visual_direction JSONB NOT NULL DEFAULT '{}'::jsonb,
+    collection_direction JSONB NOT NULL DEFAULT '[]'::jsonb,
+    source_favorite_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_by TEXT NOT NULL DEFAULT 'Eve',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+
   await q`CREATE TABLE IF NOT EXISTS store_pulse_reports (
     id BIGSERIAL PRIMARY KEY,
     store_code TEXT NOT NULL DEFAULT 'KINGDOM_MINDSET_STORE',
