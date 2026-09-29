@@ -6,7 +6,7 @@ export const runtime="nodejs";
 const VOICES={
   simon:null,
   marie:"EXAVITQu4vr4xnSDxMaL",
-  eyes:"CwhRBWXzGAHq8TQ4Fs17",
+  eyes:"jRAAK67SEFE9m7ci5DhD",
   mark:"IKne3meq5aSn9XLyUdCD",
   cammy:"XrExE9yKIg1WjnnlVkGX",
   eve:"pFZP5JQG7iQjIQuC4Bku",
