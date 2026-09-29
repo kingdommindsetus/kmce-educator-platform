@@ -12,7 +12,7 @@ const VOICES={
   eve:"pFZP5JQG7iQjIQuC4Bku",
   tube:"TX3LPaxmHKxFdv7VOQHJ",
   lucy:"cgSgspJ2msm6clMCkdW9",
-  snake:"k5eu7V3cPJkEA7D2irmP",
+  snake:"jHprmvvyQreWpRuutdmV",
   alice:"Xb7hH8MSUJpSbSDYk0k2",
   echo:"cjVigY5qzO86Huf0OWal",
   booker:"CwhRBWXzGAHq8TQ4Fs17",
@@ -20,7 +20,7 @@ const VOICES={
 
 const VOICE_NAMES={
   simon:"Sir Michael Caine™",
-  snake:"Zadok - Confident, Clear and Natural",
+  snake:"Snake canonical ElevenLabs voice",
 } as const;
 
 function normalizeVoiceName(value:string){
