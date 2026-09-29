@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless";
+import { neon, Pool } from "@neondatabase/serverless";
 
 export function sql(){
   const url=process.env.DATABASE_URL;
@@ -6,10 +6,83 @@ export function sql(){
   return neon(url);
 }
 
-let initialized=false;
-export async function ensureSchema(){
-  if(initialized) return;
+export const SCHEMA_VERSION=1;
+const SCHEMA_LOCK=727201;
+let schemaPromise:Promise<void>|null=null;
+
+type SchemaQuery=(strings:TemplateStringsArray,...values:unknown[])=>Promise<unknown[]>;
+
+export function ensureSchema():Promise<void>{
+  if(!schemaPromise){
+    schemaPromise=migrate().catch(error=>{
+      schemaPromise=null;
+      throw error;
+    });
+  }
+  return schemaPromise;
+}
+
+async function currentSchemaVersion(){
   const q=sql();
+  const exists:any=await q`SELECT to_regclass('public.schema_meta') AS table_name`;
+  if(!exists?.[0]?.table_name) return null;
+  const rows:any=await q`SELECT schema_version FROM schema_meta WHERE id=1`;
+  return rows?.[0]?.schema_version==null?null:Number(rows[0].schema_version);
+}
+
+async function migrate(){
+  if(await currentSchemaVersion()===SCHEMA_VERSION) return;
+
+  const url=process.env.DATABASE_URL;
+  if(!url) throw new Error("DATABASE_URL is not configured");
+
+  const pool=new Pool({connectionString:url});
+  const client=await pool.connect();
+  try{
+    await client.query("BEGIN");
+    await client.query("SELECT pg_advisory_xact_lock($1)",[SCHEMA_LOCK]);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS schema_meta (
+        id INTEGER PRIMARY KEY CHECK (id=1),
+        schema_version INTEGER NOT NULL,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `);
+
+    const versionResult=await client.query("SELECT schema_version FROM schema_meta WHERE id=1");
+    const version=versionResult.rows[0]?.schema_version==null?null:Number(versionResult.rows[0].schema_version);
+    if(version===SCHEMA_VERSION){
+      await client.query("COMMIT");
+      return;
+    }
+
+    const q:SchemaQuery=async(strings,...values)=>{
+      let text="";
+      for(let i=0;i<strings.length;i++){
+        text+=strings[i];
+        if(i<values.length) text+=`${i+1}`;
+      }
+      const result=await client.query(text,values);
+      return result.rows;
+    };
+
+    await runSchema(q);
+    await client.query(
+      `INSERT INTO schema_meta(id,schema_version,updated_at) VALUES(1,$1,now())
+       ON CONFLICT(id) DO UPDATE SET schema_version=EXCLUDED.schema_version,updated_at=now()`,
+      [SCHEMA_VERSION],
+    );
+    await client.query("COMMIT");
+  }catch(error){
+    await client.query("ROLLBACK").catch(()=>{});
+    throw error;
+  }finally{
+    client.release();
+    await pool.end().catch(()=>{});
+  }
+}
+
+async function runSchema(q:SchemaQuery){
 
   await q`CREATE TABLE IF NOT EXISTS educators (
     id BIGSERIAL PRIMARY KEY,
@@ -713,5 +786,4 @@ export async function ensureSchema(){
     summary JSONB NOT NULL DEFAULT '{}'::jsonb
   )`;
 
-  initialized=true;
 }
