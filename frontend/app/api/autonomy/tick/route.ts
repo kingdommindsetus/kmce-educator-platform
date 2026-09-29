@@ -77,7 +77,7 @@ async function seedDueJobs(q:any){
     if(Number(row.draft_count||0)===0 && Number(row.approved_count||0)===0){
       const key=idempotencyKey(["growth-review",row.id,new Date().toISOString().slice(0,10)]);
       await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by)
-        VALUES(${key},'growth.campaign.review','Sofia','CONTROLLED','growth_campaign',${String(row.id)},${JSON.stringify({campaign_id:Number(row.id),campaign_name:row.name})}::jsonb,'Simon')
+        VALUES(${key},'growth.campaign.review','Mark','CONTROLLED','growth_campaign',${String(row.id)},${JSON.stringify({campaign_id:Number(row.id),campaign_name:row.name})}::jsonb,'Simon')
         ON CONFLICT(idempotency_key) DO NOTHING`;
     }
   }
@@ -361,15 +361,77 @@ async function handleJob(q:any,job:any){
     return {status:"SUCCEEDED",result:{store_code:storeCode,cadence,pulse_status:evaluation.pulse_status,report_id:Number(reports[0].id),snapshot_id:snapshot?.id?Number(snapshot.id):null,findings:evaluation.findings||[],actions_created:created,external_actions_executed:false}};
   }
 
+  if(["marketing.campaign.prepare","blog.prepare","marketing.show.plan"].includes(job.capability)){
+    const p=job.payload||{};
+    const title=String(p.title||(
+      job.capability==="blog.prepare"?"Prepare KMCE blog content":
+      job.capability==="marketing.show.plan"?"Plan KMCE Marketing Show episode":
+      "Prepare KMCE campaign"
+    ));
+    const instruction=String(p.instruction||"Prepare the internal marketing deliverable using KMCE product-marketing context and approved brand rules. Do not publish externally.");
+    const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Mark' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
+    if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true,external_actions_executed:false}};
+    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Mark',${title},${instruction},'AUTONOMY','NERVS') RETURNING id`;
+    return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false,external_actions_executed:false}};
+  }
+
+  if(["campaign.generate","campaign.cost.estimate","campaign.target.score","campaign.variant.generate"].includes(job.capability)){
+    const p=job.payload||{};
+    const defaults:any={
+      "campaign.generate":["Generate KMCE campaign package","Create a complete campaign draft from Mark's brief: objective, audience, offer, message angle, channel mix, CTA, content requirements, funnel path, and success metrics. Internal draft only; do not spend, publish, or send."],
+      "campaign.cost.estimate":["Estimate campaign economics","Estimate campaign economics using available KMCE data: production cost, expected distribution cost, proposed paid-media budget, target acquisition cost, break-even conversions, contribution margin, and downside case. Clearly mark assumptions and missing data. Do not authorize spend."],
+      "campaign.target.score":["Score campaign target segments","Score candidate audience segments using available first-party and market evidence. Rank by fit, expected conversion value, contact cost, and evidence quality. Do not use protected or sensitive traits."],
+      "campaign.variant.generate":["Generate campaign test variants","Create controlled variants for message, offer, creative angle, CTA, or channel. Include hypothesis, changed variable, success metric, and stopping rule. Do not launch tests externally."]
+    };
+    const [defaultTitle,defaultInstruction]=defaults[job.capability];
+    const title=String(p.title||defaultTitle);
+    const instruction=String(p.instruction||defaultInstruction);
+    const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Cammy' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
+    if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true,external_actions_executed:false}};
+    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Cammy',${title},${instruction},'AUTONOMY','NERVS') RETURNING id`;
+    return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false,external_actions_executed:false}};
+  }
+
+  if(["social.content.adapt","social.calendar.prepare","social.comment.triage","social.reply.draft","social.performance.collect"].includes(job.capability)){
+    const p=job.payload||{};
+    const defaults:any={
+      "social.content.adapt":["Adapt approved campaign content for social channels","Take the approved Mark campaign package and produce channel-specific drafts for the requested platforms. Preserve facts, approved links, visual direction, and CTA. Do not publish."],
+      "social.calendar.prepare":["Prepare social publishing calendar","Build a deduped channel calendar from approved social drafts. Include platform, asset, CTA, link/UTM, and proposed publish time. Do not publish."],
+      "social.comment.triage":["Triage social comments and mentions","Classify new social comments/mentions into ignore, engage, lead, support, escalation, or risk. Draft next actions only; do not send replies."],
+      "social.reply.draft":["Draft social replies","Draft brand-safe replies for approved comments or messages. Do not send externally."],
+      "social.performance.collect":["Collect social performance evidence","Collect available post-level metrics and attach them to the campaign for Snake and Mark. Do not alter live content."]
+    };
+    const [defaultTitle,defaultInstruction]=defaults[job.capability];
+    const title=String(p.title||defaultTitle);
+    const instruction=String(p.instruction||defaultInstruction);
+    const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Lucy' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
+    if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true,external_actions_executed:false}};
+    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Lucy',${title},${instruction},'AUTONOMY','NERVS') RETURNING id`;
+    return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false,external_actions_executed:false}};
+  }
+
+  if(["video.plan","video.package.prepare","video.generate"].includes(job.capability)){
+    const p=job.payload||{};
+    const title=String(p.title||(
+      job.capability==="video.plan"?"Plan KMCE video":
+      job.capability==="video.generate"?"Generate KMCE video assets with Helios":"Prepare KMCE video package"
+    ));
+    const instruction=String(p.instruction||"Prepare the requested video deliverable using approved KMCE claims, evidence, and brand direction. Helios may generate internal motion assets. Do not publish externally.");
+    const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Tube' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
+    if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true,external_actions_executed:false}};
+    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Tube',${title},${instruction},'AUTONOMY','NERVS') RETURNING id`;
+    return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false,external_actions_executed:false}};
+  }
+
   if(job.capability==="growth.campaign.review"){
     const campaignId=Number(job.payload?.campaign_id||job.entity_id||0);
     const campaigns:any=await q`SELECT id,name,status FROM growth_campaigns WHERE id=${campaignId} LIMIT 1`;
     if(!campaigns.length)return {status:"DEAD",result:{reason:"CAMPAIGN_NOT_FOUND"}};
     if(campaigns[0].status!=="ACTIVE")return {status:"SUCCEEDED",result:{skipped:true,reason:"CAMPAIGN_NOT_ACTIVE"}};
     const title="Growth campaign needs content: "+campaigns[0].name;
-    const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Sofia' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
+    const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Mark' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
     if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true}};
-    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Sofia',${title},'Create or refresh the approved-channel content plan. Draft only; external publishing remains approval-gated.','AUTONOMY','Simon') RETURNING id`;
+    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Mark',${title},'Create or refresh the campaign content plan, then hand approved social distribution work to Lucy. Draft only; external publishing remains approval-gated.','AUTONOMY','NERVS') RETURNING id`;
     return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false}};
   }
 
