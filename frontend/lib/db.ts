@@ -306,6 +306,11 @@ export async function ensureSchema(){
     UNIQUE(meeting_date,meeting_type)
   )`;
 
+  await q`ALTER TABLE nervs_meeting_runs ADD COLUMN IF NOT EXISTS notion_sync_status TEXT NOT NULL DEFAULT 'NOT_CONFIGURED'`;
+  await q`ALTER TABLE nervs_meeting_runs ADD COLUMN IF NOT EXISTS notion_page_id TEXT`;
+  await q`ALTER TABLE nervs_meeting_runs ADD COLUMN IF NOT EXISTS notion_page_url TEXT`;
+  await q`ALTER TABLE nervs_meeting_runs ADD COLUMN IF NOT EXISTS notion_synced_at TIMESTAMPTZ`;
+  await q`ALTER TABLE nervs_meeting_runs ADD COLUMN IF NOT EXISTS notion_sync_error TEXT`;
   await q`CREATE TABLE IF NOT EXISTS nervs_meeting_reports (
     id BIGSERIAL PRIMARY KEY,
     meeting_id BIGINT NOT NULL REFERENCES nervs_meeting_runs(id) ON DELETE CASCADE,
