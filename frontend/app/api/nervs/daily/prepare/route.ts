@@ -5,18 +5,18 @@ import {ensureSchema,sql} from "../../../../../lib/db";
 export const runtime="nodejs";
 
 const AGENTS=[
-  {id:"simon",name:"Simon"},
-  {id:"marie",name:"Marie"},
-  {id:"eyes",name:"Eyes"},
-  {id:"mark",name:"Mark"},
-  {id:"cammy",name:"Cammy"},
-  {id:"eve",name:"Eve"},
-  {id:"tube",name:"Tube"},
-  {id:"lucy",name:"Lucy"},
-  {id:"snake",name:"Snake"},
-  {id:"alice",name:"Alice"},
-  {id:"echo",name:"Echo"},
-  {id:"booker",name:"Booker"},
+  {id:"simon",name:"Simon",department:"Executive"},
+  {id:"marie",name:"Marie",department:"Operations"},
+  {id:"eyes",name:"Eyes",department:"Intelligence"},
+  {id:"mark",name:"Mark",department:"Marketing"},
+  {id:"cammy",name:"Cammy",department:"Campaigns"},
+  {id:"eve",name:"Eve",department:"Brand"},
+  {id:"tube",name:"Tube",department:"Video"},
+  {id:"lucy",name:"Lucy",department:"Social"},
+  {id:"snake",name:"Snake",department:"Growth"},
+  {id:"alice",name:"Alice",department:"Store"},
+  {id:"echo",name:"Echo",department:"Sales Outreach"},
+  {id:"booker",name:"Booker",department:"Sales Scheduling"},
 ] as const;
 
 const DONE=new Set(["DONE","COMPLETED","SUCCESS","SUCCEEDED"]);
@@ -26,7 +26,16 @@ function clean(value:unknown){
   return String(value??"").replace(/\s+/g," ").trim();
 }
 
-function reportFor(agent:{id:string;name:string},tasks:any[]){
+function meetingDate(){
+  return new Intl.DateTimeFormat("en-CA",{
+    timeZone:"America/New_York",
+    year:"numeric",
+    month:"2-digit",
+    day:"2-digit",
+  }).format(new Date());
+}
+
+function reportFor(agent:(typeof AGENTS)[number],tasks:any[],speakingOrder:number){
   const mine=tasks.filter(t=>String(t.assigned_agent||"").toLowerCase()===agent.name.toLowerCase());
   const completed=mine.find(t=>DONE.has(String(t.status||"").toUpperCase()));
   const blocker=mine.find(t=>BLOCKED.has(String(t.status||"").toUpperCase()));
@@ -46,6 +55,8 @@ function reportFor(agent:{id:string;name:string},tasks:any[]){
   return {
     agent_id:agent.id,
     agent_name:agent.name,
+    department:agent.department,
+    speaking_order:speakingOrder,
     win,
     blocker:blocked,
     next,
@@ -69,9 +80,74 @@ export async function POST(){
     LIMIT 400
   `;
 
-  const reports=AGENTS.map(agent=>reportFor(agent,tasks as any[]));
+  const reports=AGENTS.map((agent,index)=>reportFor(agent,tasks as any[],index+1));
+  const date=meetingDate();
+  const agenda=AGENTS.map(agent=>agent.name);
+  const snapshot={
+    task_count:(tasks as any[]).length,
+    task_ids:(tasks as any[]).map(task=>task.id),
+    captured_at:new Date().toISOString(),
+  };
+
+  const meetingRows=await q`
+    INSERT INTO nervs_meeting_runs(meeting_date,meeting_type,timezone,status,agenda,source_snapshot,created_by)
+    VALUES (
+      ${date},
+      'DAILY_8AM',
+      'America/New_York',
+      'READY',
+      ${JSON.stringify(agenda)}::jsonb,
+      ${JSON.stringify(snapshot)}::jsonb,
+      'NERVS'
+    )
+    ON CONFLICT(meeting_date,meeting_type) DO UPDATE SET
+      timezone=EXCLUDED.timezone,
+      status='READY',
+      agenda=EXCLUDED.agenda,
+      source_snapshot=EXCLUDED.source_snapshot,
+      summary=NULL,
+      completed_at=NULL
+    RETURNING id,status
+  `;
+  const meetingId=Number((meetingRows as any[])[0].id);
+
+  for(const report of reports){
+    await q`
+      INSERT INTO nervs_meeting_reports(
+        meeting_id,agent_name,department,speaking_order,win,blocker,next_action,ask_of_team,evidence,voice_script,audio_status
+      )
+      VALUES(
+        ${meetingId},
+        ${report.agent_name},
+        ${report.department},
+        ${report.speaking_order},
+        ${report.win},
+        ${report.blocker},
+        ${report.next},
+        ${report.ask},
+        ${JSON.stringify({task_ids:report.evidence_task_ids})}::jsonb,
+        ${report.script},
+        'SCRIPT_READY'
+      )
+      ON CONFLICT(meeting_id,agent_name) DO UPDATE SET
+        department=EXCLUDED.department,
+        speaking_order=EXCLUDED.speaking_order,
+        win=EXCLUDED.win,
+        blocker=EXCLUDED.blocker,
+        next_action=EXCLUDED.next_action,
+        ask_of_team=EXCLUDED.ask_of_team,
+        evidence=EXCLUDED.evidence,
+        voice_script=EXCLUDED.voice_script,
+        audio_status='SCRIPT_READY',
+        audio_url=NULL,
+        provider_audio_ref=NULL
+    `;
+  }
+
   return NextResponse.json({
     status:"READY",
+    meeting_id:meetingId,
+    meeting_date:date,
     meeting_type:"NERVS_DAILY_V1",
     generated_at:new Date().toISOString(),
     reports,
