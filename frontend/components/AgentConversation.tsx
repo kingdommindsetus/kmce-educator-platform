@@ -19,7 +19,7 @@ export default function AgentConversation({agentName,role}:Props){
   const recognitionRef=useRef<any>(null);
   const thinkingRef=useRef(false);
 
-  const isRealtimePilot=agent?.id==="simon";
+  const isRealtimePilot=agent?.id==="simon"||agent?.id==="snake";
 
   const realtime=useKmceRealtimeBus({
     enabled:Boolean(isRealtimePilot&&liveMode),
@@ -192,7 +192,7 @@ export default function AgentConversation({agentName,role}:Props){
 
     <div className="muted" style={{fontSize:12,marginTop:8}}>
       {liveMode&&isRealtimePilot
-        ?"Hands-free pilot: your speech interrupts Simon immediately; each completed turn is stored through the existing Neon conversation and memory pipeline."
+        ?"Hands-free pilot: your speech interrupts "+agent.name+" immediately; each completed turn is stored through the existing Neon conversation and memory pipeline."
         :"Your voice turn interrupts current playback. Conversation is informational; external actions still follow KMCE authority gates."}
     </div>
   </div>;
