@@ -91,7 +91,7 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
     personality:"Clear, trustworthy, professional",
   },
   {
-    id:"booker", name:"Booker", role:"Scheduling / Appointments", voiceId:"CwhRBWXzGAHq8TQ4Fs17",
+    id:"booker", name:"Booker", role:"Scheduling / Appointments", voiceId:"Cz0K1kOv9tD8l0b5Qu53", voiceName:"Booker canonical ElevenLabs voice",
     referenceFile:"booker.mp4", mediaUrl:"https://resource2.heygen.ai/video/caa3df691ff44785aa41a1fcad4e667b/original.mp4", durationSeconds:10,
     liveTalkingAvatarId:"kmce_booker_v1",
     liveTalkingModel:"musetalk",
