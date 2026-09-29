@@ -15,7 +15,7 @@ const VOICES={
   snake:"jHprmvvyQreWpRuutdmV",
   alice:"Xb7hH8MSUJpSbSDYk0k2",
   echo:"cjVigY5qzO86Huf0OWal",
-  booker:"CwhRBWXzGAHq8TQ4Fs17",
+  booker:"Cz0K1kOv9tD8l0b5Qu53",
 } as const;
 
 const VOICE_NAMES={
