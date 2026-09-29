@@ -1,6 +1,6 @@
 import {NextResponse} from "next/server";
-import {requireFounder} from "../../../../lib/auth";
-import {NERVS_AVATAR_PACK_V1} from "../../../../lib/nervs-avatar-registry";
+import {requireFounder} from "../../../../../lib/auth";
+import {NERVS_AVATAR_PACK_V1} from "../../../../../lib/nervs-avatar-registry";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
