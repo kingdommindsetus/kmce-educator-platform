@@ -21,13 +21,14 @@ On each tick Simon:
 2. scans due follow-ups;
 3. scans eligible Gmail outreach threads for inbound replies;
 4. detects onboarding cases ready for payment handoff;
-5. ensures a daily executive-brief task exists;
-6. atomically claims up to 20 due jobs;
-7. evaluates capability authority;
-8. executes internal-safe handlers;
-9. parks approval/policy work rather than crossing the boundary;
-10. retries recoverable failures with exponential backoff;
-11. records job results and run summaries.
+5. runs a daily Snake Store Pulse and a weekly deeper Store Pulse on Mondays;
+6. ensures a daily executive-brief task exists;
+7. atomically claims up to 20 due jobs;
+8. evaluates capability authority;
+9. executes internal-safe handlers;
+10. parks approval/policy work rather than crossing the boundary;
+11. retries recoverable failures with exponential backoff;
+12. records job results and run summaries.
 
 ## Current autonomous internal actions
 
@@ -35,7 +36,9 @@ On each tick Simon:
 - read eligible Gmail threads, dedupe inbound messages, classify replies, and route CRM state internally;
 - create Ledger preparation tasks when onboarding is payment-ready;
 - create Marie daily executive-brief tasks;
-- create/dedupe generic internal agent tasks.
+- create/dedupe generic internal agent tasks;
+- run Snake Store Pulse against durable Shopify/store snapshots;
+- create Alice, Devon, Mercedes, or Snake internal tasks when store telemetry, marketing cadence, product cadence, catalog health, or conversion signals require attention.
 
 These actions do not contact external humans or move money. Reply sync is read-only against Gmail and writes only auditable CRM state.
 
