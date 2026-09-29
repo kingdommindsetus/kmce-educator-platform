@@ -1,7 +1,8 @@
 "use client";
 
-import {useMemo,useRef,useState} from "react";
-import {NERVS_AVATAR_PACK_V1,avatarMediaUrl} from "../lib/nervs-avatar-registry";
+import {useRef,useState} from "react";
+import {NERVS_AVATAR_PACK_V1} from "../lib/nervs-avatar-registry";
+import VoiceOrb from "./VoiceOrb";
 
 type DailyReport={
   agent_id:string;
@@ -73,13 +74,11 @@ export default function NervsRoom(){
   const [historyStatus,setHistoryStatus]=useState("NOT LOADED");
   const [selectedHistoryId,setSelectedHistoryId]=useState<number|null>(null);
 
-  const videoRef=useRef<HTMLVideoElement|null>(null);
   const audioRef=useRef<HTMLAudioElement|null>(null);
   const stopRequestedRef=useRef(false);
   const playbackResolveRef=useRef<(()=>void)|null>(null);
 
   const active=NERVS_AVATAR_PACK_V1[activeIndex];
-  const mediaUrl=useMemo(()=>avatarMediaUrl(active.id),[active.id]);
 
   function resolvePlayback(){
     if(playbackResolveRef.current){
@@ -95,10 +94,6 @@ export default function NervsRoom(){
       audioRef.current.pause();
       audioRef.current.currentTime=0;
       audioRef.current=null;
-    }
-    if(videoRef.current){
-      videoRef.current.pause();
-      videoRef.current.currentTime=0;
     }
     resolvePlayback();
     setRunning(false);
@@ -142,19 +137,9 @@ export default function NervsRoom(){
       audio.onplay=()=>{
         setRunning(true);
         setSpeechStatus("SPEAKING");
-        if(videoRef.current){
-          videoRef.current.muted=true;
-          videoRef.current.loop=true;
-          videoRef.current.currentTime=0;
-          videoRef.current.play().catch(()=>{});
-        }
       };
 
       audio.onended=()=>{
-        if(videoRef.current){
-          videoRef.current.pause();
-          videoRef.current.currentTime=0;
-        }
         audioRef.current=null;
         playbackResolveRef.current=null;
         setRunning(false);
@@ -283,7 +268,7 @@ export default function NervsRoom(){
   const selectedHistory=history.find(item=>item.id===selectedHistoryId)||null;
 
   return <div className="panel">
-    <div className="eyebrow">NERVS DAILY · AVATAR PACK V1 · SPEECH V1</div>
+    <div className="eyebrow">NERVS DAILY · LIVE VOICE ORB · SPEECH V1</div>
     <h2>Speaker Room</h2>
     <p className="muted">One active speaker at a time. NERVS can prepare evidence-based WIN / BLOCKER / NEXT / ASK reports and speak them in deterministic order.</p>
 
@@ -393,22 +378,11 @@ export default function NervsRoom(){
           <span className="pill">{speechStatus}</span>
         </div>
 
-        {mediaUrl
-          ? <video
-              key={mediaUrl}
-              ref={videoRef}
-              src={mediaUrl}
-              playsInline
-              muted
-              preload="metadata"
-              style={{width:"100%",aspectRatio:"16 / 9",objectFit:"cover",background:"#050505"}}
-            />
-          : <div style={{aspectRatio:"16 / 9",display:"grid",placeItems:"center",background:"#070707",border:"1px dashed var(--line)",padding:24,textAlign:"center"}}>
-              <div>
-                <div style={{fontSize:52}}>🎙️</div>
-                <b>{active.name} motion reference unavailable</b>
-              </div>
-            </div>}
+        <VoiceOrb
+          agentName={active.name}
+          state={speechStatus==="SPEAKING"?"speaking":speechStatus==="GENERATING VOICE"?"thinking":speechStatus.includes("ERROR")?"error":"idle"}
+          size={270}
+        />
 
         <div style={{marginTop:14}}>
           <div className="eyebrow">MANUAL SPEECH</div>
@@ -442,9 +416,8 @@ export default function NervsRoom(){
         <div className="tomorrow" style={{marginTop:16}}>
           <div className="eyebrow">PRESENTATION PROFILE</div>
           <p><b>Voice ID:</b> <code>{active.voiceId}</code></p>
-          <p><b>Motion reference:</b> {active.referenceFile}</p>
-          <p className="muted">{active.personality}</p>
-          <p className="muted"><b>Speech v1:</b> motion-loop synchronization, not word-level lip sync.</p>
+                    <p className="muted">{active.personality}</p>
+          <p className="muted"><b>Voice visualization:</b> live orb state follows listening, thinking and speaking activity.</p>
         </div>
       </div>
 
