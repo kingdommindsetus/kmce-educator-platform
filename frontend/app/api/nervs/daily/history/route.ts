@@ -12,7 +12,8 @@ export async function GET(){
   const q=sql();
 
   const meetings=await q`
-    SELECT id,meeting_date,meeting_type,timezone,status,summary,started_at,completed_at,created_at
+    SELECT id,meeting_date,meeting_type,timezone,status,summary,started_at,completed_at,created_at,
+      notion_sync_status,notion_page_id,notion_page_url,notion_synced_at,notion_sync_error
     FROM nervs_meeting_runs
     ORDER BY meeting_date DESC,id DESC
     LIMIT 30
