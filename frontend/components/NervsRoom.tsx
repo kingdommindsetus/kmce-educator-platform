@@ -234,11 +234,17 @@ export default function NervsRoom(){
         const handoff=i<reports.length-1
           ? "Hey "+nextName+", you’re up next."
           : "Hey Simon, you’re up next to close us out.";
-        const hasHandoff=/\byou(?:’|')?re up(?: next)?\b/i.test(report.script);
-        const spokenScript=hasHandoff?report.script:(report.script.trim()+" "+handoff);
+
+        // Always normalize the closing handoff so old prepared scripts cannot
+        // preserve weaker endings such as "Eyes, you're up."
+        const baseScript=report.script
+          .replace(/\s*(?:Hey\s+)?[A-Za-z]+,\s+you(?:’|')?re up(?: next)?(?: to close us out)?\.\s*$/i,"")
+          .trim();
+        const spokenScript=baseScript+" "+handoff;
 
         try{
           await playAgent(index,spokenScript);
+          await new Promise(resolve=>setTimeout(resolve,350));
         }catch(error){
           setRunning(false);
           setSpeechStatus((error instanceof Error?error.message:"VOICE ERROR")+" · CONTINUING");
