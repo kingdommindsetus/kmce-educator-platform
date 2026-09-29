@@ -11,7 +11,7 @@
     "test:atlas": "node tests/atlas-v1.test.mjs",
     "test:maven-echo": "node tests/maven-echo-v1.test.mjs",
     "test:booker-flow": "node tests/booker-flow-v1.test.mjs",
-    "test:autonomy": "node tests/autonomy-core-v1.test.mjs",
+    "test:autonomy": "node tests/autonomy-core-v1.test.mjs && node tests/store-pulse-v1.test.mjs",
     "test:ledger-delivery": "node tests/ledger-delivery-v1.test.mjs",
     "test:sofia": "node tests/sofia-v1.test.mjs",
     "test:knowledge-provider": "node tests/knowledge-provider-v1.test.mjs",
