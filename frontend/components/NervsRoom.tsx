@@ -52,6 +52,11 @@ type HistoryMeeting={
   started_at:string|null;
   completed_at:string|null;
   created_at:string;
+  notion_sync_status:string;
+  notion_page_id:string|null;
+  notion_page_url:string|null;
+  notion_synced_at:string|null;
+  notion_sync_error:string|null;
   reports:HistoryReport[];
   actions:HistoryAction[];
 };
@@ -335,6 +340,14 @@ export default function NervsRoom(){
             </div>
             <div className="muted" style={{fontSize:12,marginBottom:10}}>
               Meeting #{selectedHistory.id} · {selectedHistory.timezone}
+            </div>
+            <div className="tomorrow" style={{marginBottom:12}}>
+              <div className="eyebrow">NOTION ARCHIVE</div>
+              <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                <span className="pill">{selectedHistory.notion_sync_status||"NOT_CONFIGURED"}</span>
+                {selectedHistory.notion_page_url&&<a className="btn" href={selectedHistory.notion_page_url} target="_blank" rel="noreferrer">Open Notion Page</a>}
+              </div>
+              {selectedHistory.notion_sync_error&&<div className="muted" style={{fontSize:12,marginTop:6}}>{selectedHistory.notion_sync_error}</div>}
             </div>
             {selectedHistory.summary&&<div className="tomorrow" style={{marginBottom:12}}>
               <div className="eyebrow">EXECUTIVE NOTES</div>
