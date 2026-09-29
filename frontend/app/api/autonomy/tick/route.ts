@@ -5,7 +5,6 @@ import {executionDisposition,retryDelaySeconds,idempotencyKey} from "../../../..
 import {SERVICE_CATALOG} from "../../../../lib/simon/service-catalog";
 import {fetchEchoThread} from "../../../../lib/echo-provider";
 import {classifyReply,inboundMessages,normalizeThreadMessages} from "../../../../lib/echo-replies";
-import {parseApprovedDraft} from "../../../../lib/echo-delivery";
 
 export const runtime="nodejs";
 
@@ -102,10 +101,7 @@ async function handleJob(q:any,job:any){
       return {status:"SUCCEEDED",result:{skipped:true,reason:"OUTREACH_NOT_ELIGIBLE"}};
     }
 
-    const parsed:any=parseApprovedDraft(outreach.draft_content);
-    if(!parsed.ok)return {status:"DEAD",result:{reason:"SUBJECT_REQUIRED"}};
-
-    const providerResult:any=await fetchEchoThread(String(outreach.provider_thread_id),parsed.subject);
+    const providerResult:any=await fetchEchoThread(String(outreach.provider_thread_id),"");
     const messages:any[]=normalizeThreadMessages(providerResult?.result||providerResult)
       .filter((m:any)=>String(m.threadId||"")===String(outreach.provider_thread_id));
 
