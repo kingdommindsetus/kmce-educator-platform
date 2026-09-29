@@ -266,6 +266,23 @@ export async function ensureSchema(){
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
 
+
+  await q`INSERT INTO agent_voice_profiles(agent_name,display_name,department,voice_status)
+    VALUES
+      ('Simon','Simon','Executive','MISSING'),
+      ('Marie','Marie','Operations','MISSING'),
+      ('Eyes','Eyes','Intelligence','MISSING'),
+      ('Mark','Mark','Marketing','MISSING'),
+      ('Cammy','Cammy','Campaigns','MISSING'),
+      ('Eve','Eve','Brand','MISSING'),
+      ('Tube','Tube','Video','MISSING'),
+      ('Lucy','Lucy','Social','MISSING'),
+      ('Snake','Snake','Growth','MISSING'),
+      ('Alice','Alice','Store','MISSING'),
+      ('Echo','Echo','Sales Outreach','MISSING'),
+      ('Booker','Booker','Sales Scheduling','MISSING')
+    ON CONFLICT(agent_name) DO NOTHING`;
+
   await q`CREATE TABLE IF NOT EXISTS nervs_meeting_runs (
     id BIGSERIAL PRIMARY KEY,
     meeting_date DATE NOT NULL,
