@@ -6,6 +6,7 @@ import {SERVICE_CATALOG} from "../../../../lib/simon/service-catalog";
 import {fetchEchoThread} from "../../../../lib/echo-provider";
 import {classifyReply,inboundMessages,normalizeThreadMessages} from "../../../../lib/echo-replies";
 import {evaluateStorePulse,storePulseTaskSpec} from "../../../../lib/simon/store-pulse.mjs";
+import {createPrintifyProduct,publishPrintifyProduct,printifyReadiness} from "../../../../lib/printify-provider";
 import {listPrintifyBlueprints,printifyCatalogReadiness,scoreBlueprintForStore} from "../../../../lib/printify-catalog-provider";
 
 export const runtime="nodejs";
@@ -309,6 +310,24 @@ async function handleJob(q:any,job:any){
       taskId=Number(rows[0].id);
     }
     return {status:"SUCCEEDED",result:{store_code:storeCode,brand_brief_id:briefId,task_id:taskId,source_favorites:favorites.length,external_actions_executed:false}};
+  }
+
+  if(job.capability==="store.merch.printify.create"){
+    const readiness=printifyReadiness();
+    if(!readiness.ready)return {status:"WAITING_APPROVAL",result:{reason:"PRINTIFY_NOT_CONFIGURED",readiness}};
+    const spec:any=job.payload?.product_spec||job.payload||{};
+    const product:any=await createPrintifyProduct(spec);
+    return {status:"SUCCEEDED",result:{printify_product_id:product?.id||null,title:product?.title||spec.title||null,created:true,published:false,external_actions_executed:false}};
+  }
+
+  if(job.capability==="store.merch.printify.publish"){
+    if(!job.payload?.alice_approved)return {status:"WAITING_APPROVAL",result:{reason:"ALICE_REVIEW_REQUIRED"}};
+    const productId=String(job.payload?.printify_product_id||job.entity_id||"");
+    if(!productId)return {status:"DEAD",result:{reason:"PRINTIFY_PRODUCT_ID_REQUIRED"}};
+    const readiness=printifyReadiness();
+    if(!readiness.ready)return {status:"WAITING_APPROVAL",result:{reason:"PRINTIFY_NOT_CONFIGURED",readiness}};
+    const published:any=await publishPrintifyProduct(productId,job.payload?.publish_fields||{});
+    return {status:"SUCCEEDED",result:{printify_product_id:productId,published:true,alice_approved:true,provider_result:published||null}};
   }
 
   if(job.capability==="store.maintenance.audit"){
