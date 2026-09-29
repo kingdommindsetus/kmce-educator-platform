@@ -253,6 +253,45 @@ export async function ensureSchema(){
   await q`CREATE INDEX IF NOT EXISTS agent_tasks_agent_idx ON agent_tasks(assigned_agent,status,created_at DESC)`;
 
 
+  await q`CREATE TABLE IF NOT EXISTS agent_conversation_sessions (
+    id BIGSERIAL PRIMARY KEY,
+    agent_name TEXT NOT NULL,
+    founder_email TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','CLOSED')),
+    title TEXT,
+    summary TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS agent_conversation_sessions_agent_idx ON agent_conversation_sessions(agent_name,status,updated_at DESC)`;
+
+  await q`CREATE TABLE IF NOT EXISTS agent_conversation_messages (
+    id BIGSERIAL PRIMARY KEY,
+    session_id BIGINT NOT NULL REFERENCES agent_conversation_sessions(id) ON DELETE CASCADE,
+    agent_name TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('FOUNDER','AGENT','SYSTEM')),
+    content TEXT NOT NULL,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS agent_conversation_messages_session_idx ON agent_conversation_messages(session_id,id)`;
+  await q`CREATE INDEX IF NOT EXISTS agent_conversation_messages_agent_idx ON agent_conversation_messages(agent_name,created_at DESC)`;
+
+  await q`CREATE TABLE IF NOT EXISTS agent_memories (
+    id BIGSERIAL PRIMARY KEY,
+    agent_name TEXT NOT NULL,
+    memory_type TEXT NOT NULL DEFAULT 'INTERACTION' CHECK (memory_type IN ('INTERACTION','SUMMARY','EVENT','BROADCAST')),
+    content TEXT NOT NULL,
+    importance INTEGER NOT NULL DEFAULT 50 CHECK (importance BETWEEN 0 AND 100),
+    topics JSONB NOT NULL DEFAULT '[]'::jsonb,
+    source_session_id BIGINT REFERENCES agent_conversation_sessions(id) ON DELETE SET NULL,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS agent_memories_agent_idx ON agent_memories(agent_name,importance DESC,created_at DESC)`;
+  await q`CREATE INDEX IF NOT EXISTS agent_memories_topics_idx ON agent_memories USING GIN(topics)`;
+
   await q`CREATE TABLE IF NOT EXISTS agent_voice_profiles (
     agent_name TEXT PRIMARY KEY,
     provider TEXT NOT NULL DEFAULT 'elevenlabs',
