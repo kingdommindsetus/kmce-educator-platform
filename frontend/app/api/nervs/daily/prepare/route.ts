@@ -5,12 +5,18 @@ import {ensureSchema,sql} from "../../../../../lib/db";
 export const runtime="nodejs";
 
 const AGENTS=[
+  {id:"simon",name:"Simon"},
+  {id:"marie",name:"Marie"},
+  {id:"eyes",name:"Eyes"},
   {id:"mark",name:"Mark"},
+  {id:"cammy",name:"Cammy"},
+  {id:"eve",name:"Eve"},
   {id:"tube",name:"Tube"},
   {id:"lucy",name:"Lucy"},
-  {id:"booker",name:"Booker"},
-  {id:"alice",name:"Alice"},
   {id:"snake",name:"Snake"},
+  {id:"alice",name:"Alice"},
+  {id:"echo",name:"Echo"},
+  {id:"booker",name:"Booker"},
 ] as const;
 
 const DONE=new Set(["DONE","COMPLETED","SUCCESS","SUCCEEDED"]);
@@ -58,9 +64,9 @@ export async function POST(){
   const tasks=await q`
     SELECT id,assigned_agent,title,instruction,status,source,requested_by,created_at,updated_at
     FROM agent_tasks
-    WHERE lower(assigned_agent) IN ('mark','tube','lucy','booker','alice','snake')
+    WHERE lower(assigned_agent) IN ('simon','marie','eyes','mark','cammy','eve','tube','lucy','snake','alice','echo','booker')
     ORDER BY updated_at DESC,id DESC
-    LIMIT 250
+    LIMIT 400
   `;
 
   const reports=AGENTS.map(agent=>reportFor(agent,tasks as any[]));
