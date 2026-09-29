@@ -6,6 +6,9 @@ assert.deepEqual(executionDisposition("outreach.reply.sync"),{status:"RUNNABLE",
 assert.deepEqual(executionDisposition("discovery.prepare"),{status:"RUNNABLE",reason:"AUTHORIZED_INTERNAL"});
 assert.deepEqual(executionDisposition("store.pulse.review"),{status:"RUNNABLE",reason:"AUTHORIZED_INTERNAL"});
 assert.deepEqual(executionDisposition("store.catalog.review"),{status:"RUNNABLE",reason:"AUTHORIZED_INTERNAL"});
+assert.deepEqual(executionDisposition("store.maintenance.audit"),{status:"RUNNABLE",reason:"AUTHORIZED_INTERNAL"});
+assert.deepEqual(executionDisposition("store.content.optimize"),{status:"RUNNABLE",reason:"AUTHORIZED_INTERNAL"});
+assert.deepEqual(executionDisposition("store.live.edit"),{status:"WAITING_APPROVAL",reason:"FOUNDER_APPROVAL_REQUIRED"});
 assert.deepEqual(executionDisposition("store.publish"),{status:"WAITING_APPROVAL",reason:"FOUNDER_APPROVAL_REQUIRED"});
 assert.deepEqual(executionDisposition("store.email.send"),{status:"WAITING_APPROVAL",reason:"FOUNDER_APPROVAL_REQUIRED"});
 assert.deepEqual(executionDisposition("outreach.send"),{status:"WAITING_APPROVAL",reason:"FOUNDER_APPROVAL_REQUIRED"});
