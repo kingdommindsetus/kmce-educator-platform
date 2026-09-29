@@ -23,6 +23,38 @@ const VOICE_NAMES={
   snake:"Snake canonical ElevenLabs voice",
 } as const;
 
+const SIMON_SHARED_VOICE={
+  publicUserId:"79da7f36fbf802bde97037272f41096c8bc9dc1b8b4fd8559be1e6c29082395e",
+  voiceId:"3WqHLnw80rOZqJzW9YRB",
+  collectionName:"Simon - KMCE Executive",
+} as const;
+
+async function ensureSimonSharedVoice(apiKey:string){
+  const r=await fetch(
+    `https://api.elevenlabs.io/v1/voices/add/${SIMON_SHARED_VOICE.publicUserId}/${SIMON_SHARED_VOICE.voiceId}`,
+    {
+      method:"POST",
+      headers:{
+        "xi-api-key":apiKey,
+        "Content-Type":"application/json",
+        "Accept":"application/json",
+      },
+      body:JSON.stringify({
+        new_name:SIMON_SHARED_VOICE.collectionName,
+        bookmarked:true,
+      }),
+      cache:"no-store",
+    },
+  );
+
+  // 200 means it was added. 400/409/422 can mean the shared voice is
+  // already present or cannot be added again; TTS below remains the
+  // authoritative capability check and will surface its provider detail.
+  if(r.ok) return {ok:true,status:r.status};
+  const detail=await r.text().catch(()=>"");
+  return {ok:false,status:r.status,detail:detail.slice(0,600)};
+}
+
 function normalizeVoiceName(value:string){
   return value.toLowerCase().replace(/[™®©]/g,"").replace(/\s+/g," ").trim();
 }
@@ -79,6 +111,12 @@ export async function POST(req:Request){
   if(text.length>1200) return NextResponse.json({error:"Text must be 1200 characters or fewer"},{status:400});
 
   const resolved=await resolveVoiceId(agentId,apiKey);
+
+  let sharedVoiceProvision:null|{ok:boolean;status:number;detail?:string}=null;
+  if(agentId==="simon"){
+    sharedVoiceProvision=await ensureSimonSharedVoice(apiKey);
+  }
+
   if(!resolved.voiceId){
     return NextResponse.json({
       error:"VOICE_NOT_FOUND",
@@ -113,6 +151,7 @@ export async function POST(req:Request){
       voice_id:resolved.voiceId,
       provider_status:r.status,
       detail:detail.slice(0,600),
+      shared_voice_provision:sharedVoiceProvision,
     },{status:502});
   }
 
@@ -123,6 +162,7 @@ export async function POST(req:Request){
     voice_name:resolved.voiceName,
     voice_id:resolved.voiceId,
     voice_source:resolved.source,
+    shared_voice_provision:sharedVoiceProvision,
     content_type:"audio/mpeg",
     audio_base64:audio,
   });
