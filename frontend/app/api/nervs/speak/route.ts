@@ -11,7 +11,7 @@ const VOICES={
   cammy:"XrExE9yKIg1WjnnlVkGX",
   eve:"pFZP5JQG7iQjIQuC4Bku",
   tube:"TX3LPaxmHKxFdv7VOQHJ",
-  lucy:"cgSgspJ2msm6clMCkdW9",
+  lucy:"XlDdozLmuTofIxK4BjPD",
   snake:"jHprmvvyQreWpRuutdmV",
   alice:"Xb7hH8MSUJpSbSDYk0k2",
   echo:"cjVigY5qzO86Huf0OWal",
