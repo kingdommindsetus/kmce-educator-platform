@@ -30,6 +30,18 @@ type HistoryReport={
   evidence:{task_ids?:Array<number|string>}|null;
 };
 
+type HistoryAction={
+  id:number;
+  source_agent:string|null;
+  assigned_agent:string;
+  title:string;
+  instruction:string;
+  priority:string;
+  authority:string;
+  status:string;
+  metadata:Record<string,unknown>|null;
+};
+
 type HistoryMeeting={
   id:number;
   meeting_date:string;
@@ -41,6 +53,7 @@ type HistoryMeeting={
   completed_at:string|null;
   created_at:string;
   reports:HistoryReport[];
+  actions:HistoryAction[];
 };
 
 export default function NervsRoom(){
@@ -323,6 +336,23 @@ export default function NervsRoom(){
             <div className="muted" style={{fontSize:12,marginBottom:10}}>
               Meeting #{selectedHistory.id} · {selectedHistory.timezone}
             </div>
+            {selectedHistory.summary&&<div className="tomorrow" style={{marginBottom:12}}>
+              <div className="eyebrow">EXECUTIVE NOTES</div>
+              <pre style={{whiteSpace:"pre-wrap",fontFamily:"inherit",margin:0}}>{selectedHistory.summary}</pre>
+            </div>}
+            {selectedHistory.actions?.length>0&&<div className="tomorrow" style={{marginBottom:12}}>
+              <div className="eyebrow">ACTION QUEUE</div>
+              {selectedHistory.actions.map(action=><div key={action.id} style={{borderTop:"1px solid var(--line)",padding:"8px 0"}}>
+                <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+                  <b>{action.assigned_agent}</b>
+                  <span className="pill">{action.priority}</span>
+                  <span className="pill">{action.authority}</span>
+                  <span className="pill">{action.status}</span>
+                </div>
+                <div style={{marginTop:4}}>{action.title}</div>
+                <div className="muted" style={{fontSize:12,marginTop:2}}>{action.instruction}</div>
+              </div>)}
+            </div>}
             {selectedHistory.reports.map(report=>
               <details key={report.agent_name} style={{borderTop:"1px solid var(--line)",padding:"10px 0"}}>
                 <summary style={{cursor:"pointer"}}><b>{report.agent_name}</b>{report.department?" · "+report.department:""}</summary>

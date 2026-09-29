@@ -24,6 +24,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
   const [meetingStatus,setMeetingStatus]=useState("NOT PREPARED");
   const [activeAgentId,setActiveAgentId]=useState<string>("simon");
   const [speechStatus,setSpeechStatus]=useState("READY");
+  const [notesStatus,setNotesStatus]=useState("NOT FINALIZED");
   const [running,setRunning]=useState(false);
 
   const audioRef=useRef<HTMLAudioElement|null>(null);
@@ -85,6 +86,20 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
     if(!r.ok) throw new Error(data?.error||"Could not update meeting status");
   }
 
+  async function finalizeMeeting(id:number|null){
+    if(!id) return;
+    setNotesStatus("FINALIZING");
+    const r=await fetch("/api/nervs/daily/finalize",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({meeting_id:id}),
+    });
+    const data=await r.json();
+    if(!r.ok) throw new Error(data?.error||"Could not finalize meeting notes");
+    setNotesStatus("SAVED · "+String(data.action_count||0)+" ACTION"+(Number(data.action_count)===1?"":"S"));
+  }
+
+
   async function prepareMeeting(){
     setMeetingStatus("PREPARING");
     const r=await fetch("/api/nervs/daily/prepare",{method:"POST"});
@@ -94,6 +109,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
     setReports(nextReports);
     setMeetingId(Number(data.meeting_id)||null);
     setMeetingStatus("READY");
+    setNotesStatus("NOT FINALIZED");
     if(nextReports[0]) setActiveAgentId(nextReports[0].agent_id);
     return {reports:nextReports,meetingId:Number(data.meeting_id)||null};
   }
@@ -172,6 +188,11 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
       }else{
         await updateMeetingStatus("COMPLETED",activeMeetingId);
         setMeetingStatus("COMPLETED");
+        try{
+          await finalizeMeeting(activeMeetingId);
+        }catch(error){
+          setNotesStatus(error instanceof Error?error.message:"NOTES FAILED");
+        }
       }
     }catch(error){
       await updateMeetingStatus("FAILED",activeMeetingId).catch(()=>{});
@@ -199,6 +220,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         <span className="pill">Meeting {meetingId?`#${meetingId}`:"—"}</span>
         <span className="pill">{meetingStatus}</span>
+        <span className="pill">Notes: {notesStatus}</span>
       </div>
     </div>
 
