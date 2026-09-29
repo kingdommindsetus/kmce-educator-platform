@@ -100,6 +100,8 @@ Permanent forbidden actions:
 | store.live.edit | Alice | Shopify | APPROVAL |
 | store.product.digital.prepare | Devon | KMCE product workflow | CONTROLLED |
 | store.product.merch.prepare | Mercedes | KMCE merchandise workflow | CONTROLLED |
+| store.merch.printify.create | Mercedes | Printify API | CONTROLLED |
+| store.merch.printify.publish | Mercedes | Printify connected sales channel | POLICY |
 | store.campaign.prepare | Snake | store growth engine | CONTROLLED |
 | store.publish | Alice | Shopify | APPROVAL |
 | store.email.send | Snake | approved email provider | APPROVAL |
@@ -159,3 +161,10 @@ Alice owns continuous storefront maintenance. Simon seeds a daily freshness audi
 ## Eve brand and catalog curation
 
 Eve owns product discovery and brand coherence for The Kingdom Mindset Store. Simon seeds a daily Printify catalog scan and a Monday brand-development pass. Eve scans available Printify blueprints, scores candidates against store-fit rules, and maintains KMCE's own persistent shortlist in Neon. Printify's public API does not expose the website Favorites control, so Eve's shortlist is the canonical machine-readable favorite set. Eve then uses that shortlist together with Eyes/Snake market intelligence to prepare brand positioning, visual direction, collection architecture, product-family strategy, naming rules, and merchandising standards. She does not change the live store name or publish products without the appropriate approval/policy gate.
+
+
+## Mercedes Printify workflow
+
+EYES/SNAKE opportunity brief → MERCEDES artwork/product spec → PRINTIFY draft creation → ALICE storefront/merchandising review → policy-approved PRINTIFY publish → connected Shopify sales channel.
+
+The Printify token and shop ID are server-only environment variables. Mercedes may create product drafts when a complete blueprint/provider/variant/print-area spec exists. Publishing requires the store.merch.printify.publish policy gate plus alice_approved=true. The agent never embeds credentials in code or job payloads.
