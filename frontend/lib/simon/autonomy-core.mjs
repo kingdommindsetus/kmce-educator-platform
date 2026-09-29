@@ -12,6 +12,8 @@ export const AUTONOMY_CAPABILITIES=Object.freeze({
   "store.campaign.prepare":{owner:"Snake",authority:"CONTROLLED"},
   "store.product.digital.prepare":{owner:"Devon",authority:"CONTROLLED"},
   "store.product.merch.prepare":{owner:"Mercedes",authority:"CONTROLLED"},
+  "store.merch.printify.create":{owner:"Mercedes",authority:"CONTROLLED"},
+  "store.merch.printify.publish":{owner:"Mercedes",authority:"POLICY"},
   "store.catalog.review":{owner:"Alice",authority:"CONTROLLED"},
   "store.catalog.scan":{owner:"Eve",authority:"CONTROLLED"},
   "store.catalog.shortlist":{owner:"Eve",authority:"CONTROLLED"},
