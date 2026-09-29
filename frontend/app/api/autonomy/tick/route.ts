@@ -80,6 +80,12 @@ async function seedDueJobs(q:any){
     }
   }
   const day=new Date().toISOString().slice(0,10);
+  const maintenanceKey=idempotencyKey(["store-maintenance","KINGDOM_MINDSET_STORE","daily",day]);
+  await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by)
+    VALUES(${maintenanceKey},'store.maintenance.audit','Alice','CONTROLLED','store','KINGDOM_MINDSET_STORE',
+    ${JSON.stringify({store_code:"KINGDOM_MINDSET_STORE",cadence:"DAILY",audit_date:day})}::jsonb,'Simon')
+    ON CONFLICT(idempotency_key) DO NOTHING`;
+
   const pulseKey=idempotencyKey(["store-pulse","KINGDOM_MINDSET_STORE","daily",day]);
   await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by)
     VALUES(${pulseKey},'store.pulse.review','Snake','CONTROLLED','store','KINGDOM_MINDSET_STORE',
@@ -87,6 +93,11 @@ async function seedDueJobs(q:any){
     ON CONFLICT(idempotency_key) DO NOTHING`;
   const isMonday=new Date().getUTCDay()===1;
   if(isMonday){
+    const weeklyMaintenanceKey=idempotencyKey(["store-maintenance","KINGDOM_MINDSET_STORE","weekly",day]);
+    await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by)
+      VALUES(${weeklyMaintenanceKey},'store.maintenance.audit','Alice','CONTROLLED','store','KINGDOM_MINDSET_STORE',
+      ${JSON.stringify({store_code:"KINGDOM_MINDSET_STORE",cadence:"WEEKLY",audit_date:day})}::jsonb,'Simon')
+      ON CONFLICT(idempotency_key) DO NOTHING`;
     const weeklyKey=idempotencyKey(["store-pulse","KINGDOM_MINDSET_STORE","weekly",day]);
     await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by)
       VALUES(${weeklyKey},'store.pulse.review','Snake','CONTROLLED','store','KINGDOM_MINDSET_STORE',
@@ -95,7 +106,7 @@ async function seedDueJobs(q:any){
   }
   const briefKey=idempotencyKey(["executive-brief",day]);
   await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by) VALUES(${briefKey},'executive.brief.queue','Marie','CONTROLLED','company','KMCE',${JSON.stringify({brief_date:day})}::jsonb,'Simon') ON CONFLICT(idempotency_key) DO NOTHING`;
-  return {followups:followups.length,reply_sync_candidates:replyCandidates.length,interested_for_booker:interested.length,onboarding_ready:ready.length,active_campaigns:campaigns.length,store_pulse_daily:1,store_pulse_weekly:isMonday?1:0,brief_date:day};
+  return {followups:followups.length,reply_sync_candidates:replyCandidates.length,interested_for_booker:interested.length,onboarding_ready:ready.length,active_campaigns:campaigns.length,store_maintenance_daily:1,store_maintenance_weekly:isMonday?1:0,store_pulse_daily:1,store_pulse_weekly:isMonday?1:0,brief_date:day};
 }
 
 async function handleJob(q:any,job:any){
@@ -234,6 +245,19 @@ async function handleJob(q:any,job:any){
     if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true}};
     const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Ledger',${title},${"Onboarding case "+caseId+" is complete. Prepare payment path for service "+cases[0].service_code+". Do not charge or send a payment request without approval."},'AUTONOMY','Simon') RETURNING id`;
     return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false}};
+  }
+
+  if(job.capability==="store.maintenance.audit"){
+    const storeCode=String(job.payload?.store_code||job.entity_id||"KINGDOM_MINDSET_STORE");
+    const cadence=String(job.payload?.cadence||"DAILY").toUpperCase()==="WEEKLY"?"WEEKLY":"DAILY";
+    const title=cadence==="WEEKLY"?"Weekly Kingdom Mindset Store deep cleanup":"Daily Kingdom Mindset Store freshness audit";
+    const instruction=cadence==="WEEKLY"
+      ?"Review the entire storefront for stale or inconsistent product imagery, weak titles/descriptions, missing or weak SEO metadata, collection organization, duplicate/stale listings, product status, accessibility/alt text, broken merchandising, and brand consistency. Prepare a prioritized cleanup plan. Do not publish, alter live pricing, delete products, or change live theme/settings without Founder approval."
+      :"Review the Kingdom Mindset Store for freshness: new/stale product images, titles/descriptions, SEO metadata, collection placement, product status, obvious broken listings, visual consistency, and merchandising opportunities. Prepare only the needed updates and flag anything requiring Founder approval.";
+    const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Alice' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
+    if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true,store_code:storeCode,cadence,external_actions_executed:false}};
+    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Alice',${title},${instruction},'AUTONOMY','Simon') RETURNING id`;
+    return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false,store_code:storeCode,cadence,external_actions_executed:false}};
   }
 
   if(job.capability==="store.pulse.review"){
