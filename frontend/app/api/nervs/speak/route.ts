@@ -5,7 +5,7 @@ export const runtime="nodejs";
 
 const VOICES={
   simon:null,
-  marie:"EXAVITQu4vr4xnSDxMaL",
+  marie:"DODLEQrClDo8wCz460ld",
   eyes:"jRAAK67SEFE9m7ci5DhD",
   mark:"IKne3meq5aSn9XLyUdCD",
   cammy:"XrExE9yKIg1WjnnlVkGX",
