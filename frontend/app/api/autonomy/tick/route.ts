@@ -375,6 +375,23 @@ async function handleJob(q:any,job:any){
     return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false,external_actions_executed:false}};
   }
 
+  if(["campaign.generate","campaign.cost.estimate","campaign.target.score","campaign.variant.generate"].includes(job.capability)){
+    const p=job.payload||{};
+    const defaults:any={
+      "campaign.generate":["Generate KMCE campaign package","Create a complete campaign draft from Mark's brief: objective, audience, offer, message angle, channel mix, CTA, content requirements, funnel path, and success metrics. Internal draft only; do not spend, publish, or send."],
+      "campaign.cost.estimate":["Estimate campaign economics","Estimate campaign economics using available KMCE data: production cost, expected distribution cost, proposed paid-media budget, target acquisition cost, break-even conversions, contribution margin, and downside case. Clearly mark assumptions and missing data. Do not authorize spend."],
+      "campaign.target.score":["Score campaign target segments","Score candidate audience segments using available first-party and market evidence. Rank by fit, expected conversion value, contact cost, and evidence quality. Do not use protected or sensitive traits."],
+      "campaign.variant.generate":["Generate campaign test variants","Create controlled variants for message, offer, creative angle, CTA, or channel. Include hypothesis, changed variable, success metric, and stopping rule. Do not launch tests externally."]
+    };
+    const [defaultTitle,defaultInstruction]=defaults[job.capability];
+    const title=String(p.title||defaultTitle);
+    const instruction=String(p.instruction||defaultInstruction);
+    const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Cammy' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
+    if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true,external_actions_executed:false}};
+    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Cammy',${title},${instruction},'AUTONOMY','NERVS') RETURNING id`;
+    return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false,external_actions_executed:false}};
+  }
+
   if(["social.content.adapt","social.calendar.prepare","social.comment.triage","social.reply.draft","social.performance.collect"].includes(job.capability)){
     const p=job.payload||{};
     const defaults:any={
