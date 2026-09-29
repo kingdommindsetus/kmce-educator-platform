@@ -28,4 +28,32 @@ const inbound=inboundMessages(messages,"kingdommindsetus@gmail.com","2026-09-29T
 assert.equal(inbound.length,1);
 assert.equal(inbound[0].messageId,"reply1");
 
-console.log("Echo reply detection PASS: provider normalization, self-filtering, quote stripping, and conservative routing work.");
+
+const gmailNative={data:{
+ id:"t2",
+ messages:[
+  {
+   id:"sent2",threadId:"t2",internalDate:"1790644090000",labelIds:["SENT"],
+   payload:{headers:[
+    {name:"From",value:"Kimberly <kingdommindsetus@gmail.com>"},
+    {name:"To",value:"lead@example.com"},
+    {name:"Subject",value:"Native thread"}
+   ],body:{data:Buffer.from("hello").toString("base64url")}}
+  },
+  {
+   id:"reply2",threadId:"t2",internalDate:"1790647690000",labelIds:["INBOX"],
+   payload:{headers:[
+    {name:"From",value:"Lead <lead@example.com>"},
+    {name:"To",value:"kingdommindsetus@gmail.com"},
+    {name:"Subject",value:"Re: Native thread"}
+   ],body:{data:Buffer.from("Yes, I'd like to learn more.").toString("base64url")}}
+  }
+ ]
+}};
+const nativeMessages=normalizeThreadMessages(gmailNative);
+assert.equal(nativeMessages.length,2);
+assert.equal(nativeMessages[1].body,"Yes, I'd like to learn more.");
+assert.equal(nativeMessages[1].sender,"Lead <lead@example.com>");
+assert.match(nativeMessages[1].timestamp,/^2026-/);
+
+console.log("Echo reply detection PASS: provider normalization, Gmail-native payload parsing, self-filtering, quote stripping, and conservative routing work.");

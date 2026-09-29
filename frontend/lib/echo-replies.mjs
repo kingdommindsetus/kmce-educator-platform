@@ -57,6 +57,38 @@ export function classifyReply(value=""){
   return {classification:"REPLIED",pipeline_stage:"REPLIED",assigned_agent:"Booker",body};
 }
 
+
+function decodeBase64Url(value=""){
+  try{
+    const normalized=String(value||"").replace(/-/g,"+").replace(/_/g,"/");
+    return Buffer.from(normalized,"base64").toString("utf8");
+  }catch{return "";}
+}
+
+function payloadText(payload){
+  if(!payload)return "";
+  if(payload?.body?.data){
+    const own=decodeBase64Url(payload.body.data);
+    if(own)return own;
+  }
+  if(Array.isArray(payload?.parts)){
+    const plain=payload.parts.find(p=>String(p?.mimeType||"").toLowerCase()==="text/plain");
+    const html=payload.parts.find(p=>String(p?.mimeType||"").toLowerCase()==="text/html");
+    return payloadText(plain)||payloadText(html)||payload.parts.map(payloadText).find(Boolean)||"";
+  }
+  return "";
+}
+
+function normalizeTimestamp(value){
+  if(value===null||value===undefined||value==="")return "";
+  const s=String(value);
+  if(/^\d{10,}$/.test(s)){
+    const n=Number(s);
+    if(Number.isFinite(n))return new Date(n).toISOString();
+  }
+  return s;
+}
+
 export function normalizeThreadMessages(providerResult){
   const candidates=[
     providerResult,
@@ -77,8 +109,8 @@ export function normalizeThreadMessages(providerResult){
     sender:String(m?.sender||header(m,"From")||""),
     recipient:String(m?.to||header(m,"To")||""),
     subject:String(m?.subject||m?.preview?.subject||header(m,"Subject")||""),
-    body:String(m?.messageText||m?.text||m?.body||""),
-    timestamp:String(m?.messageTimestamp||m?.internalDate||""),
+    body:String(m?.messageText||m?.text||m?.body||payloadText(m?.payload)||""),
+    timestamp:normalizeTimestamp(m?.messageTimestamp||m?.internalDate||""),
     labelIds:Array.isArray(m?.labelIds)?m.labelIds.map(String):[]
   })).filter(m=>m.messageId);
 }
