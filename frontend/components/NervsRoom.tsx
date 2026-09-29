@@ -224,11 +224,26 @@ export default function NervsRoom(){
       await updateMeetingStatus("RUNNING",activeMeetingId);
       setMeetingStatus("RUNNING");
 
-      for(const report of reports){
+      for(let i=0;i<reports.length;i++){
         if(stopRequestedRef.current) break;
+        const report=reports[i];
         const index=NERVS_AVATAR_PACK_V1.findIndex(agent=>agent.id===report.agent_id);
         if(index<0) continue;
-        await playAgent(index,report.script);
+
+        const nextName=reports[i+1]?.agent_name||"Simon";
+        const handoff=i<reports.length-1
+          ? "Hey "+nextName+", you’re up next."
+          : "Hey Simon, you’re up next to close us out.";
+        const hasHandoff=/\byou(?:’|')?re up(?: next)?\b/i.test(report.script);
+        const spokenScript=hasHandoff?report.script:(report.script.trim()+" "+handoff);
+
+        try{
+          await playAgent(index,spokenScript);
+        }catch(error){
+          setRunning(false);
+          setSpeechStatus((error instanceof Error?error.message:"VOICE ERROR")+" · CONTINUING");
+          await new Promise(resolve=>setTimeout(resolve,700));
+        }
       }
 
       if(stopRequestedRef.current){
