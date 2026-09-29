@@ -70,7 +70,7 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
     personality:"Bright, social, audience-aware; Lucky is an optional nickname only",
   },
   {
-    id:"snake", name:"Snake", role:"Growth Measurement / Analytics", voiceId:"k5eu7V3cPJkEA7D2irmP", voiceName:"Zadok - Confident, Clear and Natural",
+    id:"snake", name:"Snake", role:"Growth Measurement / Analytics", voiceId:"jHprmvvyQreWpRuutdmV", voiceName:"Snake canonical ElevenLabs voice",
     referenceFile:"snake.mp4", mediaUrl:"https://resource2.heygen.ai/video/e5f8b946639347f2882888b4acc41697/original.mp4", durationSeconds:10,
     liveTalkingAvatarId:"kmce_snake_v1",
     liveTalkingModel:"musetalk",
