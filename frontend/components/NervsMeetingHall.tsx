@@ -96,7 +96,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
     });
     const data=await r.json();
     if(!r.ok) throw new Error(data?.error||"Could not finalize meeting notes");
-    setNotesStatus("SAVED · "+String(data.action_count||0)+" ACTION"+(Number(data.action_count)===1?"":"S"));
+    setNotesStatus("SAVED · "+String(data.action_count||0)+" ACTION"+(Number(data.action_count)===1?"":"S")+" · NOTION "+String(data.notion_sync?.status||"NOT_CONFIGURED"));
   }
 
 
