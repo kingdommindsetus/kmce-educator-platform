@@ -235,20 +235,33 @@ export default function NervsRoom(){
           ? "Hey "+nextName+", you’re up next."
           : "Hey Simon, you’re up next to close us out.";
 
-        // Always normalize the closing handoff so old prepared scripts cannot
-        // preserve weaker endings such as "Eyes, you're up."
+        // Strip any legacy handoff from prepared text. Handoffs are spoken
+        // as a separate audio turn so every agent reliably introduces the next.
         const baseScript=report.script
           .replace(/\s*(?:Hey\s+)?[A-Za-z]+,\s+you(?:’|')?re up(?: next)?(?: to close us out)?\.\s*$/i,"")
           .trim();
-        const spokenScript=baseScript+" "+handoff;
 
         try{
-          await playAgent(index,spokenScript);
-          await new Promise(resolve=>setTimeout(resolve,350));
+          await playAgent(index,baseScript);
+          if(stopRequestedRef.current) break;
+          await new Promise(resolve=>setTimeout(resolve,220));
+          await playAgent(index,handoff);
+          await new Promise(resolve=>setTimeout(resolve,420));
         }catch(error){
           setRunning(false);
           setSpeechStatus((error instanceof Error?error.message:"VOICE ERROR")+" · CONTINUING");
           await new Promise(resolve=>setTimeout(resolve,700));
+        }
+      }
+
+      if(!stopRequestedRef.current){
+        const simonIndex=NERVS_AVATAR_PACK_V1.findIndex(agent=>agent.id==="simon");
+        if(simonIndex>=0){
+          await new Promise(resolve=>setTimeout(resolve,450));
+          await playAgent(
+            simonIndex,
+            "Thank you, team. Kimberly, that concludes today’s NERVS Daily. The priorities, blockers, and next moves are captured. Meeting closed."
+          );
         }
       }
 
