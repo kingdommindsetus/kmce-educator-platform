@@ -19,6 +19,36 @@ const VOICES={
 } as const;
 
 
+const OPENAI_VOICES={
+  simon:"cedar",
+  marie:"marin",
+  eyes:"sage",
+  mark:"onyx",
+  cammy:"coral",
+  eve:"shimmer",
+  tube:"verse",
+  lucy:"nova",
+  snake:"ash",
+  alice:"ballad",
+  echo:"echo",
+  booker:"alloy",
+} as const;
+
+const OPENAI_STYLE={
+  simon:"Speak in a calm, polished British executive tone with measured pacing.",
+  marie:"Speak warmly, professionally, and reassuringly like an executive operations lead.",
+  eyes:"Speak analytically and precisely with a calm evidence-first delivery.",
+  mark:"Speak confidently and directly like a strategic marketing director.",
+  cammy:"Speak upbeat, professional, and numbers-aware.",
+  eve:"Speak polished, refined, and brand-conscious.",
+  tube:"Speak energetic and creator-friendly without sounding exaggerated.",
+  lucy:"Speak bright, social, and audience-aware.",
+  snake:"Speak dry, controlled, and analytical.",
+  alice:"Speak clearly and professionally like an educator.",
+  echo:"Speak smoothly and confidently like a trusted sales professional.",
+  booker:"Speak warmly, clearly, and efficiently like a scheduling coordinator.",
+} as const;
+
 const AGENT_ORDER=[
   "marie","eyes","mark","cammy","eve","tube","lucy","snake","alice","echo","booker",
 ] as const;
@@ -79,7 +109,8 @@ export async function POST(req:Request){
   if(!founder) return NextResponse.json({error:"Founder access required"},{status:403});
 
   const apiKey=process.env.ELEVENLABS_API_KEY;
-  if(!apiKey) return NextResponse.json({error:"NERVS voice provider is not configured"},{status:503});
+  const openaiKey=process.env.OPENAI_API_KEY;
+  if(!apiKey && !openaiKey) return NextResponse.json({error:"NERVS voice providers are not configured"},{status:503});
 
   const body=await req.json().catch(()=>({}));
   const agentId=String(body.agent_id||"").toLowerCase() as keyof typeof VOICES;
@@ -89,17 +120,17 @@ export async function POST(req:Request){
   if(!text) return NextResponse.json({error:"Text required"},{status:400});
   if(text.length>1200) return NextResponse.json({error:"Text must be 1200 characters or fewer"},{status:400});
 
-  const resolved=await resolveVoiceId(agentId,apiKey);
+  const resolved=apiKey
+    ? await resolveVoiceId(agentId,apiKey)
+    : {voiceId:"",voiceName:agentId,source:"elevenlabs_unavailable",alternatives:[] as AvailableVoice[]};
 
 
-  if(!resolved.voiceId){
+  if(!resolved.voiceId && !openaiKey){
     return NextResponse.json({
       error:"VOICE_NOT_FOUND",
       agent_id:agentId,
       requested_voice:resolved.voiceName,
-      detail:agentId==="simon"
-        ? "Simon is locked to Sir Michael Caine™. Add that voice to the connected ElevenLabs account or set SIMON_ELEVENLABS_VOICE_ID."
-        : "The requested ElevenLabs voice is not available.",
+      detail:"No usable ElevenLabs voice was resolved and OpenAI TTS fallback is unavailable.",
     },{status:503});
   }
 
@@ -121,7 +152,10 @@ export async function POST(req:Request){
 
   let activeVoiceId=resolved.voiceId;
   let voiceSource=resolved.source;
-  let r=await synthesize(activeVoiceId);
+  let providerUsed="elevenlabs";
+  let r=activeVoiceId && apiKey
+    ? await synthesize(activeVoiceId)
+    : new Response(null,{status:503});
 
   if(!r.ok && agentId!=="simon" && agentId!=="marie"){
     for(const candidate of resolved.alternatives){
@@ -136,7 +170,43 @@ export async function POST(req:Request){
     }
   }
 
-  if(!r.ok){
+  if(!r.ok && openaiKey){
+    const openaiVoice=OPENAI_VOICES[agentId];
+    const openaiRes=await fetch("https://api.openai.com/v1/audio/speech",{
+      method:"POST",
+      headers:{
+        "Authorization":"Bearer "+openaiKey,
+        "Content-Type":"application/json",
+        "Accept":"audio/mpeg",
+      },
+      body:JSON.stringify({
+        model:"gpt-4o-mini-tts",
+        input:text,
+        voice:openaiVoice,
+        instructions:OPENAI_STYLE[agentId],
+        response_format:"mp3",
+      }),
+    });
+
+    if(openaiRes.ok){
+      r=openaiRes;
+      activeVoiceId=openaiVoice;
+      voiceSource="openai_fallback";
+      providerUsed="openai";
+    }else{
+      const elevenDetail=await r.text().catch(()=>"");
+      const openaiDetail=await openaiRes.text().catch(()=>"");
+      return NextResponse.json({
+        error:"NERVS_VOICE_PROVIDERS_REJECTED",
+        agent_id:agentId,
+        requested_voice:resolved.voiceName,
+        elevenlabs_status:r.status,
+        elevenlabs_detail:elevenDetail.slice(0,400),
+        openai_status:openaiRes.status,
+        openai_detail:openaiDetail.slice(0,400),
+      },{status:502});
+    }
+  }else if(!r.ok){
     const detail=await r.text().catch(()=>"");
     return NextResponse.json({
       error:"NERVS_VOICE_PROVIDER_REJECTED",
@@ -155,6 +225,7 @@ export async function POST(req:Request){
     voice_name:resolved.voiceName,
     voice_id:activeVoiceId,
     voice_source:voiceSource,
+    provider:providerUsed,
     content_type:"audio/mpeg",
     audio_base64:audio,
   });
