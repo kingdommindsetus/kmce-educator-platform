@@ -252,6 +252,73 @@ export async function ensureSchema(){
   await q`CREATE INDEX IF NOT EXISTS simon_messages_session_idx ON simon_messages(session_id,created_at)`;
   await q`CREATE INDEX IF NOT EXISTS agent_tasks_agent_idx ON agent_tasks(assigned_agent,status,created_at DESC)`;
 
+
+  await q`CREATE TABLE IF NOT EXISTS agent_voice_profiles (
+    agent_name TEXT PRIMARY KEY,
+    provider TEXT NOT NULL DEFAULT 'elevenlabs',
+    provider_voice_id TEXT,
+    display_name TEXT NOT NULL,
+    department TEXT,
+    voice_status TEXT NOT NULL DEFAULT 'MISSING' CHECK (voice_status IN ('MISSING','READY','DISABLED','ERROR')),
+    settings JSONB NOT NULL DEFAULT '{}'::jsonb,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS nervs_meeting_runs (
+    id BIGSERIAL PRIMARY KEY,
+    meeting_date DATE NOT NULL,
+    meeting_type TEXT NOT NULL DEFAULT 'DAILY_8AM',
+    timezone TEXT NOT NULL DEFAULT 'America/New_York',
+    status TEXT NOT NULL DEFAULT 'PREPARING' CHECK (status IN ('PREPARING','READY','RUNNING','COMPLETED','FAILED','CANCELLED')),
+    agenda JSONB NOT NULL DEFAULT '[]'::jsonb,
+    source_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
+    summary TEXT,
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
+    created_by TEXT NOT NULL DEFAULT 'NERVS',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(meeting_date,meeting_type)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS nervs_meeting_reports (
+    id BIGSERIAL PRIMARY KEY,
+    meeting_id BIGINT NOT NULL REFERENCES nervs_meeting_runs(id) ON DELETE CASCADE,
+    agent_name TEXT NOT NULL,
+    department TEXT,
+    speaking_order INTEGER,
+    win TEXT,
+    blocker TEXT,
+    next_action TEXT,
+    ask_of_team TEXT,
+    evidence JSONB NOT NULL DEFAULT '{}'::jsonb,
+    voice_script TEXT,
+    audio_status TEXT NOT NULL DEFAULT 'SCRIPT_READY' CHECK (audio_status IN ('SCRIPT_READY','GENERATING','AUDIO_READY','ERROR','SKIPPED')),
+    audio_url TEXT,
+    provider_audio_ref TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(meeting_id,agent_name)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS nervs_meeting_actions (
+    id BIGSERIAL PRIMARY KEY,
+    meeting_id BIGINT NOT NULL REFERENCES nervs_meeting_runs(id) ON DELETE CASCADE,
+    source_agent TEXT,
+    assigned_agent TEXT NOT NULL,
+    title TEXT NOT NULL,
+    instruction TEXT NOT NULL,
+    priority TEXT NOT NULL DEFAULT 'NORMAL' CHECK (priority IN ('LOW','NORMAL','HIGH','URGENT')),
+    authority TEXT NOT NULL DEFAULT 'CONTROLLED' CHECK (authority IN ('AUTO','CONTROLLED','POLICY','APPROVAL','FORBIDDEN')),
+    status TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','QUEUED','IN_PROGRESS','WAITING_APPROVAL','DONE','CANCELLED')),
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+
+  await q`CREATE INDEX IF NOT EXISTS nervs_meeting_reports_meeting_idx ON nervs_meeting_reports(meeting_id,speaking_order,id)`;
+  await q`CREATE INDEX IF NOT EXISTS nervs_meeting_actions_meeting_idx ON nervs_meeting_actions(meeting_id,status,priority)`;
+
   await q`CREATE TABLE IF NOT EXISTS service_catalog (
     service_code TEXT PRIMARY KEY,
     service_name TEXT NOT NULL,
