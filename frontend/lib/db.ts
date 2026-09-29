@@ -308,17 +308,17 @@ export async function ensureSchema(){
 
   await q`INSERT INTO agent_voice_profiles(agent_name,display_name,department,provider,provider_voice_id,voice_status,metadata)
     VALUES
-      ('Simon','Simon','Executive','elevenlabs','3WqHLnw80rOZqJzW9YRB','READY','{"voice_name":"Sir Michael Caine™","voice_resolution":"canonical_id"}'::jsonb),
-      ('Marie','Marie','Operations','elevenlabs','21m00Tcm4TlvDq8ikWAM','READY','{"voice_name":"Rachel - warm executive operations","voice_resolution":"agent_registry"}'::jsonb),
-      ('Eyes','Eyes','Intelligence','elevenlabs','jRAAK67SEFE9m7ci5DhD','READY','{"voice_name":"Eyes canonical ElevenLabs voice"}'::jsonb),
-      ('Mark','Mark','Marketing','elevenlabs','IKne3meq5aSn9XLyUdCD','READY','{"voice_name":"Charlie - Deep, Confident, Energetic"}'::jsonb),
-      ('Cammy','Cammy','Campaigns','elevenlabs','XrExE9yKIg1WjnnlVkGX','READY','{"voice_name":"Matilda - Knowledgable, Professional"}'::jsonb),
-      ('Eve','Eve','Brand','elevenlabs','yj30vwTGJxSHezdAGsv9','READY','{"voice_name":"Eve canonical ElevenLabs voice"}'::jsonb),
-      ('Tube','Tube','Video','elevenlabs','TX3LPaxmHKxFdv7VOQHJ','READY','{"voice_name":"Liam - Energetic, Social Media Creator"}'::jsonb),
-      ('Lucy','Lucy','Social','elevenlabs','XlDdozLmuTofIxK4BjPD','READY','{"voice_name":"Lucy canonical ElevenLabs voice"}'::jsonb),
-      ('Snake','Snake','Growth','elevenlabs','jHprmvvyQreWpRuutdmV','READY','{"voice_name":"Snake canonical ElevenLabs voice"}'::jsonb),
-      ('Alice','Alice','Store','elevenlabs','Xb7hH8MSUJpSbSDYk0k2','READY','{"voice_name":"Alice - Clear, Engaging Educator"}'::jsonb),
-      ('Echo','Echo','Sales Outreach','elevenlabs','cjVigY5qzO86Huf0OWal','READY','{"voice_name":"Eric - Smooth, Trustworthy"}'::jsonb),
+      ('Simon','Simon','Executive','elevenlabs','pNInz6obpgDQGcFmaJgB','READY','{"voice_name":"Adam - confident male executive","voice_resolution":"fixed_agent_voice"}'::jsonb),
+      ('Marie','Marie','Operations','elevenlabs','21m00Tcm4TlvDq8ikWAM','READY','{"voice_name":"Rachel - warm female operations","voice_resolution":"fixed_agent_voice"}'::jsonb),
+      ('Eyes','Eyes','Intelligence','elevenlabs','EXAVITQu4vr4xnSDxMaL','READY','{"voice_name":"Bella - clear analytical female","voice_resolution":"fixed_agent_voice"}'::jsonb),
+      ('Mark','Mark','Marketing','elevenlabs','IKne3meq5aSn9XLyUdCD','READY','{"voice_name":"Charlie - confident marketing male","voice_resolution":"fixed_agent_voice"}'::jsonb),
+      ('Cammy','Cammy','Campaigns','elevenlabs','XrExE9yKIg1WjnnlVkGX','READY','{"voice_name":"Matilda - professional female","voice_resolution":"fixed_agent_voice"}'::jsonb),
+      ('Eve','Eve','Brand','elevenlabs','AZnzlk1XvdvUeBnXmlld','READY','{"voice_name":"Domi - polished female brand voice","voice_resolution":"fixed_agent_voice"}'::jsonb),
+      ('Tube','Tube','Video','elevenlabs','TX3LPaxmHKxFdv7VOQHJ','READY','{"voice_name":"Liam - energetic creator male","voice_resolution":"fixed_agent_voice"}'::jsonb),
+      ('Lucy','Lucy','Social','elevenlabs','MF3mGyEYCl7XYWbV9V6O','READY','{"voice_name":"Elli - bright social female","voice_resolution":"fixed_agent_voice"}'::jsonb),
+      ('Snake','Snake','Growth','elevenlabs','TxGEqnHWrfWFTfGW9XjX','READY','{"voice_name":"Josh - direct analytical male","voice_resolution":"fixed_agent_voice"}'::jsonb),
+      ('Alice','Alice','Store','elevenlabs','Xb7hH8MSUJpSbSDYk0k2','READY','{"voice_name":"Alice - clear educator female","voice_resolution":"fixed_agent_voice"}'::jsonb),
+      ('Echo','Echo','Sales Outreach','elevenlabs','cjVigY5qzO86Huf0OWal','READY','{"voice_name":"Eric - smooth sales male","voice_resolution":"fixed_agent_voice"}'::jsonb),
       ('Booker','Booker','Sales Scheduling','elevenlabs','Cz0K1kOv9tD8l0b5Qu53','READY','{"voice_name":"Booker canonical ElevenLabs voice"}'::jsonb)
     ON CONFLICT(agent_name) DO UPDATE SET
       display_name=EXCLUDED.display_name,
