@@ -4,7 +4,7 @@ import {requireFounder} from "../../../../lib/auth";
 export const runtime="nodejs";
 
 const VOICES={
-  simon:"pqHfZKP75CvOlQylNhV4",
+  simon:null,
   marie:"EXAVITQu4vr4xnSDxMaL",
   eyes:"CwhRBWXzGAHq8TQ4Fs17",
   mark:"IKne3meq5aSn9XLyUdCD",
@@ -17,6 +17,54 @@ const VOICES={
   echo:"cjVigY5qzO86Huf0OWal",
   booker:"CwhRBWXzGAHq8TQ4Fs17",
 } as const;
+
+const VOICE_NAMES={
+  simon:"Sir Michael Caine™",
+  snake:"Zadok - Confident, Clear and Natural",
+} as const;
+
+function normalizeVoiceName(value:string){
+  return value.toLowerCase().replace(/[™®©]/g,"").replace(/\s+/g," ").trim();
+}
+
+async function findVoiceByName(apiKey:string,name:string){
+  const url=new URL("https://api.elevenlabs.io/v2/voices");
+  url.searchParams.set("search",name);
+  url.searchParams.set("page_size","100");
+  const r=await fetch(url,{
+    headers:{"xi-api-key":apiKey,"Accept":"application/json"},
+    cache:"no-store",
+  });
+  if(!r.ok) return null;
+  const data=await r.json().catch(()=>({}));
+  const voices=Array.isArray(data?.voices)?data.voices:[];
+  const target=normalizeVoiceName(name);
+  const exact=voices.find((v:any)=>normalizeVoiceName(String(v?.name||""))===target);
+  const close=voices.find((v:any)=>normalizeVoiceName(String(v?.name||"")).includes(target)||target.includes(normalizeVoiceName(String(v?.name||""))));
+  const match=exact||close;
+  return match?.voice_id?String(match.voice_id):null;
+}
+
+async function resolveVoiceId(agentId:keyof typeof VOICES,apiKey:string){
+  if(agentId==="simon"){
+    const envId=String(process.env.SIMON_ELEVENLABS_VOICE_ID||"").trim();
+    if(envId) return {voiceId:envId,voiceName:VOICE_NAMES.simon,source:"env"};
+    const voiceName=String(process.env.SIMON_ELEVENLABS_VOICE_NAME||VOICE_NAMES.simon).trim();
+    const found=await findVoiceByName(apiKey,voiceName);
+    if(found) return {voiceId:found,voiceName,source:"account_lookup"};
+    return {voiceId:null,voiceName,source:"not_found"};
+  }
+
+  if(agentId==="snake"){
+    const envId=String(process.env.SNAKE_ELEVENLABS_VOICE_ID||"").trim();
+    if(envId) return {voiceId:envId,voiceName:VOICE_NAMES.snake,source:"env"};
+    const voiceName=String(process.env.SNAKE_ELEVENLABS_VOICE_NAME||VOICE_NAMES.snake).trim();
+    const found=await findVoiceByName(apiKey,voiceName);
+    if(found) return {voiceId:found,voiceName,source:"account_lookup"};
+  }
+
+  return {voiceId:VOICES[agentId],voiceName:null,source:"registry"};
+}
 
 export async function POST(req:Request){
   const founder=await requireFounder();
@@ -33,8 +81,19 @@ export async function POST(req:Request){
   if(!text) return NextResponse.json({error:"Text required"},{status:400});
   if(text.length>1200) return NextResponse.json({error:"Text must be 1200 characters or fewer"},{status:400});
 
-  const voiceId=VOICES[agentId];
-  const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`,{
+  const resolved=await resolveVoiceId(agentId,apiKey);
+  if(!resolved.voiceId){
+    return NextResponse.json({
+      error:"VOICE_NOT_FOUND",
+      agent_id:agentId,
+      requested_voice:resolved.voiceName,
+      detail:agentId==="simon"
+        ? "Simon is locked to Sir Michael Caine™. Add that voice to the connected ElevenLabs account or set SIMON_ELEVENLABS_VOICE_ID."
+        : "The requested ElevenLabs voice is not available.",
+    },{status:503});
+  }
+
+  const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(resolved.voiceId)}`,{
     method:"POST",
     headers:{
       "xi-api-key":apiKey,
@@ -50,13 +109,23 @@ export async function POST(req:Request){
 
   if(!r.ok){
     const detail=await r.text().catch(()=>"");
-    return NextResponse.json({error:"NERVS voice provider rejected the request",detail:detail.slice(0,300)},{status:502});
+    return NextResponse.json({
+      error:"NERVS_VOICE_PROVIDER_REJECTED",
+      agent_id:agentId,
+      requested_voice:resolved.voiceName,
+      voice_id:resolved.voiceId,
+      provider_status:r.status,
+      detail:detail.slice(0,600),
+    },{status:502});
   }
 
   const audio=Buffer.from(await r.arrayBuffer()).toString("base64");
   return NextResponse.json({
     status:"AUDIO_READY",
     agent_id:agentId,
+    voice_name:resolved.voiceName,
+    voice_id:resolved.voiceId,
+    voice_source:resolved.source,
     content_type:"audio/mpeg",
     audio_base64:audio,
   });
