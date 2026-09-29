@@ -5,7 +5,7 @@ export const runtime="nodejs";
 
 const VOICES={
   simon:"3WqHLnw80rOZqJzW9YRB",
-  marie:"DODLEQrClDo8wCz460ld",
+  marie:"21m00Tcm4TlvDq8ikWAM",
   eyes:"jRAAK67SEFE9m7ci5DhD",
   mark:"IKne3meq5aSn9XLyUdCD",
   cammy:"XrExE9yKIg1WjnnlVkGX",
@@ -18,48 +18,13 @@ const VOICES={
   booker:"Cz0K1kOv9tD8l0b5Qu53",
 } as const;
 
-const VOICE_NAMES={
-  simon:"Sir Michael Caine™",
-  snake:"Snake canonical ElevenLabs voice",
-} as const;
-
-function normalizeVoiceName(value:string){
-  return value.toLowerCase().replace(/[™®©]/g,"").replace(/\s+/g," ").trim();
-}
-
-async function findVoiceByName(apiKey:string,name:string){
-  const url=new URL("https://api.elevenlabs.io/v2/voices");
-  url.searchParams.set("search",name);
-  url.searchParams.set("page_size","100");
-  const r=await fetch(url,{
-    headers:{"xi-api-key":apiKey,"Accept":"application/json"},
-    cache:"no-store",
-  });
-  if(!r.ok) return null;
-  const data=await r.json().catch(()=>({}));
-  const voices=Array.isArray(data?.voices)?data.voices:[];
-  const target=normalizeVoiceName(name);
-  const exact=voices.find((v:any)=>normalizeVoiceName(String(v?.name||""))===target);
-  const close=voices.find((v:any)=>normalizeVoiceName(String(v?.name||"")).includes(target)||target.includes(normalizeVoiceName(String(v?.name||""))));
-  const match=exact||close;
-  return match?.voice_id?String(match.voice_id):null;
-}
-
-async function resolveVoiceId(agentId:keyof typeof VOICES,apiKey:string){
+async function resolveVoiceId(agentId:keyof typeof VOICES){
   if(agentId==="simon"){
     const envId=String(process.env.SIMON_ELEVENLABS_VOICE_ID||process.env.ELEVENLABS_VOICE_ID||"IKne3meq5aSn9XLyUdCD").trim();
     return {voiceId:envId,voiceName:"Simon voice",source:process.env.SIMON_ELEVENLABS_VOICE_ID?"env_simon":process.env.ELEVENLABS_VOICE_ID?"env_default":"builtin_fallback"};
   }
 
-  if(agentId==="snake"){
-    const envId=String(process.env.SNAKE_ELEVENLABS_VOICE_ID||"").trim();
-    if(envId) return {voiceId:envId,voiceName:VOICE_NAMES.snake,source:"env"};
-    const voiceName=String(process.env.SNAKE_ELEVENLABS_VOICE_NAME||VOICE_NAMES.snake).trim();
-    const found=await findVoiceByName(apiKey,voiceName);
-    if(found) return {voiceId:found,voiceName,source:"account_lookup"};
-  }
-
-  return {voiceId:VOICES[agentId],voiceName:null,source:"registry"};
+  return {voiceId:VOICES[agentId],voiceName:agentId,source:"agent_registry"};
 }
 
 export async function POST(req:Request){
@@ -77,7 +42,7 @@ export async function POST(req:Request){
   if(!text) return NextResponse.json({error:"Text required"},{status:400});
   if(text.length>1200) return NextResponse.json({error:"Text must be 1200 characters or fewer"},{status:400});
 
-  const resolved=await resolveVoiceId(agentId,apiKey);
+  const resolved=await resolveVoiceId(agentId);
 
 
   if(!resolved.voiceId){
