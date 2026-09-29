@@ -32,7 +32,7 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
   },
   {
     id:"cammy", name:"Cammy", role:"Campaign Generation / Economics", voiceId:"XrExE9yKIg1WjnnlVkGX",
-    referenceFile:null, mediaUrl:null, durationSeconds:null,
+    referenceFile:"cammy.mp4", mediaUrl:"https://resource2.heygen.ai/video/832eb6d56c384118aff8046eedf782d6/original.mp4", durationSeconds:10,
     personality:"Professional, numbers-aware, campaign-focused",
   },
   {
