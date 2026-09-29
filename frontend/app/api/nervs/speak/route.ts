@@ -23,38 +23,6 @@ const VOICE_NAMES={
   snake:"Snake canonical ElevenLabs voice",
 } as const;
 
-const SIMON_SHARED_VOICE={
-  publicUserId:"79da7f36fbf802bde97037272f41096c8bc9dc1b8b4fd8559be1e6c29082395e",
-  voiceId:"3WqHLnw80rOZqJzW9YRB",
-  collectionName:"Simon - KMCE Executive",
-} as const;
-
-async function ensureSimonSharedVoice(apiKey:string){
-  const r=await fetch(
-    `https://api.elevenlabs.io/v1/voices/add/${SIMON_SHARED_VOICE.publicUserId}/${SIMON_SHARED_VOICE.voiceId}`,
-    {
-      method:"POST",
-      headers:{
-        "xi-api-key":apiKey,
-        "Content-Type":"application/json",
-        "Accept":"application/json",
-      },
-      body:JSON.stringify({
-        new_name:SIMON_SHARED_VOICE.collectionName,
-        bookmarked:true,
-      }),
-      cache:"no-store",
-    },
-  );
-
-  // 200 means it was added. 400/409/422 can mean the shared voice is
-  // already present or cannot be added again; TTS below remains the
-  // authoritative capability check and will surface its provider detail.
-  if(r.ok) return {ok:true,status:r.status};
-  const detail=await r.text().catch(()=>"");
-  return {ok:false,status:r.status,detail:detail.slice(0,600)};
-}
-
 function normalizeVoiceName(value:string){
   return value.toLowerCase().replace(/[™®©]/g,"").replace(/\s+/g," ").trim();
 }
@@ -79,9 +47,8 @@ async function findVoiceByName(apiKey:string,name:string){
 
 async function resolveVoiceId(agentId:keyof typeof VOICES,apiKey:string){
   if(agentId==="simon"){
-    const envId=String(process.env.SIMON_ELEVENLABS_VOICE_ID||"").trim();
-    if(envId) return {voiceId:envId,voiceName:VOICE_NAMES.simon,source:"env"};
-    return {voiceId:VOICES.simon,voiceName:VOICE_NAMES.simon,source:"registry"};
+    const envId=String(process.env.SIMON_ELEVENLABS_VOICE_ID||process.env.ELEVENLABS_VOICE_ID||"IKne3meq5aSn9XLyUdCD").trim();
+    return {voiceId:envId,voiceName:"Simon voice",source:process.env.SIMON_ELEVENLABS_VOICE_ID?"env_simon":process.env.ELEVENLABS_VOICE_ID?"env_default":"builtin_fallback"};
   }
 
   if(agentId==="snake"){
@@ -112,10 +79,6 @@ export async function POST(req:Request){
 
   const resolved=await resolveVoiceId(agentId,apiKey);
 
-  let sharedVoiceProvision:null|{ok:boolean;status:number;detail?:string}=null;
-  if(agentId==="simon"){
-    sharedVoiceProvision=await ensureSimonSharedVoice(apiKey);
-  }
 
   if(!resolved.voiceId){
     return NextResponse.json({
@@ -128,19 +91,36 @@ export async function POST(req:Request){
     },{status:503});
   }
 
-  const r=await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(resolved.voiceId)}`,{
-    method:"POST",
-    headers:{
-      "xi-api-key":apiKey,
-      "Content-Type":"application/json",
-      "Accept":"audio/mpeg",
-    },
-    body:JSON.stringify({
-      text,
-      model_id:"eleven_multilingual_v2",
-      voice_settings:{stability:.58,similarity_boost:.82,style:.18,use_speaker_boost:true},
-    }),
-  });
+  async function synthesize(voiceId:string){
+    return fetch("https://api.elevenlabs.io/v1/text-to-speech/"+encodeURIComponent(voiceId),{
+      method:"POST",
+      headers:{
+        "xi-api-key":apiKey,
+        "Content-Type":"application/json",
+        "Accept":"audio/mpeg",
+      },
+      body:JSON.stringify({
+        text,
+        model_id:"eleven_multilingual_v2",
+        voice_settings:{stability:.58,similarity_boost:.82,style:.18,use_speaker_boost:true},
+      }),
+    });
+  }
+
+  let activeVoiceId=resolved.voiceId;
+  let voiceSource=resolved.source;
+  let r=await synthesize(activeVoiceId);
+
+  if(!r.ok){
+    const fallbackId=String(process.env.ELEVENLABS_VOICE_ID||"IKne3meq5aSn9XLyUdCD").trim();
+    if(fallbackId && fallbackId!==activeVoiceId){
+      r=await synthesize(fallbackId);
+      if(r.ok){
+        activeVoiceId=fallbackId;
+        voiceSource="universal_fallback";
+      }
+    }
+  }
 
   if(!r.ok){
     const detail=await r.text().catch(()=>"");
@@ -148,7 +128,7 @@ export async function POST(req:Request){
       error:"NERVS_VOICE_PROVIDER_REJECTED",
       agent_id:agentId,
       requested_voice:resolved.voiceName,
-      voice_id:resolved.voiceId,
+      voice_id:activeVoiceId,
       provider_status:r.status,
       detail:detail.slice(0,600),
       shared_voice_provision:sharedVoiceProvision,
@@ -160,8 +140,8 @@ export async function POST(req:Request){
     status:"AUDIO_READY",
     agent_id:agentId,
     voice_name:resolved.voiceName,
-    voice_id:resolved.voiceId,
-    voice_source:resolved.source,
+    voice_id:activeVoiceId,
+    voice_source:voiceSource,
     shared_voice_provision:sharedVoiceProvision,
     content_type:"audio/mpeg",
     audio_base64:audio,
