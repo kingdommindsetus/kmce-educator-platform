@@ -3,6 +3,7 @@
 import {useEffect,useRef,useState} from "react";
 import {NERVS_AVATAR_PACK_V1} from "../lib/nervs-avatar-registry";
 import {useKmceRealtimeBus} from "../hooks/useKmceRealtimeBus";
+import VoiceOrb from "./VoiceOrb";
 
 type Msg={id?:number;role:"FOUNDER"|"AGENT"|"SYSTEM";content:string;created_at?:string};
 type Props={agentName:string;role?:string};
@@ -162,6 +163,18 @@ export default function AgentConversation({agentName,role}:Props){
       </div>
       <span className="pill">{displayStatus}</span>
     </div>
+
+    <VoiceOrb
+      agentName={agent.name}
+      state={
+        status==="SPEAKING"?"speaking":
+        status==="THINKING"||status==="VOICE GENERATING"?"thinking":
+        (liveMode&&realtime.status==="LISTENING")||status==="LISTENING"?"listening":
+        status.includes("ERROR")||status.startsWith("VOICE UNAVAILABLE")?"error":
+        "idle"
+      }
+      size={210}
+    />
 
     <div style={{marginTop:12,maxHeight:300,overflowY:"auto",border:"1px solid var(--line)",padding:10}}>
       {!messages.length&&<p className="muted">No conversation yet. Say something to {agent.name}.</p>}
