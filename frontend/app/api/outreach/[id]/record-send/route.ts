@@ -20,7 +20,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
     return NextResponse.json({error:"provider_message_id required"},{status:400});
   }
 
-  const rows=await q`
+  const rows:any=await q`
     SELECT o.*,l.email,l.pipeline_stage,l.approval_status,
            l.contact_source_url,l.contact_verified_at
     FROM outreach_jobs o
@@ -34,7 +34,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   if(job.sent_at || job.status==="SENT"){
     return NextResponse.json({error:"Already sent; duplicate send blocked",reason:"DUPLICATE_SEND"},{status:409});
   }
-  if(job.status!=="APPROVED" || job.pipeline_stage!=="APPROVED" || job.approval_status!=="APPROVED"){
+  if(!["APPROVED","SENDING","SEND_UNKNOWN"].includes(job.status) || job.pipeline_stage!=="APPROVED" || job.approval_status!=="APPROVED"){
     return NextResponse.json({error:"Founder-approved outreach required",reason:"NOT_APPROVED"},{status:409});
   }
   if(!job.email || !job.contact_source_url || !job.contact_verified_at){
@@ -48,7 +48,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   const detail=`Provider-confirmed ${provider} send recorded with message id ${providerMessageId}; follow-up scheduled in 3 days.`;
 
   try{
-    const [updated]=await q.transaction([
+    const tx:any=await q.transaction([
       q`
         UPDATE outreach_jobs
         SET status='SENT',
@@ -60,9 +60,10 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
             sent_by=${actor},
             delivery_status='SUBMITTED',
             follow_up_due_at=now()+interval '3 days',
+            send_error=NULL,
             updated_at=now()
         WHERE id=${id}
-          AND status='APPROVED'
+          AND status IN ('APPROVED','SENDING','SEND_UNKNOWN')
           AND sent_at IS NULL
         RETURNING *
       `,
@@ -80,6 +81,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
       `
     ]);
 
+    const updated=tx[0]||[];
     if(!updated.length){
       return NextResponse.json({error:"Send state transition blocked",reason:"SEND_STATE_TRANSITION_BLOCKED"},{status:409});
     }
