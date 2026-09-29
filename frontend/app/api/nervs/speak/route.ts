@@ -126,7 +126,6 @@ export async function POST(req:Request){
       }
     }
   }
-  }
 
   if(!r.ok){
     const detail=await r.text().catch(()=>"");
