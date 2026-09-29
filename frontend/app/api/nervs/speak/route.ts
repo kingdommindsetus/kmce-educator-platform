@@ -22,7 +22,7 @@ const VOICES={
 const OPENAI_VOICES={
   simon:"cedar",
   marie:"marin",
-  eyes:"sage",
+  eyes:"nova",
   mark:"onyx",
   cammy:"coral",
   eve:"shimmer",
@@ -34,12 +34,12 @@ const OPENAI_VOICES={
   booker:"sage",
 } as const;
 
-const FORCE_OPENAI=new Set<keyof typeof VOICES>(["alice","echo","booker"]);
+const FORCE_OPENAI=new Set<keyof typeof VOICES>(["eyes","alice","echo","booker"]);
 
 const OPENAI_STYLE={
   simon:"Speak in a calm, polished British executive tone with measured pacing.",
   marie:"Speak warmly, professionally, and reassuringly like an executive operations lead.",
-  eyes:"Speak analytically and precisely with a calm evidence-first delivery.",
+  eyes:"Speak with strong projection, crisp confidence, and noticeable energy. Sound like a sharp market-intelligence lead presenting an important finding to executives. Keep the delivery lively, assertive, and easy to hear. Do not sound soft, sleepy, or subdued."
   mark:"Speak confidently and directly like a strategic marketing director.",
   cammy:"Speak upbeat, professional, and numbers-aware.",
   eve:"Speak polished, refined, and brand-conscious.",
@@ -189,6 +189,7 @@ export async function POST(req:Request){
         input:text,
         voice:openaiVoice,
         instructions:OPENAI_STYLE[agentId],
+        speed:agentId==="eyes"?1.08:1,
         response_format:"mp3",
       }),
     });
