@@ -63,7 +63,7 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
     personality:"Creator energy, visual, fast-moving",
   },
   {
-    id:"lucy", name:"Lucy", role:"Social Media / Distribution", voiceId:"cgSgspJ2msm6clMCkdW9",
+    id:"lucy", name:"Lucy", role:"Social Media / Distribution", voiceId:"XlDdozLmuTofIxK4BjPD", voiceName:"Lucy canonical ElevenLabs voice",
     referenceFile:"lucy.mp4", mediaUrl:"https://resource2.heygen.ai/video/a99b918e8ae348c9876e9e93ca1a6491/original.mp4", durationSeconds:10,
     liveTalkingAvatarId:"kmce_lucy_v1",
     liveTalkingModel:"musetalk",
