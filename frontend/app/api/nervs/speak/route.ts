@@ -34,13 +34,13 @@ const OPENAI_VOICES={
   booker:"sage",
 } as const;
 
-const FORCE_OPENAI=new Set<keyof typeof VOICES>(["eyes","alice","echo","booker"]);
+const FORCE_OPENAI=new Set<keyof typeof VOICES>(["eyes","mark","alice","echo","booker"]);
 
 const OPENAI_STYLE={
   simon:"Speak in a calm, polished British executive tone with measured pacing.",
   marie:"Speak warmly, professionally, and reassuringly like an executive operations lead.",
   eyes:"Speak with strong projection, crisp confidence, and noticeable energy. Sound like a sharp market-intelligence lead presenting an important finding to executives. Keep the delivery lively, assertive, and easy to hear. Do not sound soft, sleepy, or subdued.",
-  mark:"Speak confidently and directly like a strategic marketing director.",
+  mark:"Speak with strong confidence, upbeat executive energy, and clear projection like a sharp strategic marketing director presenting a decisive recommendation. Keep the pace lively and persuasive without sounding rushed.",
   cammy:"Speak upbeat, professional, and numbers-aware.",
   eve:"Speak polished, refined, and brand-conscious.",
   tube:"Speak energetic and creator-friendly without sounding exaggerated.",
