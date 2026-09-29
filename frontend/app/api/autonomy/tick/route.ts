@@ -79,9 +79,22 @@ async function seedDueJobs(q:any){
     }
   }
   const day=new Date().toISOString().slice(0,10);
+  const pulseKey=idempotencyKey(["store-pulse","KINGDOM_MINDSET_STORE","daily",day]);
+  await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by)
+    VALUES(${pulseKey},'store.pulse.review','Snake','CONTROLLED','store','KINGDOM_MINDSET_STORE',
+    ${JSON.stringify({store_code:"KINGDOM_MINDSET_STORE",cadence:"DAILY",pulse_date:day})}::jsonb,'Simon')
+    ON CONFLICT(idempotency_key) DO NOTHING`;
+  const isMonday=new Date().getUTCDay()===1;
+  if(isMonday){
+    const weeklyKey=idempotencyKey(["store-pulse","KINGDOM_MINDSET_STORE","weekly",day]);
+    await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by)
+      VALUES(${weeklyKey},'store.pulse.review','Snake','CONTROLLED','store','KINGDOM_MINDSET_STORE',
+      ${JSON.stringify({store_code:"KINGDOM_MINDSET_STORE",cadence:"WEEKLY",pulse_date:day})}::jsonb,'Simon')
+      ON CONFLICT(idempotency_key) DO NOTHING`;
+  }
   const briefKey=idempotencyKey(["executive-brief",day]);
   await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by) VALUES(${briefKey},'executive.brief.queue','Marie','CONTROLLED','company','KMCE',${JSON.stringify({brief_date:day})}::jsonb,'Simon') ON CONFLICT(idempotency_key) DO NOTHING`;
-  return {followups:followups.length,reply_sync_candidates:replyCandidates.length,interested_for_booker:interested.length,onboarding_ready:ready.length,active_campaigns:campaigns.length,brief_date:day};
+  return {followups:followups.length,reply_sync_candidates:replyCandidates.length,interested_for_booker:interested.length,onboarding_ready:ready.length,active_campaigns:campaigns.length,store_pulse_daily:1,store_pulse_weekly:isMonday?1:0,brief_date:day};
 }
 
 async function handleJob(q:any,job:any){
