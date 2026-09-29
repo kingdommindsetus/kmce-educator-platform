@@ -37,20 +37,33 @@ export async function fetchEchoThread(threadId:string,subject:string){
   if(!readiness.apiKeyConfigured) throw new Error("COMPOSIO_API_KEY is not configured");
   if(!readiness.connectedAccountConfigured) throw new Error("COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID is not configured");
   if(!subject) throw new Error("Subject is required to fetch Gmail thread safely");
-  const composio=new Composio({apiKey:process.env.COMPOSIO_API_KEY!});
-  const escaped=subject.replace(/"/g,'');
-  const result:any=await composio.tools.execute("GMAIL_FETCH_EMAILS",{
-    userId:"kmce-founder",
-    connectedAccountId:process.env.COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID!,
-    arguments:{
-      user_id:"me",
-      query:`subject:"${escaped}"`,
-      max_results:50,
-      verbose:true,
-      include_payload:true,
-      include_spam_trash:false
+
+  const escaped=subject.replace(/"/g,"");
+  const response=await fetch("https://backend.composio.dev/api/v3.1/tools/execute/GMAIL_FETCH_EMAILS",{
+    method:"POST",
+    headers:{
+      "content-type":"application/json",
+      "x-api-key":process.env.COMPOSIO_API_KEY!
     },
-    dangerouslySkipVersionCheck:true
+    body:JSON.stringify({
+      connected_account_id:process.env.COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID!,
+      user_id:"kmce-founder",
+      version:"latest",
+      arguments:{
+        user_id:"me",
+        query:`subject:"${escaped}"`,
+        max_results:50,
+        verbose:true,
+        include_payload:true,
+        include_spam_trash:false
+      }
+    })
   });
-  return {result,threadId};
+
+  const payload:any=await response.json().catch(()=>({}));
+  if(!response.ok || payload?.successful===false){
+    const detail=String(payload?.error||payload?.message||`Composio HTTP ${response.status}`).slice(0,500);
+    throw new Error(detail);
+  }
+  return {result:payload,threadId};
 }
