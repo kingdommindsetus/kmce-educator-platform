@@ -135,6 +135,7 @@ export async function POST(req:Request){
   }
 
   async function synthesize(voiceId:string){
+    if(!apiKey) return new Response(null,{status:503});
     return fetch("https://api.elevenlabs.io/v1/text-to-speech/"+encodeURIComponent(voiceId),{
       method:"POST",
       headers:{
