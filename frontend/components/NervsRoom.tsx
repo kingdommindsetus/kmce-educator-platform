@@ -19,6 +19,30 @@ type PreparedDaily={
   meetingId:number|null;
 };
 
+type HistoryReport={
+  agent_name:string;
+  department:string|null;
+  speaking_order:number|null;
+  win:string|null;
+  blocker:string|null;
+  next_action:string|null;
+  ask_of_team:string|null;
+  evidence:{task_ids?:Array<number|string>}|null;
+};
+
+type HistoryMeeting={
+  id:number;
+  meeting_date:string;
+  meeting_type:string;
+  timezone:string;
+  status:string;
+  summary:string|null;
+  started_at:string|null;
+  completed_at:string|null;
+  created_at:string;
+  reports:HistoryReport[];
+};
+
 export default function NervsRoom(){
   const [activeIndex,setActiveIndex]=useState(0);
   const [running,setRunning]=useState(false);
@@ -27,6 +51,9 @@ export default function NervsRoom(){
   const [dailyReports,setDailyReports]=useState<DailyReport[]>([]);
   const [meetingStatus,setMeetingStatus]=useState("NOT PREPARED");
   const [meetingId,setMeetingId]=useState<number|null>(null);
+  const [history,setHistory]=useState<HistoryMeeting[]>([]);
+  const [historyStatus,setHistoryStatus]=useState("NOT LOADED");
+  const [selectedHistoryId,setSelectedHistoryId]=useState<number|null>(null);
 
   const videoRef=useRef<HTMLVideoElement|null>(null);
   const audioRef=useRef<HTMLAudioElement|null>(null);
@@ -220,6 +247,22 @@ export default function NervsRoom(){
     await updateMeetingStatus("CANCELLED").catch(()=>{});
     setMeetingStatus("STOPPED");
   }
+  async function loadHistory(){
+    setHistoryStatus("LOADING");
+    try{
+      const r=await fetch("/api/nervs/daily/history");
+      const data=await r.json();
+      if(!r.ok) throw new Error(data?.error||"Could not load meeting history");
+      const meetings=(data.meetings||[]) as HistoryMeeting[];
+      setHistory(meetings);
+      setSelectedHistoryId(meetings[0]?.id??null);
+      setHistoryStatus(meetings.length?"READY":"EMPTY");
+    }catch(error){
+      setHistoryStatus(error instanceof Error?error.message:"HISTORY FAILED");
+    }
+  }
+
+  const selectedHistory=history.find(item=>item.id===selectedHistoryId)||null;
 
   return <div className="panel">
     <div className="eyebrow">NERVS DAILY · AVATAR PACK V1 · SPEECH V1</div>
@@ -239,6 +282,63 @@ export default function NervsRoom(){
       </div>}
     </div>
 
+    <div className="tomorrow" style={{marginTop:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap"}}>
+        <div>
+          <div className="eyebrow">MEETING HISTORY</div>
+          <div className="muted" style={{fontSize:12}}>Founder-only audit trail of persisted NERVS Daily meetings and agent reports.</div>
+        </div>
+        <button className="btn" onClick={loadHistory}>Load History</button>
+      </div>
+      <p><b>History:</b> {historyStatus}</p>
+
+      {history.length>0&&<div style={{display:"grid",gridTemplateColumns:"minmax(220px,0.8fr) minmax(0,2fr)",gap:14}}>
+        <div>
+          {history.map(item=>
+            <button
+              key={item.id}
+              className={"agent-chip "+(selectedHistoryId===item.id?"active":"")}
+              onClick={()=>setSelectedHistoryId(item.id)}
+              style={{width:"100%",marginTop:8,textAlign:"left"}}
+            >
+              <span className="avatar">🗂️</span>
+              <span>
+                <b>{item.meeting_date}</b>
+                <small>#{item.id} · {item.status}</small>
+              </span>
+              <em>{item.reports.length}</em>
+            </button>
+          )}
+        </div>
+
+        <div style={{border:"1px solid var(--line)",padding:14}}>
+          {selectedHistory?<>
+            <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+              <div>
+                <div className="eyebrow">{selectedHistory.meeting_type}</div>
+                <h3 style={{margin:"4px 0"}}>{selectedHistory.meeting_date}</h3>
+              </div>
+              <span className="pill">{selectedHistory.status}</span>
+            </div>
+            <div className="muted" style={{fontSize:12,marginBottom:10}}>
+              Meeting #{selectedHistory.id} · {selectedHistory.timezone}
+            </div>
+            {selectedHistory.reports.map(report=>
+              <details key={report.agent_name} style={{borderTop:"1px solid var(--line)",padding:"10px 0"}}>
+                <summary style={{cursor:"pointer"}}><b>{report.agent_name}</b>{report.department?" · "+report.department:""}</summary>
+                <p><b>WIN:</b> {report.win||"—"}</p>
+                <p><b>BLOCKER:</b> {report.blocker||"—"}</p>
+                <p><b>NEXT:</b> {report.next_action||"—"}</p>
+                <p><b>ASK:</b> {report.ask_of_team||"—"}</p>
+                <div className="muted" style={{fontSize:12}}>
+                  Evidence task IDs: {report.evidence?.task_ids?.length?report.evidence.task_ids.join(", "):"none recorded"}
+                </div>
+              </details>
+            )}
+          </>:<div className="muted">Select a meeting.</div>}
+        </div>
+      </div>}
+    </div>
     <div style={{display:"grid",gridTemplateColumns:"minmax(0,2fr) minmax(280px,1fr)",gap:18,marginTop:18}}>
       <div style={{border:"1px solid var(--line)",padding:16,minHeight:360}}>
         <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",marginBottom:12}}>
