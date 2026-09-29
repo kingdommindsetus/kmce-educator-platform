@@ -4,12 +4,18 @@ import {requireFounder} from "../../../../lib/auth";
 export const runtime="nodejs";
 
 const VOICES={
+  simon:"pqHfZKP75CvOlQylNhV4",
+  marie:"EXAVITQu4vr4xnSDxMaL",
+  eyes:"SAz9YHcvj6GT2YYXdXww",
   mark:"IKne3meq5aSn9XLyUdCD",
+  cammy:"XrExE9yKIg1WjnnlVkGX",
+  eve:"pFZP5JQG7iQjIQuC4Bku",
   tube:"TX3LPaxmHKxFdv7VOQHJ",
   lucy:"cgSgspJ2msm6clMCkdW9",
-  booker:"CwhRBWXzGAHq8TQ4Fs17",
-  alice:"Xb7hH8MSUJpSbSDYk0k2",
   snake:"k5eu7V3cPJkEA7D2irmP",
+  alice:"Xb7hH8MSUJpSbSDYk0k2",
+  echo:"cjVigY5qzO86Huf0OWal",
+  booker:"CwhRBWXzGAHq8TQ4Fs17",
 } as const;
 
 export async function POST(req:Request){
