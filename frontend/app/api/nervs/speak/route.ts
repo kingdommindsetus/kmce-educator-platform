@@ -29,10 +29,12 @@ const OPENAI_VOICES={
   tube:"verse",
   lucy:"nova",
   snake:"ash",
-  alice:"ballad",
-  echo:"echo",
-  booker:"alloy",
+  alice:"marin",
+  echo:"cedar",
+  booker:"sage",
 } as const;
+
+const FORCE_OPENAI=new Set<keyof typeof VOICES>(["alice","echo","booker"]);
 
 const OPENAI_STYLE={
   simon:"Speak in a calm, polished British executive tone with measured pacing.",
@@ -154,9 +156,11 @@ export async function POST(req:Request){
   let activeVoiceId=resolved.voiceId;
   let voiceSource=resolved.source;
   let providerUsed="elevenlabs";
-  let r=activeVoiceId && apiKey
-    ? await synthesize(activeVoiceId)
-    : new Response(null,{status:503});
+  let r=FORCE_OPENAI.has(agentId)
+    ? new Response(null,{status:503})
+    : activeVoiceId && apiKey
+      ? await synthesize(activeVoiceId)
+      : new Response(null,{status:503});
 
   if(!r.ok && agentId!=="simon" && agentId!=="marie"){
     for(const candidate of resolved.alternatives){
@@ -192,7 +196,7 @@ export async function POST(req:Request){
     if(openaiRes.ok){
       r=openaiRes;
       activeVoiceId=openaiVoice;
-      voiceSource="openai_fallback";
+      voiceSource=FORCE_OPENAI.has(agentId)?"openai_primary":"openai_fallback";
       providerUsed="openai";
     }else{
       const elevenDetail=await r.text().catch(()=>"");
