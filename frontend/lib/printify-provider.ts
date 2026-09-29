@@ -14,7 +14,7 @@ export function printifyReadiness(){
   };
 }
 
-async function request(path,init={}){
+async function request(path:string,init:any={}){
   const res=await fetch(API_BASE+path,{...init,headers:{...headers(),...(init.headers||{})}});
   const text=await res.text();
   let body; try{body=text?JSON.parse(text):null}catch{body={raw:text}}
@@ -26,7 +26,7 @@ export async function listPrintifyShops(){
   return request("/shops.json",{method:"GET"});
 }
 
-export async function uploadPrintifyImage(input){
+export async function uploadPrintifyImage(input:any){
   if(!input?.file_name) throw new Error("file_name required");
   if(!input?.url && !input?.contents) throw new Error("url or contents required");
   return request("/uploads/images.json",{
@@ -39,7 +39,7 @@ export async function uploadPrintifyImage(input){
   });
 }
 
-export async function createPrintifyProduct(spec){
+export async function createPrintifyProduct(spec:any){
   const shopId=String(spec?.shop_id||process.env.PRINTIFY_SHOP_ID||"");
   if(!shopId) throw new Error("PRINTIFY_SHOP_ID is not configured");
   const required=["title","description","blueprint_id","print_provider_id","variants","print_areas"];
@@ -58,7 +58,7 @@ export async function createPrintifyProduct(spec){
   });
 }
 
-export async function publishPrintifyProduct(productId,fields={}){
+export async function publishPrintifyProduct(productId:string,fields:any={}){
   const shopId=String(process.env.PRINTIFY_SHOP_ID||"");
   if(!shopId) throw new Error("PRINTIFY_SHOP_ID is not configured");
   if(!productId) throw new Error("productId required");
