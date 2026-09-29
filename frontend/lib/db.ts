@@ -319,7 +319,7 @@ export async function ensureSchema(){
       ('Snake','Snake','Growth','elevenlabs','jHprmvvyQreWpRuutdmV','READY','{"voice_name":"Snake canonical ElevenLabs voice"}'::jsonb),
       ('Alice','Alice','Store','elevenlabs','Xb7hH8MSUJpSbSDYk0k2','READY','{"voice_name":"Alice - Clear, Engaging Educator"}'::jsonb),
       ('Echo','Echo','Sales Outreach','elevenlabs','cjVigY5qzO86Huf0OWal','READY','{"voice_name":"Eric - Smooth, Trustworthy"}'::jsonb),
-      ('Booker','Booker','Sales Scheduling','elevenlabs','CwhRBWXzGAHq8TQ4Fs17','READY','{"voice_name":"Roger - Laid-Back, Casual, Resonant"}'::jsonb)
+      ('Booker','Booker','Sales Scheduling','elevenlabs','Cz0K1kOv9tD8l0b5Qu53','READY','{"voice_name":"Booker canonical ElevenLabs voice"}'::jsonb)
     ON CONFLICT(agent_name) DO UPDATE SET
       display_name=EXCLUDED.display_name,
       department=EXCLUDED.department,
