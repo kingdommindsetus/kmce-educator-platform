@@ -45,6 +45,11 @@ Permanent forbidden actions:
 | Flow | Onboarding | documents, missing items, questions, completion tracking |
 | Ledger | Finance | Stripe handoff, transaction state, double-entry ledger, reconciliation |
 | Delivery/CE | Fulfillment | entitlement, attendance/completion, CE/certificate evidence |
+| Eyes | Market intelligence | external trends, search demand, visual/product opportunity signals |
+| Alice | Kingdom Mindset Store manager | catalog health, merchandising, store operations, review queue |
+| Devon | Digital product agent | downloadable products, toolkits, templates, product packaging |
+| Mercedes | Merchandise designer | apparel/merch concepts, creative direction, mockup requirements |
+| Snake | Store growth operations | Store Pulse, marketing cadence, outreach planning, conversion recovery |
 
 ## Stable capability contracts
 
@@ -83,6 +88,14 @@ Permanent forbidden actions:
 | ce.issue | Delivery/CE | KMCE CE engine | POLICY |
 | refund.execute | Ledger | Stripe | APPROVAL |
 | audit.append | Gatekeeper | Neon append-only audit | CONTROLLED |
+| store.trend.research | Eyes/Snake | public trend/search intelligence providers | AUTO |
+| store.pulse.review | Snake | Shopify telemetry + Neon pulse reports | CONTROLLED |
+| store.catalog.review | Alice | Shopify + KMCE store operations | CONTROLLED |
+| store.product.digital.prepare | Devon | KMCE product workflow | CONTROLLED |
+| store.product.merch.prepare | Mercedes | KMCE merchandise workflow | CONTROLLED |
+| store.campaign.prepare | Snake | store growth engine | CONTROLLED |
+| store.publish | Alice | Shopify | APPROVAL |
+| store.email.send | Snake | approved email provider | APPROVAL |
 
 ## Provider boundaries
 
@@ -122,3 +135,10 @@ Marie never:
 EVENT → MARIE TRIAGE → CAPABILITY RESOLUTION → SPECIALIST → RESULT/EVIDENCE → MARIE FOLLOW-UP → SIMON BRIEF → KIMBERLY ONLY WHEN REQUIRED.
 
 This registry is the contract. Providers can change without changing the employee model.
+
+
+## Kingdom Mindset Store operating loop
+
+EYES → SNAKE → DEVON/MERCEDES → ALICE → FOUNDER GATE → SNAKE DISTRIBUTION → EYES MEASUREMENT → SNAKE STORE PULSE.
+
+Snake is cross-functional for store growth health. He may create internal tasks and pulse reports, but he may not publish products, send campaigns, spend ad budget, create discounts, or change live pricing without the relevant approval/policy gate.

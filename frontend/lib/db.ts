@@ -439,6 +439,41 @@ export async function ensureSchema(){
     UNIQUE(campaign_id,channel,metric_date)
   )`;
 
+  await q`CREATE TABLE IF NOT EXISTS store_metrics_snapshots (
+    id BIGSERIAL PRIMARY KEY,
+    store_code TEXT NOT NULL DEFAULT 'KINGDOM_MINDSET_STORE',
+    snapshot_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    products_active INTEGER NOT NULL DEFAULT 0,
+    products_draft INTEGER NOT NULL DEFAULT 0,
+    orders_count INTEGER NOT NULL DEFAULT 0,
+    revenue_minor BIGINT NOT NULL DEFAULT 0,
+    sessions BIGINT NOT NULL DEFAULT 0,
+    conversion_rate NUMERIC(8,4),
+    email_campaigns_7d INTEGER NOT NULL DEFAULT 0,
+    social_posts_7d INTEGER NOT NULL DEFAULT 0,
+    new_products_14d INTEGER NOT NULL DEFAULT 0,
+    last_campaign_at TIMESTAMPTZ,
+    last_product_publish_at TIMESTAMPTZ,
+    source TEXT NOT NULL DEFAULT 'SHOPIFY',
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(store_code,snapshot_date,source)
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS store_metrics_snapshots_recent_idx ON store_metrics_snapshots(store_code,snapshot_date DESC,created_at DESC)`;
+
+  await q`CREATE TABLE IF NOT EXISTS store_pulse_reports (
+    id BIGSERIAL PRIMARY KEY,
+    store_code TEXT NOT NULL DEFAULT 'KINGDOM_MINDSET_STORE',
+    cadence TEXT NOT NULL CHECK (cadence IN ('DAILY','WEEKLY')),
+    pulse_status TEXT NOT NULL CHECK (pulse_status IN ('GREEN','YELLOW','RED','NO_DATA')),
+    snapshot_id BIGINT REFERENCES store_metrics_snapshots(id) ON DELETE SET NULL,
+    findings JSONB NOT NULL DEFAULT '[]'::jsonb,
+    actions_created JSONB NOT NULL DEFAULT '[]'::jsonb,
+    created_by TEXT NOT NULL DEFAULT 'Snake',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS store_pulse_reports_recent_idx ON store_pulse_reports(store_code,cadence,created_at DESC)`;
+
   await q`CREATE TABLE IF NOT EXISTS knowledge_documents (
     id BIGSERIAL PRIMARY KEY,
     source_type TEXT NOT NULL,
