@@ -96,6 +96,8 @@ Permanent forbidden actions:
 | store.live.edit | Alice | Shopify | APPROVAL |
 | store.product.digital.prepare | Devon | KMCE product workflow | CONTROLLED |
 | store.product.merch.prepare | Mercedes | KMCE merchandise workflow | CONTROLLED |
+| store.merch.printify.create | Mercedes | Printify API | CONTROLLED |
+| store.merch.printify.publish | Mercedes | Printify connected sales channel | POLICY |
 | store.campaign.prepare | Snake | store growth engine | CONTROLLED |
 | store.publish | Alice | Shopify | APPROVAL |
 | store.email.send | Snake | approved email provider | APPROVAL |
@@ -150,3 +152,10 @@ Snake is cross-functional for store growth health. He may create internal tasks 
 ## Alice storefront stewardship
 
 Alice owns continuous storefront maintenance. Simon seeds a daily freshness audit and a Monday deep-clean audit. Alice checks product imagery, titles/descriptions, SEO metadata, collections, listing status, accessibility/alt text, duplicates/stale inventory presentation, visual consistency, and merchandising opportunities. Internal audits and optimization drafts are CONTROLLED; live publishing, destructive changes, live price changes, and theme/settings changes remain Founder-approval gated.
+
+
+## Mercedes Printify workflow
+
+EYES/SNAKE opportunity brief → MERCEDES artwork/product spec → PRINTIFY draft creation → ALICE storefront/merchandising review → policy-approved PRINTIFY publish → connected Shopify sales channel.
+
+The Printify token and shop ID are server-only environment variables. Mercedes may create product drafts when a complete blueprint/provider/variant/print-area spec exists. Publishing requires the store.merch.printify.publish policy gate plus alice_approved=true. The agent never embeds credentials in code or job payloads.
