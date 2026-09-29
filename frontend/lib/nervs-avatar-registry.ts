@@ -28,7 +28,7 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
     personality:"Reassuring, organized, operationally disciplined",
   },
   {
-    id:"eyes", name:"Eyes", role:"Market Intelligence", voiceId:"CwhRBWXzGAHq8TQ4Fs17",
+    id:"eyes", name:"Eyes", role:"Market Intelligence", voiceId:"jRAAK67SEFE9m7ci5DhD",
     referenceFile:"eyes.mp4", mediaUrl:"https://resource2.heygen.ai/video/2667f12ff04e4352b445177f24ddc370/original.mp4", durationSeconds:10,
     liveTalkingAvatarId:"kmce_eyes_v1",
     liveTalkingModel:"musetalk",
