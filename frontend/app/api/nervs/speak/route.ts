@@ -18,8 +18,51 @@ const VOICES={
   booker:"yoZ06aMxZJJ28mfd3POQ",
 } as const;
 
-async function resolveVoiceId(agentId:keyof typeof VOICES){
-  return {voiceId:VOICES[agentId],voiceName:agentId,source:"fixed_agent_voice"};
+
+const AGENT_ORDER=[
+  "marie","eyes","mark","cammy","eve","tube","lucy","snake","alice","echo","booker",
+] as const;
+
+type AvailableVoice={voice_id:string;name?:string};
+
+async function getAvailableVoices(apiKey:string):Promise<AvailableVoice[]>{
+  const url=new URL("https://api.elevenlabs.io/v2/voices");
+  url.searchParams.set("page_size","100");
+  const r=await fetch(url,{
+    headers:{"xi-api-key":apiKey,"Accept":"application/json"},
+    cache:"no-store",
+  });
+  if(!r.ok) return [];
+  const data=await r.json().catch(()=>({}));
+  const voices=Array.isArray(data?.voices)?data.voices:[];
+  return voices
+    .filter((v:any)=>typeof v?.voice_id==="string" && v.voice_id)
+    .map((v:any)=>({voice_id:String(v.voice_id),name:String(v?.name||"")}));
+}
+
+async function resolveVoiceId(agentId:keyof typeof VOICES,apiKey:string){
+  if(agentId==="simon"){
+    return {
+      voiceId:"pNInz6obpgDQGcFmaJgB",
+      voiceName:"Simon",
+      source:"locked_simon",
+      alternatives:[] as AvailableVoice[],
+    };
+  }
+
+  const available=await getAvailableVoices(apiKey);
+  const nonSimon=available.filter(v=>v.voice_id!=="pNInz6obpgDQGcFmaJgB");
+  const index=AGENT_ORDER.indexOf(agentId as typeof AGENT_ORDER[number]);
+  const selected=nonSimon.length
+    ? nonSimon[(index>=0?index:0)%nonSimon.length]
+    : null;
+
+  return {
+    voiceId:selected?.voice_id||VOICES[agentId],
+    voiceName:selected?.name||agentId,
+    source:selected?"account_voice":"registry_fallback",
+    alternatives:nonSimon,
+  };
 }
 
 export async function POST(req:Request){
@@ -37,7 +80,7 @@ export async function POST(req:Request){
   if(!text) return NextResponse.json({error:"Text required"},{status:400});
   if(text.length>1200) return NextResponse.json({error:"Text must be 1200 characters or fewer"},{status:400});
 
-  const resolved=await resolveVoiceId(agentId);
+  const resolved=await resolveVoiceId(agentId,apiKey);
 
 
   if(!resolved.voiceId){
@@ -71,15 +114,18 @@ export async function POST(req:Request){
   let voiceSource=resolved.source;
   let r=await synthesize(activeVoiceId);
 
-  if(!r.ok){
-    const fallbackId="pNInz6obpgDQGcFmaJgB";
-    if(fallbackId && fallbackId!==activeVoiceId){
-      r=await synthesize(fallbackId);
-      if(r.ok){
-        activeVoiceId=fallbackId;
-        voiceSource="universal_fallback";
+  if(!r.ok && agentId!=="simon"){
+    for(const candidate of resolved.alternatives){
+      if(candidate.voice_id===activeVoiceId) continue;
+      const retry=await synthesize(candidate.voice_id);
+      if(retry.ok){
+        r=retry;
+        activeVoiceId=candidate.voice_id;
+        voiceSource="account_retry";
+        break;
       }
     }
+  }
   }
 
   if(!r.ok){
