@@ -3,6 +3,7 @@ import {executionDisposition,retryDelaySeconds,idempotencyKey} from "../lib/simo
 
 assert.deepEqual(executionDisposition("agent.task.ensure"),{status:"RUNNABLE",reason:"AUTHORIZED_INTERNAL"});
 assert.deepEqual(executionDisposition("outreach.reply.sync"),{status:"RUNNABLE",reason:"AUTHORIZED_INTERNAL"});
+assert.deepEqual(executionDisposition("discovery.prepare"),{status:"RUNNABLE",reason:"AUTHORIZED_INTERNAL"});
 assert.deepEqual(executionDisposition("outreach.send"),{status:"WAITING_APPROVAL",reason:"FOUNDER_APPROVAL_REQUIRED"});
 assert.deepEqual(executionDisposition("calendar.book.external"),{status:"WAITING_APPROVAL",reason:"POLICY_NOT_SATISFIED"});
 assert.deepEqual(executionDisposition("calendar.book.external",true),{status:"RUNNABLE",reason:"AUTHORIZED_INTERNAL"});
