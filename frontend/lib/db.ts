@@ -309,7 +309,7 @@ export async function ensureSchema(){
   await q`INSERT INTO agent_voice_profiles(agent_name,display_name,department,provider,provider_voice_id,voice_status,metadata)
     VALUES
       ('Simon','Simon','Executive','elevenlabs','3WqHLnw80rOZqJzW9YRB','READY','{"voice_name":"Sir Michael Caine™","voice_resolution":"canonical_id"}'::jsonb),
-      ('Marie','Marie','Operations','elevenlabs','DODLEQrClDo8wCz460ld','READY','{"voice_name":"Marie canonical ElevenLabs voice"}'::jsonb),
+      ('Marie','Marie','Operations','elevenlabs','21m00Tcm4TlvDq8ikWAM','READY','{"voice_name":"Rachel - warm executive operations","voice_resolution":"agent_registry"}'::jsonb),
       ('Eyes','Eyes','Intelligence','elevenlabs','jRAAK67SEFE9m7ci5DhD','READY','{"voice_name":"Eyes canonical ElevenLabs voice"}'::jsonb),
       ('Mark','Mark','Marketing','elevenlabs','IKne3meq5aSn9XLyUdCD','READY','{"voice_name":"Charlie - Deep, Confident, Energetic"}'::jsonb),
       ('Cammy','Cammy','Campaigns','elevenlabs','XrExE9yKIg1WjnnlVkGX','READY','{"voice_name":"Matilda - Knowledgable, Professional"}'::jsonb),
