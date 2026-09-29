@@ -1,6 +1,7 @@
 import {NextResponse} from "next/server";
 import {requireFounder} from "../../../../../lib/auth";
 import {ensureSchema,sql} from "../../../../../lib/db";
+import {mirrorMeetingToNotion} from "../../../../../lib/notion-meeting-archive";
 
 export const runtime="nodejs";
 
@@ -136,6 +137,51 @@ export async function POST(req:Request){
       id ASC
   `;
 
+  const meetingDate=typeof meeting.meeting_date==="string"
+    ? meeting.meeting_date.slice(0,10)
+    : new Date(meeting.meeting_date).toISOString().slice(0,10);
+  const founderApprovals=(actions as any[]).filter(action=>String(action.authority)==="APPROVAL").length;
+
+  let notionSync:{status:string;pageId:string|null;pageUrl:string|null;error:string|null}={
+    status:"NOT_CONFIGURED",
+    pageId:null,
+    pageUrl:null,
+    error:null,
+  };
+
+  try{
+    notionSync=await mirrorMeetingToNotion({
+      meetingId,
+      meetingDate,
+      meetingType:String(meeting.meeting_type||"DAILY_8AM"),
+      summary,
+      wins:wins.length,
+      blockers:blockers.length,
+      actions:(actions as any[]).length,
+      founderApprovals,
+      reports:(reports as any[]),
+      actionItems:(actions as any[]),
+    });
+  }catch(error){
+    notionSync={
+      status:"ERROR",
+      pageId:null,
+      pageUrl:null,
+      error:error instanceof Error?error.message:"Unknown Notion sync error",
+    };
+  }
+
+  await q`
+    UPDATE nervs_meeting_runs
+    SET
+      notion_sync_status=${notionSync.status},
+      notion_page_id=${notionSync.pageId},
+      notion_page_url=${notionSync.pageUrl},
+      notion_synced_at=CASE WHEN ${notionSync.status}='SYNCED' THEN now() ELSE notion_synced_at END,
+      notion_sync_error=${notionSync.error}
+    WHERE id=${meetingId}
+  `;
+
   return NextResponse.json({
     status:"FINALIZED",
     meeting_id:meetingId,
@@ -143,6 +189,7 @@ export async function POST(req:Request){
     action_count:(actions as any[]).length,
     created_action_count:createdActions.length,
     actions,
+    notion_sync:notionSync,
     authority_note:"Meeting notes may create internal action records only. APPROVAL items remain blocked pending founder review.",
   });
 }
