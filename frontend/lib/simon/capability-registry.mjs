@@ -8,7 +8,7 @@ export const AUTHORITY = Object.freeze({
 
 export const EMPLOYEES = Object.freeze([
   "Simon","Marie","Scout","Claire","Atlas","Sofia","Maven",
-  "Mark","Lucy","Tube","Helios","Eyes","Eve","Alice","Devon","Mercedes","Snake",
+  "Mark","Cammy","Lucy","Tube","Helios","Eyes","Eve","Alice","Devon","Mercedes","Snake",
   "Gatekeeper","Echo","Booker","Flow","Ledger","Delivery/CE"
 ]);
 
@@ -33,7 +33,11 @@ export const CAPABILITIES = Object.freeze({
   "lead.qualify": {owner:"Atlas", provider:"KMCE scoring", authority:AUTHORITY.CONTROLLED},
 
   "campaign.plan": {owner:"Mark", provider:"NERVS + KMCE marketing skills", authority:AUTHORITY.AUTO},
-  "campaign.prepare": {owner:"Mark", provider:"NERVS campaign workflow", authority:AUTHORITY.CONTROLLED},
+  "marketing.campaign.prepare": {owner:"Mark", provider:"NERVS campaign workflow", authority:AUTHORITY.CONTROLLED},
+  "campaign.generate": {owner:"Cammy", provider:"KMCE campaign generation engine", authority:AUTHORITY.CONTROLLED},
+  "campaign.cost.estimate": {owner:"Cammy", provider:"KMCE campaign economics model", authority:AUTHORITY.CONTROLLED},
+  "campaign.target.score": {owner:"Cammy", provider:"KMCE audience scoring model", authority:AUTHORITY.CONTROLLED},
+  "campaign.variant.generate": {owner:"Cammy", provider:"KMCE campaign experiment engine", authority:AUTHORITY.CONTROLLED},
   "campaign.email.prepare": {owner:"Mark", provider:"Listmonk-compatible adapter", authority:AUTHORITY.CONTROLLED},
   "blog.prepare": {owner:"Mark", provider:"KMCE marketing skills", authority:AUTHORITY.CONTROLLED},
   "marketing.show.plan": {owner:"Mark", provider:"KMCE editorial workflow", authority:AUTHORITY.CONTROLLED},
@@ -44,7 +48,7 @@ export const CAPABILITIES = Object.freeze({
   "social.comment.triage": {owner:"Lucy", provider:"Approved social connectors", authority:AUTHORITY.CONTROLLED},
   "social.reply.draft": {owner:"Lucy", provider:"NERVS social adapter layer", authority:AUTHORITY.CONTROLLED},
   "social.reply.send": {owner:"Lucy", provider:"Approved social connectors", authority:AUTHORITY.APPROVAL},
-  "social.performance.collect": {owner:"Lucy", provider:"Approved social analytics connectors", authority:AUTHORITY.AUTO},
+  "social.performance.collect": {owner:"Lucy", provider:"Approved social analytics connectors", authority:AUTHORITY.CONTROLLED},
   "social.publish": {owner:"Lucy", provider:"Approved social connectors", authority:AUTHORITY.APPROVAL},
 
   "video.plan": {owner:"Tube", provider:"AgentTube-derived workflow", authority:AUTHORITY.CONTROLLED},
