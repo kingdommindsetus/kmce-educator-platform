@@ -35,6 +35,110 @@ function meetingDate(){
   }).format(new Date());
 }
 
+function naturalSpeech(
+  agent:(typeof AGENTS)[number],
+  completed:any|undefined,
+  blocker:any|undefined,
+  open:any|undefined,
+  nextAgentName:string|undefined,
+){
+  const winTitle=completed?clean(completed.title):"";
+  const blockerTitle=blocker?clean(blocker.title):"";
+  const nextTitle=open?clean(open.title):(blocker?clean(blocker.title):"");
+  const founderGate=blocker&&/approval|kimberly|founder/i.test(String(blocker.title||"")+" "+String(blocker.instruction||""));
+
+  const openings:Record<string,string>={
+    Simon:"Good morning, Kimberly.",
+    Marie:"Morning, Kimberly.",
+    Eyes:"Here’s what I’m seeing.",
+    Mark:"Quick marketing update.",
+    Cammy:"Here’s where the campaign work stands.",
+    Eve:"Quick brand update.",
+    Tube:"Here’s my video update.",
+    Lucy:"Here’s what’s happening on social.",
+    Snake:"I’ve been watching the numbers.",
+    Alice:"Quick storefront update.",
+    Echo:"Here’s where outreach stands.",
+    Booker:"Here’s the scheduling update.",
+  };
+
+  const parts:string[]=[openings[agent.name]||"Quick update."];
+
+  if(winTitle){
+    const winLead:Record<string,string>={
+      Simon:"We closed out ",
+      Marie:"I finished ",
+      Eyes:"I verified ",
+      Mark:"I wrapped up ",
+      Cammy:"I completed ",
+      Eve:"I finished ",
+      Tube:"I wrapped ",
+      Lucy:"I finished ",
+      Snake:"I confirmed ",
+      Alice:"I completed ",
+      Echo:"I finished ",
+      Booker:"I wrapped up ",
+    };
+    parts.push((winLead[agent.name]||"I finished ")+winTitle+".");
+  }else{
+    parts.push(agent.name==="Snake"
+      ?"Nothing new is fully closed yet, but I’m still tracking movement."
+      :"I don’t have a completed item to call out since the last check.");
+  }
+
+  if(blockerTitle){
+    parts.push(founderGate
+      ?"I’m held up on "+blockerTitle+" because it needs your decision."
+      :"The only thing slowing me down is "+blockerTitle+".");
+  }else{
+    const clearLine=agent.name==="Snake"
+      ?"Nothing is stuck right now."
+      :agent.name==="Eyes"
+        ?"I’m not seeing a blocker at the moment."
+        :"Nothing is blocking me right now.";
+    parts.push(clearLine);
+  }
+
+  if(nextTitle){
+    const nextLead:Record<string,string>={
+      Simon:"My next move is ",
+      Marie:"I’m moving next into ",
+      Eyes:"Next I’m checking ",
+      Mark:"Next I’m moving on ",
+      Cammy:"Next I’m working through ",
+      Eve:"Next I’m tightening up ",
+      Tube:"Next I’m building ",
+      Lucy:"Next I’m pushing ",
+      Snake:"Next I’m watching ",
+      Alice:"Next I’m cleaning up ",
+      Echo:"Next I’m following through on ",
+      Booker:"Next I’m working on ",
+    };
+    parts.push((nextLead[agent.name]||"Next I’m handling ")+nextTitle+".");
+  }else{
+    parts.push("My queue is clear for the moment.");
+  }
+
+  if(founderGate){
+    parts.push("I need you to make that call before I move forward.");
+  }else if(blockerTitle){
+    parts.push("Once that dependency clears, I can keep moving.");
+  }else{
+    const noAsk=agent.name==="Simon"
+      ?"I don’t need anything from you right now."
+      :agent.name==="Marie"
+        ?"I’m good to keep moving unless you want to redirect me."
+        :"I don’t need anything from the team right now.";
+    parts.push(noAsk);
+  }
+
+  if(nextAgentName){
+    parts.push(nextAgentName+", you’re up.");
+  }
+
+  return parts.join(" ");
+}
+
 function reportFor(agent:(typeof AGENTS)[number],tasks:any[],speakingOrder:number){
   const mine=tasks.filter(t=>String(t.assigned_agent||"").toLowerCase()===agent.name.toLowerCase());
   const completed=mine.find(t=>DONE.has(String(t.status||"").toUpperCase()));
@@ -50,7 +154,8 @@ function reportFor(agent:(typeof AGENTS)[number],tasks:any[],speakingOrder:numbe
       : ("Dependency needs resolution for "+clean(blocker.title)+".")
   ):"No ask.";
 
-  const script=agent.name+" reporting. Win: "+win+" Blocker: "+blocked+" Next: "+next+" Ask: "+ask;
+  const nextAgent=AGENTS[speakingOrder]?.name;
+  const script=naturalSpeech(agent,completed,blocker,open,nextAgent);
 
   return {
     agent_id:agent.id,
