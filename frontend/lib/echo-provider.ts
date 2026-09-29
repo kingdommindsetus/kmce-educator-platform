@@ -30,3 +30,17 @@ export async function sendWithEcho(message:EchoEmail){
     dangerouslySkipVersionCheck:true
   });
 }
+
+
+export async function fetchEchoThread(threadId:string){
+  const readiness=echoProviderReadiness();
+  if(!readiness.apiKeyConfigured) throw new Error("COMPOSIO_API_KEY is not configured");
+  if(!readiness.connectedAccountConfigured) throw new Error("COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID is not configured");
+  const composio=new Composio({apiKey:process.env.COMPOSIO_API_KEY!});
+  return composio.tools.execute("GMAIL_FETCH_MESSAGE_BY_THREAD_ID",{
+    userId:"kmce-founder",
+    connectedAccountId:process.env.COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID!,
+    arguments:{thread_id:threadId,user_id:"me"},
+    dangerouslySkipVersionCheck:true
+  });
+}

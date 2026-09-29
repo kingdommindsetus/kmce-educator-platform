@@ -121,6 +121,25 @@ export async function ensureSchema(){
   await q`CREATE UNIQUE INDEX IF NOT EXISTS outreach_jobs_send_attempt_uidx ON outreach_jobs(send_attempt_id) WHERE send_attempt_id IS NOT NULL`;
   await q`CREATE UNIQUE INDEX IF NOT EXISTS outreach_jobs_provider_message_uidx ON outreach_jobs(provider,provider_message_id) WHERE provider_message_id IS NOT NULL`;
 
+  await q`CREATE TABLE IF NOT EXISTS inbound_replies (
+    id BIGSERIAL PRIMARY KEY,
+    outreach_job_id BIGINT NOT NULL REFERENCES outreach_jobs(id) ON DELETE CASCADE,
+    lead_id BIGINT NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL DEFAULT 'gmail',
+    provider_message_id TEXT NOT NULL,
+    provider_thread_id TEXT NOT NULL,
+    sender TEXT,
+    recipient TEXT,
+    subject TEXT,
+    body TEXT,
+    message_at TIMESTAMPTZ,
+    classification TEXT NOT NULL DEFAULT 'REPLIED' CHECK (classification IN ('REPLIED','INTERESTED','NOT_INTERESTED')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(provider,provider_message_id)
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS inbound_replies_lead_idx ON inbound_replies(lead_id,message_at DESC,id DESC)`;
+  await q`CREATE INDEX IF NOT EXISTS inbound_replies_outreach_idx ON inbound_replies(outreach_job_id,message_at DESC,id DESC)`;
+
   await q`CREATE TABLE IF NOT EXISTS discovery_appointments (
     id BIGSERIAL PRIMARY KEY,
     lead_id BIGINT NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
