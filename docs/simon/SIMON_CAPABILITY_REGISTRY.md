@@ -46,6 +46,7 @@ Permanent forbidden actions:
 | Ledger | Finance | Stripe handoff, transaction state, double-entry ledger, reconciliation |
 | Delivery/CE | Fulfillment | entitlement, attendance/completion, CE/certificate evidence |
 | Eyes | Market intelligence | external trends, search demand, visual/product opportunity signals |
+| Eve | Brand & catalog curator | Printify catalog scanning, internal favorites/shortlist, brand direction, collection architecture |
 | Alice | Kingdom Mindset Store manager | storefront freshness, catalog health, images, copy, SEO, collections, merchandising, review queue |
 | Devon | Digital product agent | downloadable products, toolkits, templates, product packaging |
 | Mercedes | Merchandise designer | apparel/merch concepts, creative direction, mockup requirements |
@@ -91,6 +92,9 @@ Permanent forbidden actions:
 | store.trend.research | Eyes/Snake | public trend/search intelligence providers | AUTO |
 | store.pulse.review | Snake | Shopify telemetry + Neon pulse reports | CONTROLLED |
 | store.catalog.review | Alice | Shopify + KMCE store operations | CONTROLLED |
+| store.catalog.scan | Eve | Printify catalog | CONTROLLED |
+| store.catalog.shortlist | Eve | Neon catalog favorites | CONTROLLED |
+| store.brand.develop | Eve | Eve shortlist + Eyes/Snake intelligence | CONTROLLED |
 | store.maintenance.audit | Alice | Shopify storefront + catalog telemetry | CONTROLLED |
 | store.content.optimize | Alice | product copy, imagery, SEO, merchandising workflow | CONTROLLED |
 | store.live.edit | Alice | Shopify | APPROVAL |
@@ -150,3 +154,8 @@ Snake is cross-functional for store growth health. He may create internal tasks 
 ## Alice storefront stewardship
 
 Alice owns continuous storefront maintenance. Simon seeds a daily freshness audit and a Monday deep-clean audit. Alice checks product imagery, titles/descriptions, SEO metadata, collections, listing status, accessibility/alt text, duplicates/stale inventory presentation, visual consistency, and merchandising opportunities. Internal audits and optimization drafts are CONTROLLED; live publishing, destructive changes, live price changes, and theme/settings changes remain Founder-approval gated.
+
+
+## Eve brand and catalog curation
+
+Eve owns product discovery and brand coherence for The Kingdom Mindset Store. Simon seeds a daily Printify catalog scan and a Monday brand-development pass. Eve scans available Printify blueprints, scores candidates against store-fit rules, and maintains KMCE's own persistent shortlist in Neon. Printify's public API does not expose the website Favorites control, so Eve's shortlist is the canonical machine-readable favorite set. Eve then uses that shortlist together with Eyes/Snake market intelligence to prepare brand positioning, visual direction, collection architecture, product-family strategy, naming rules, and merchandising standards. She does not change the live store name or publish products without the appropriate approval/policy gate.
