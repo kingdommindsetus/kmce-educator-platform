@@ -315,7 +315,7 @@ export async function ensureSchema(){
       ('Cammy','Cammy','Campaigns','elevenlabs','XrExE9yKIg1WjnnlVkGX','READY','{"voice_name":"Matilda - Knowledgable, Professional"}'::jsonb),
       ('Eve','Eve','Brand','elevenlabs','pFZP5JQG7iQjIQuC4Bku','READY','{"voice_name":"Lily - Velvety Actress"}'::jsonb),
       ('Tube','Tube','Video','elevenlabs','TX3LPaxmHKxFdv7VOQHJ','READY','{"voice_name":"Liam - Energetic, Social Media Creator"}'::jsonb),
-      ('Lucy','Lucy','Social','elevenlabs','cgSgspJ2msm6clMCkdW9','READY','{"voice_name":"Jessica - Playful, Bright, Warm"}'::jsonb),
+      ('Lucy','Lucy','Social','elevenlabs','XlDdozLmuTofIxK4BjPD','READY','{"voice_name":"Lucy canonical ElevenLabs voice"}'::jsonb),
       ('Snake','Snake','Growth','elevenlabs','jHprmvvyQreWpRuutdmV','READY','{"voice_name":"Snake canonical ElevenLabs voice"}'::jsonb),
       ('Alice','Alice','Store','elevenlabs','Xb7hH8MSUJpSbSDYk0k2','READY','{"voice_name":"Alice - Clear, Engaging Educator"}'::jsonb),
       ('Echo','Echo','Sales Outreach','elevenlabs','cjVigY5qzO86Huf0OWal','READY','{"voice_name":"Eric - Smooth, Trustworthy"}'::jsonb),
