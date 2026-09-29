@@ -4,7 +4,7 @@ import {requireFounder} from "../../../../lib/auth";
 export const runtime="nodejs";
 
 const VOICES={
-  simon:null,
+  simon:"3WqHLnw80rOZqJzW9YRB",
   marie:"DODLEQrClDo8wCz460ld",
   eyes:"jRAAK67SEFE9m7ci5DhD",
   mark:"IKne3meq5aSn9XLyUdCD",
@@ -49,10 +49,7 @@ async function resolveVoiceId(agentId:keyof typeof VOICES,apiKey:string){
   if(agentId==="simon"){
     const envId=String(process.env.SIMON_ELEVENLABS_VOICE_ID||"").trim();
     if(envId) return {voiceId:envId,voiceName:VOICE_NAMES.simon,source:"env"};
-    const voiceName=String(process.env.SIMON_ELEVENLABS_VOICE_NAME||VOICE_NAMES.simon).trim();
-    const found=await findVoiceByName(apiKey,voiceName);
-    if(found) return {voiceId:found,voiceName,source:"account_lookup"};
-    return {voiceId:null,voiceName,source:"not_found"};
+    return {voiceId:VOICES.simon,voiceName:VOICE_NAMES.simon,source:"registry"};
   }
 
   if(agentId==="snake"){
