@@ -50,7 +50,7 @@ export default function AgentConversation({agentName,role}:Props){
       body:JSON.stringify({agent_id:agent.id,text:text.slice(0,1200)}),
     });
     const data=await r.json().catch(()=>({}));
-    if(!r.ok){setStatus("TEXT READY · VOICE UNAVAILABLE");return;}
+    if(!r.ok){setStatus("VOICE UNAVAILABLE · "+String(data?.requested_voice||data?.detail||data?.error||"UNKNOWN").slice(0,90));return;}
     const audio=new Audio("data:"+(data.content_type||"audio/mpeg")+";base64,"+data.audio_base64);
     audioRef.current=audio;
     audio.onplay=()=>setStatus("SPEAKING");
@@ -125,7 +125,7 @@ export default function AgentConversation({agentName,role}:Props){
       <div>
         <div className="eyebrow">LIVE OFFICE CONVERSATION</div>
         <b>Talk to {agent.name}</b>
-        <div className="muted" style={{fontSize:12}}>{role||agent.role} · persistent Neon memory</div>
+        <div className="muted" style={{fontSize:12}}>{role||agent.role} · persistent Neon memory{agent.voiceName?" · "+agent.voiceName:""}</div>
       </div>
       <span className="pill">{status}</span>
     </div>
