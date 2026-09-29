@@ -133,7 +133,9 @@ function naturalSpeech(
   }
 
   if(nextAgentName){
-    parts.push(nextAgentName+", you’re up.");
+    parts.push("Hey "+nextAgentName+", you’re up next.");
+  }else{
+    parts.push("Hey Simon, you’re up next to close us out.");
   }
 
   return parts.join(" ");
