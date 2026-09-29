@@ -162,7 +162,7 @@ export async function POST(req:Request){
       ? await synthesize(activeVoiceId)
       : new Response(null,{status:503});
 
-  if(!r.ok && agentId!=="simon" && agentId!=="marie"){
+  if(!r.ok && agentId!=="simon" && agentId!=="marie" && !FORCE_OPENAI.has(agentId)){
     for(const candidate of resolved.alternatives){
       if(candidate.voice_id===activeVoiceId) continue;
       const retry=await synthesize(candidate.voice_id);
