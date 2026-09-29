@@ -9,7 +9,7 @@ const VOICES={
   eyes:"jRAAK67SEFE9m7ci5DhD",
   mark:"IKne3meq5aSn9XLyUdCD",
   cammy:"XrExE9yKIg1WjnnlVkGX",
-  eve:"pFZP5JQG7iQjIQuC4Bku",
+  eve:"yj30vwTGJxSHezdAGsv9",
   tube:"TX3LPaxmHKxFdv7VOQHJ",
   lucy:"XlDdozLmuTofIxK4BjPD",
   snake:"jHprmvvyQreWpRuutdmV",
