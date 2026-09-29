@@ -11,6 +11,9 @@ assert.deepEqual(executionDisposition("store.catalog.shortlist"),{status:"RUNNAB
 assert.deepEqual(executionDisposition("store.brand.develop"),{status:"RUNNABLE",reason:"AUTHORIZED_INTERNAL"});
 assert.deepEqual(executionDisposition("store.maintenance.audit"),{status:"RUNNABLE",reason:"AUTHORIZED_INTERNAL"});
 assert.deepEqual(executionDisposition("store.content.optimize"),{status:"RUNNABLE",reason:"AUTHORIZED_INTERNAL"});
+assert.deepEqual(executionDisposition("store.merch.printify.create"),{status:"RUNNABLE",reason:"AUTHORIZED_INTERNAL"});
+assert.deepEqual(executionDisposition("store.merch.printify.publish"),{status:"WAITING_APPROVAL",reason:"POLICY_NOT_SATISFIED"});
+assert.deepEqual(executionDisposition("store.merch.printify.publish",true),{status:"RUNNABLE",reason:"AUTHORIZED_INTERNAL"});
 assert.deepEqual(executionDisposition("store.live.edit"),{status:"WAITING_APPROVAL",reason:"FOUNDER_APPROVAL_REQUIRED"});
 assert.deepEqual(executionDisposition("store.publish"),{status:"WAITING_APPROVAL",reason:"FOUNDER_APPROVAL_REQUIRED"});
 assert.deepEqual(executionDisposition("store.email.send"),{status:"WAITING_APPROVAL",reason:"FOUNDER_APPROVAL_REQUIRED"});
