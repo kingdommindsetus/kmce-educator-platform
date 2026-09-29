@@ -3,6 +3,7 @@ export type NervsAvatarAgent = {
   name: string;
   role: string;
   voiceId: string;
+  voiceName?: string;
   referenceFile: string | null;
   mediaUrl: string | null;
   durationSeconds: number | null;
@@ -13,11 +14,11 @@ export type NervsAvatarAgent = {
 
 export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
   {
-    id:"simon", name:"Simon", role:"Executive / Orchestrator", voiceId:"pqHfZKP75CvOlQylNhV4",
+    id:"simon", name:"Simon", role:"Executive / Orchestrator", voiceId:"", voiceName:"Sir Michael Caine™",
     referenceFile:"simon.mp4", mediaUrl:"https://resource2.heygen.ai/video/f55d6cfb26d84479836f9bba79d80170/original.mp4", durationSeconds:10,
     liveTalkingAvatarId:"kmce_simon_v1",
     liveTalkingModel:"musetalk",
-    personality:"Calm, executive, decisive, systems-focused",
+    personality:"Calm, executive, decisive, systems-focused; polished British chief-of-staff delivery",
   },
   {
     id:"marie", name:"Marie", role:"Executive Operations", voiceId:"EXAVITQu4vr4xnSDxMaL",
@@ -69,7 +70,7 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
     personality:"Bright, social, audience-aware; Lucky is an optional nickname only",
   },
   {
-    id:"snake", name:"Snake", role:"Growth Measurement / Analytics", voiceId:"k5eu7V3cPJkEA7D2irmP",
+    id:"snake", name:"Snake", role:"Growth Measurement / Analytics", voiceId:"k5eu7V3cPJkEA7D2irmP", voiceName:"Zadok - Confident, Clear and Natural",
     referenceFile:"snake.mp4", mediaUrl:"https://resource2.heygen.ai/video/e5f8b946639347f2882888b4acc41697/original.mp4", durationSeconds:10,
     liveTalkingAvatarId:"kmce_snake_v1",
     liveTalkingModel:"musetalk",
