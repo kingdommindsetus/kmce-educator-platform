@@ -84,7 +84,7 @@ async function seedDueJobs(q:any){
   const day=new Date().toISOString().slice(0,10);
   const eveScanKey=idempotencyKey(["eve-catalog-scan","KINGDOM_MINDSET_STORE",day]);
   await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by)
-    VALUES(${eveScanKey},'store.catalog.scan','Eve','CONTROLLED','store','KINGDOM_MINDSET_STORE',
+    VALUES(${eveScanKey},'store.catalog.scan','Evan','CONTROLLED','store','KINGDOM_MINDSET_STORE',
     ${JSON.stringify({store_code:"KINGDOM_MINDSET_STORE",scan_date:day,max_shortlist:50})}::jsonb,'Simon')
     ON CONFLICT(idempotency_key) DO NOTHING`;
 
@@ -103,7 +103,7 @@ async function seedDueJobs(q:any){
   if(isMonday){
     const brandKey=idempotencyKey(["eve-brand-development","KINGDOM_MINDSET_STORE",day]);
     await q`INSERT INTO autonomy_jobs(idempotency_key,capability,owner_agent,authority,entity_type,entity_id,payload,created_by)
-      VALUES(${brandKey},'store.brand.develop','Eve','CONTROLLED','store','KINGDOM_MINDSET_STORE',
+      VALUES(${brandKey},'store.brand.develop','Evan','CONTROLLED','store','KINGDOM_MINDSET_STORE',
       ${JSON.stringify({store_code:"KINGDOM_MINDSET_STORE",cadence:"WEEKLY",brand_date:day})}::jsonb,'Simon')
       ON CONFLICT(idempotency_key) DO NOTHING`;
 
@@ -277,8 +277,8 @@ async function handleJob(q:any,job:any){
       await q`INSERT INTO store_catalog_favorites(store_code,provider,provider_item_id,title,brand,model,image_url,source,favorite_status,fit_score,rationale,metadata,created_by)
         VALUES(${storeCode},'PRINTIFY',${String(item.id)},${String(item.title||"Untitled")},${item.brand||null},${item.model||null},
         ${Array.isArray(item.images)&&item.images.length?String(item.images[0]):null},'EVE_SCAN','SHORTLISTED',${Number(item.fit_score)},
-        ${"Eve catalog scan: product type fits current Kingdom Mindset Store merchandise categories."},
-        ${JSON.stringify({description:item.description||null,images:item.images||[]})}::jsonb,'Eve')
+        ${"Evan catalog scan: product type fits current Kingdom Mindset Store merchandise categories."},
+        ${JSON.stringify({description:item.description||null,images:item.images||[]})}::jsonb,'Evan')
         ON CONFLICT(store_code,provider,provider_item_id) DO UPDATE SET
         title=EXCLUDED.title,brand=EXCLUDED.brand,model=EXCLUDED.model,image_url=EXCLUDED.image_url,
         fit_score=EXCLUDED.fit_score,metadata=EXCLUDED.metadata,updated_at=now()`;
@@ -296,17 +296,17 @@ async function handleJob(q:any,job:any){
     let briefId=active.length?Number(active[0].id):null;
     if(!briefId){
       const rows:any=await q`INSERT INTO store_brand_briefs(store_code,status,brand_name,source_favorite_ids,created_by)
-        VALUES(${storeCode},'DRAFT','The Kingdom Mindset Store',${JSON.stringify(favorites.map((x:any)=>Number(x.id)))}::jsonb,'Eve')
+        VALUES(${storeCode},'DRAFT','The Kingdom Mindset Store',${JSON.stringify(favorites.map((x:any)=>Number(x.id)))}::jsonb,'Evan')
         RETURNING id`;
       briefId=Number(rows[0].id);
     }
     const title="Develop Kingdom Mindset Store brand direction";
-    const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Eve' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
+    const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Evan' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
     let taskId:number;
     if(existing.length)taskId=Number(existing[0].id);
     else{
-      const instruction="Use the current Eve shortlist plus Eyes/Snake market intelligence to develop a cohesive Kingdom Mindset Store brand direction: audience, positioning, visual language, product-family strategy, collection architecture, naming system, image style, typography direction, and merchandising rules. Keep the existing store name unless Founder approves a change. Prepare recommendations only; do not publish or alter live products.";
-      const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Eve',${title},${instruction},'AUTONOMY','Simon') RETURNING id`;
+      const instruction="Use the current Evan shortlist plus Eyes/Snake market intelligence to develop a cohesive Kingdom Mindset Store brand direction: audience, positioning, visual language, product-family strategy, collection architecture, naming system, image style, typography direction, and merchandising rules. Keep the existing store name unless Founder approves a change. Prepare recommendations only; do not publish or alter live products.";
+      const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Evan',${title},${instruction},'AUTONOMY','Simon') RETURNING id`;
       taskId=Number(rows[0].id);
     }
     return {status:"SUCCEEDED",result:{store_code:storeCode,brand_brief_id:briefId,task_id:taskId,source_favorites:favorites.length,external_actions_executed:false}};
