@@ -14,7 +14,7 @@ export type NervsAvatarAgent = {
 
 export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
   {
-    id:"simon", name:"Simon", role:"Executive / Orchestrator", voiceId:"pNInz6obpgDQGcFmaJgB", voiceName:"Adam - confident male executive",
+    id:"simon", name:"Simon", role:"Executive / Orchestrator", voiceId:"pNInz6obpgDQGcFmaJgB", voiceName:"Simon - confident male executive",
     referenceFile:"simon.mp4", mediaUrl:"https://resource2.heygen.ai/video/f55d6cfb26d84479836f9bba79d80170/original.mp4", durationSeconds:10,
     liveTalkingAvatarId:"kmce_simon_v1",
     liveTalkingModel:"musetalk",

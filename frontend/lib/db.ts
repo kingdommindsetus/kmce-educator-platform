@@ -6,7 +6,7 @@ export function sql(){
   return neon(url);
 }
 
-export const SCHEMA_VERSION=1;
+export const SCHEMA_VERSION=2;
 const SCHEMA_LOCK=727201;
 let schemaPromise:Promise<void>|null=null;
 
@@ -381,7 +381,7 @@ async function runSchema(q:SchemaQuery){
 
   await q`INSERT INTO agent_voice_profiles(agent_name,display_name,department,provider,provider_voice_id,voice_status,metadata)
     VALUES
-      ('Simon','Simon','Executive','elevenlabs','pNInz6obpgDQGcFmaJgB','READY','{"voice_name":"Adam - confident male executive","voice_resolution":"fixed_agent_voice"}'::jsonb),
+      ('Simon','Simon','Executive','elevenlabs','pNInz6obpgDQGcFmaJgB','READY','{"voice_name":"Simon - confident male executive","voice_resolution":"fixed_agent_voice"}'::jsonb),
       ('Marie','Marie','Operations','elevenlabs','21m00Tcm4TlvDq8ikWAM','READY','{"voice_name":"Rachel - warm female operations","voice_resolution":"fixed_agent_voice"}'::jsonb),
       ('Eyes','Eyes','Intelligence','elevenlabs','EXAVITQu4vr4xnSDxMaL','READY','{"voice_name":"Bella - clear analytical female","voice_resolution":"fixed_agent_voice"}'::jsonb),
       ('Mark','Mark','Marketing','elevenlabs','IKne3meq5aSn9XLyUdCD','READY','{"voice_name":"Charlie - confident marketing male","voice_resolution":"fixed_agent_voice"}'::jsonb),
