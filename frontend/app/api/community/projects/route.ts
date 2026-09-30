@@ -45,5 +45,7 @@ export async function POST(req:Request){
   const project=rows[0];
   await q`INSERT INTO community_builder_actions(project_id,action_type,actor,detail,payload)
     VALUES(${project.id},'BLUEPRINT_CREATED','Pegasus','Native community blueprint generated from educator brief.',${JSON.stringify({tier_count:blueprint.tiers.length,space_count:blueprint.spaces.length})}::jsonb)`;
+  await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by)
+    VALUES('Marie',${"Coordinate "+projectName},${"Own community operations for "+projectName+". Track the blueprint through founder approval, native build, content setup, member setup, launch readiness, and live operations. Escalate founder-only decisions instead of making them."},'PEGASUS_COMMUNITY','Pegasus')`;
   return NextResponse.json({project},{status:201});
 }

@@ -99,6 +99,12 @@ export async function POST(_req:Request,{params}:{params:Promise<{id:string}>}){
   `;
   await q`INSERT INTO community_builder_actions(project_id,action_type,actor,detail,payload)
     VALUES(${projectId},'COMMUNITY_CREATED','Pegasus','Native Pegasus community created from approved blueprint.',${JSON.stringify({community_id:communityId,tiers:Object.keys(tierIds).length,spaces:Object.keys(spaceIds).length,lessons:lessonCount})}::jsonb)`;
+  const taskTitle="Launch "+String(community.name)+" community operations";
+  const existingTask:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Marie' AND source='PEGASUS_COMMUNITY' AND title=${taskTitle} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
+  if(!existingTask.length){
+    await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by)
+      VALUES('Marie',${taskTitle},${"Community is live. Coordinate content completion, onboarding, events, member readiness, specialist handoffs, and launch monitoring. Keep pricing, destructive changes, refunds, and consequential access decisions founder-gated."},'PEGASUS_COMMUNITY','Pegasus')`;
+  }
 
   return NextResponse.json({project:updated[0],community,summary:{tiers:Object.keys(tierIds).length,spaces:Object.keys(spaceIds).length,lessons:lessonCount}});
 }
