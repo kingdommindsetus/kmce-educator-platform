@@ -6,7 +6,7 @@ export function sql(){
   return neon(url);
 }
 
-export const SCHEMA_VERSION=9;
+export const SCHEMA_VERSION=10;
 const SCHEMA_LOCK=727201;
 let schemaPromise:Promise<void>|null=null;
 
@@ -96,6 +96,7 @@ async function runSchema(q:SchemaQuery){
   await q`CREATE TABLE IF NOT EXISTS courses (
     id BIGSERIAL PRIMARY KEY,
     course_code TEXT NOT NULL UNIQUE CHECK (course_code ~ '^KM-[0-9]{4}-[0-9]{3}$'),
+    working_name TEXT NOT NULL DEFAULT '',
     educator_id BIGINT NOT NULL REFERENCES educators(id),
     title TEXT NOT NULL,
     course_format TEXT NOT NULL,
@@ -120,6 +121,7 @@ async function runSchema(q:SchemaQuery){
 
   // Upgrade legacy course tables created before controlled CE course files.
   await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_code TEXT`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS working_name TEXT NOT NULL DEFAULT ''`;
   await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS educator_id BIGINT REFERENCES educators(id)`;
   await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_format TEXT NOT NULL DEFAULT 'Legacy'`;
   await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS target_audience TEXT NOT NULL DEFAULT ''`;
@@ -147,6 +149,7 @@ async function runSchema(q:SchemaQuery){
     SET course_code='KM-2026-001'
     WHERE course_code IS NULL
       AND title='Craniofacial Biodentistry & Advanced Airway Integration'`;
+  await q`UPDATE courses SET working_name='Dr. Tim Course 2026' WHERE course_code='KM-2026-001' AND working_name=''`;
 
   await q`WITH legacy AS (
       SELECT id,row_number() OVER (ORDER BY id) AS rn

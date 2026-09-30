@@ -12,12 +12,13 @@ export async function seedPilot(){
  // First controlled KMCE course file. Creation does not authorize CE.
  const km2026001EducationalNeed=`Sleep-related breathing disorders, obstructive sleep apnea in particular, are common and widely underdiagnosed. General dentists can identify craniofacial and airway findings early, yet many practices lack a structured workflow to recognize risk factors, document findings, refer to a physician for diagnosis, and integrate airway findings into restorative, orthodontic, and TMJ/TMD treatment planning. This draft uses a craniofacial-development and biologic-dentistry perspective while staying within dental scope of practice. Faculty confirmation and KMCE needs evidence remain required before submission.`;
  await q`INSERT INTO courses(
-   course_code,educator_id,title,course_format,target_audience,educational_need,
+   course_code,working_name,educator_id,title,course_format,target_audience,educational_need,
    learning_objectives,agenda,instructional_minutes,proposed_ce_hours,subject_code,reference_resources,
    attendance_method,completion_criteria,evaluation_method,assessment_plan,
    course_status,authorization_status
  ) VALUES(
    'KM-2026-001',
+   'Dr. Tim Course 2026',
    ${educator.id},
    'Craniofacial Biodentistry & Advanced Airway Integration',
    'Live seminar',
@@ -37,7 +38,7 @@ export async function seedPilot(){
    'NOT_SUBMITTED'
  )
  ON CONFLICT(course_code) DO UPDATE SET
-   course_format=EXCLUDED.course_format,target_audience=EXCLUDED.target_audience,educational_need=EXCLUDED.educational_need,learning_objectives=EXCLUDED.learning_objectives,agenda=EXCLUDED.agenda,instructional_minutes=EXCLUDED.instructional_minutes,proposed_ce_hours=EXCLUDED.proposed_ce_hours,subject_code=EXCLUDED.subject_code,reference_resources=EXCLUDED.reference_resources,attendance_method=EXCLUDED.attendance_method,completion_criteria=EXCLUDED.completion_criteria,evaluation_method=EXCLUDED.evaluation_method,assessment_plan=EXCLUDED.assessment_plan,updated_at=now()
+   working_name=CASE WHEN courses.working_name='' THEN EXCLUDED.working_name ELSE courses.working_name END,course_format=EXCLUDED.course_format,target_audience=EXCLUDED.target_audience,educational_need=EXCLUDED.educational_need,learning_objectives=EXCLUDED.learning_objectives,agenda=EXCLUDED.agenda,instructional_minutes=EXCLUDED.instructional_minutes,proposed_ce_hours=EXCLUDED.proposed_ce_hours,subject_code=EXCLUDED.subject_code,reference_resources=EXCLUDED.reference_resources,attendance_method=EXCLUDED.attendance_method,completion_criteria=EXCLUDED.completion_criteria,evaluation_method=EXCLUDED.evaluation_method,assessment_plan=EXCLUDED.assessment_plan,updated_at=now()
  WHERE courses.authorization_status='NOT_SUBMITTED' AND courses.learning_objectives='[]'::jsonb AND courses.agenda=''`;
 
  for(const l of seedLeads){

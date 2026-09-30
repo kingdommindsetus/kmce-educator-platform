@@ -7,7 +7,7 @@ import CourseOfferLanes from "./CourseOfferLanes";
 type Props={educators:any[]};
 
 const empty={
-  course_code:"KM-2026-001", educator_id:"", title:"", course_format:"Live webinar",
+  course_code:"KM-2026-001", working_name:"", educator_id:"", title:"", course_format:"Live webinar",
   target_audience:"Dental professionals", educational_need:"", learning_objectives:"",
   agenda:"", instructional_minutes:"", proposed_ce_hours:"", subject_code:"",
   reference_resources:"", attendance_method:"", completion_criteria:"", evaluation_method:"", assessment_plan:"",
@@ -32,7 +32,7 @@ export default function CourseControl({educators}:Props){
   function editPacket(course:any){
     setEditing(course);
     setForm({
-      course_code:course.course_code,educator_id:String(course.educator_id||""),title:course.title||"",course_format:course.course_format||"",target_audience:course.target_audience||"",educational_need:course.educational_need||"",learning_objectives:Array.isArray(course.learning_objectives)?course.learning_objectives.join("\n"):"",agenda:course.agenda||"",instructional_minutes:String(course.instructional_minutes||""),proposed_ce_hours:String(course.proposed_ce_hours||""),subject_code:course.subject_code||"",reference_resources:Array.isArray(course.reference_resources)?course.reference_resources.join("\n"):"",attendance_method:course.attendance_method||"",completion_criteria:course.completion_criteria||"",evaluation_method:course.evaluation_method||"",assessment_plan:course.assessment_plan||"",
+      course_code:course.course_code,working_name:course.working_name||"",educator_id:String(course.educator_id||""),title:course.title||"",course_format:course.course_format||"",target_audience:course.target_audience||"",educational_need:course.educational_need||"",learning_objectives:Array.isArray(course.learning_objectives)?course.learning_objectives.join("\n"):"",agenda:course.agenda||"",instructional_minutes:String(course.instructional_minutes||""),proposed_ce_hours:String(course.proposed_ce_hours||""),subject_code:course.subject_code||"",reference_resources:Array.isArray(course.reference_resources)?course.reference_resources.join("\n"):"",attendance_method:course.attendance_method||"",completion_criteria:course.completion_criteria||"",evaluation_method:course.evaluation_method||"",assessment_plan:course.assessment_plan||"",
     });
     setNotice(`${course.course_code} · EDIT PACKET`);
   }
@@ -83,6 +83,7 @@ export default function CourseControl({educators}:Props){
     <p className="muted">A course is not authorized merely because it is created. Approval is a separate founder decision recorded in the course file.</p>
     <div className="grid" style={{gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:10}}>
       <input value={form.course_code} onChange={e=>update("course_code",e.target.value)} placeholder="KM-YYYY-###" />
+      <input value={form.working_name} onChange={e=>update("working_name",e.target.value)} placeholder="Working name — e.g., Dr. Tim Course 2026" />
       <select value={form.educator_id} onChange={e=>update("educator_id",e.target.value)}><option value="">Faculty owner</option>{educators.map(e=><option value={e.id} key={e.id}>{e.public_name}</option>)}</select>
       <input value={form.title} onChange={e=>update("title",e.target.value)} placeholder="Course title" />
       <input value={form.course_format} onChange={e=>update("course_format",e.target.value)} placeholder="Format" />
@@ -106,7 +107,7 @@ export default function CourseControl({educators}:Props){
     {notice&&<p><b>{notice}</b></p>}
     <div className="eyebrow" style={{marginTop:24}}>COURSE REGISTER</div>
     {courses.map(course=><div className="lead" key={course.id}>
-      <div><b>{course.course_code} · {course.title}</b><div className="muted">{course.faculty_name} · {course.course_format} · {course.proposed_ce_hours} hours</div></div>
+      <div><b>{course.working_name||course.title}</b><div className="muted">{course.faculty_name} · {course.course_format} · {course.proposed_ce_hours} hours · Internal ID {course.course_code}</div></div>
       <span className="pill">{course.authorization_status}</span>
       {course.authorization_status!=="UNDER_REVIEW"&&<button className="btn" onClick={()=>editPacket(course)}>Edit packet</button>}
       {course.authorization_status==="NOT_SUBMITTED"&&<button className="btn" onClick={()=>void submit(course)}>Submit for review</button>}
