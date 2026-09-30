@@ -22,11 +22,12 @@ export default function KmCommunityBuilder({educators}:Props){
   useEffect(()=>{void load();},[]);
 
   async function generate(){
+    if(!status?.storage_ready){setNotice("PEGASUS STORAGE IS NOT READY · refresh once migration completes");return;}
     setBusy(true);setNotice("Pegasus is building the community blueprint…");
     const r=await fetch("/api/community/projects",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({brief,educator_id:educatorId||null})});
     const d=await r.json().catch(()=>({}));
     setBusy(false);
-    if(!r.ok){setNotice(d.error||"Could not build community blueprint");return;}
+    if(!r.ok){setNotice([d.error,d.detail].filter(Boolean).join(" · ")||`Could not build community blueprint (${r.status})`);return;}
     setProject(d.project);setNotice("BLUEPRINT READY · MARIE IS TRACKING THE PROJECT");await load();
   }
 
@@ -56,7 +57,7 @@ export default function KmCommunityBuilder({educators}:Props){
   return <div className="panel circle-builder">
     <div className="circle-hero">
       <div><div className="eyebrow">KM CIRCLE · POWERED BY PEGASUS</div><h2>Build it. Then let Marie run it.</h2><p className="muted">Pegasus creates the membership structure and native community. Marie manages the operating lifecycle, specialist handoffs, member readiness, content completion and launch health.</p></div>
-      <div className={"circle-connection "+(status?.provisioning_enabled?"online":"offline")}><span>●</span><div><b>Pegasus Community Engine</b><small>Native · Neon-backed · Marie managed</small></div></div>
+      <div className={"circle-connection "+(status?.storage_ready?"online":"offline")}><span>●</span><div><b>Pegasus Community Engine</b><small>{status?.storage_ready?`Ready · Neon · schema v${status?.schema_version||"?"}`:"Preparing storage · generation locked"}</small></div></div>
     </div>
 
     <div className="circle-mode-tabs">
@@ -70,7 +71,7 @@ export default function KmCommunityBuilder({educators}:Props){
         <label className="course-field"><span>Faculty / Community Owner</span><select value={educatorId} onChange={e=>setEducatorId(e.target.value)}><option value="">KMCE / unassigned</option>{educators.map(e=><option key={e.id} value={e.id}>{e.public_name}</option>)}</select></label>
         <div className="circle-message assistant"><b>Pegasus</b><p>Describe the community, tiers, price points, courses, coaching, events, or member experience you want. I’ll structure it before anything is created.</p></div>
         <div className="circle-message founder"><b>{educator?.public_name||"Founder"}</b><textarea value={brief} onChange={e=>setBrief(e.target.value)} rows={7}/></div>
-        <button className="btn primary circle-build-btn" disabled={busy} onClick={()=>void generate()}>{busy?"Building blueprint…":"Generate Community Blueprint"}</button>
+        <button className="btn primary circle-build-btn" disabled={busy||!status?.storage_ready} onClick={()=>void generate()}>{busy?"Building blueprint…":!status?.storage_ready?"Preparing Pegasus Storage…":"Generate Community Blueprint"}</button>
         {notice&&<div className="circle-notice">{notice}</div>}
         <div className="circle-recent"><div className="eyebrow">RECENT BLUEPRINTS</div>{projects.slice(0,5).map(p=><button key={p.id} onClick={()=>setProject(p)}><div><b>{p.project_name}</b><small>{p.educator_name||"KMCE"} · #{p.id}</small></div><span>{p.status}</span></button>)}</div>
       </section>
