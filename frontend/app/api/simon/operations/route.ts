@@ -1,6 +1,7 @@
 import {NextResponse} from "next/server";
 import {requireFounder} from "../../../../lib/auth";
 import {ensureSchema,sql} from "../../../../lib/db";
+import {labelAgentTask} from "../../../../lib/course-task-labels";
 
 export const runtime="nodejs";
 
@@ -10,13 +11,15 @@ export async function GET(){
   await ensureSchema();
   const q=sql();
 
-  const tasks:any=await q`
+  const rawTasks:any=await q`
     SELECT id,assigned_agent,title,instruction,status,source,requested_by,created_at,updated_at
     FROM agent_tasks
     WHERE status IN ('QUEUED','IN_PROGRESS')
     ORDER BY created_at DESC
     LIMIT 100
   `;
+  const courses:any=await q`SELECT c.course_code,c.working_name,c.title,c.course_format,e.public_name AS faculty_name FROM courses c JOIN educators e ON e.id=c.educator_id`;
+  const tasks=rawTasks.map((task:any)=>labelAgentTask(task,courses));
 
   const actions:any=await q`
     SELECT id,action_type,target,payload,status,requested_by,created_at
