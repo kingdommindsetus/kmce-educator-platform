@@ -75,7 +75,7 @@ export const KMCE_TOOL_REGISTRY=Object.freeze([
   {
     tool_id:"commerce.shopify_intelligence",
     label:"E-Commerce MCP",
-    owner_agents:["Eve","Snake","Alice","Simon"],
+    owner_agents:["Evan","Snake","Alice","Simon"],
     provider:"Apify MCP",
     actor_url:"https://apify.com/nexgendata/ecommerce-intelligence-mcp-server",
     authority:TOOL_AUTHORITY.AUTO,
