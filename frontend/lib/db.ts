@@ -93,6 +93,40 @@ async function runSchema(q:SchemaQuery){
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
 
+  await q`CREATE TABLE IF NOT EXISTS courses (
+    id BIGSERIAL PRIMARY KEY,
+    course_code TEXT NOT NULL UNIQUE CHECK (course_code ~ '^KM-[0-9]{4}-[0-9]{3}$'),
+    educator_id BIGINT NOT NULL REFERENCES educators(id),
+    title TEXT NOT NULL,
+    course_format TEXT NOT NULL,
+    target_audience TEXT NOT NULL,
+    educational_need TEXT NOT NULL,
+    learning_objectives JSONB NOT NULL DEFAULT '[]'::jsonb,
+    agenda TEXT NOT NULL DEFAULT '',
+    instructional_minutes INTEGER NOT NULL DEFAULT 0 CHECK (instructional_minutes >= 0),
+    proposed_ce_hours NUMERIC(6,2) NOT NULL DEFAULT 0 CHECK (proposed_ce_hours >= 0),
+    subject_code TEXT,
+    attendance_method TEXT NOT NULL DEFAULT '',
+    completion_criteria TEXT NOT NULL DEFAULT '',
+    evaluation_method TEXT NOT NULL DEFAULT '',
+    assessment_plan TEXT,
+    course_status TEXT NOT NULL DEFAULT 'Development',
+    authorization_status TEXT NOT NULL DEFAULT 'NOT_SUBMITTED' CHECK (authorization_status IN ('NOT_SUBMITTED','UNDER_REVIEW','APPROVED','APPROVED_WITH_CONDITIONS','REVISION_REQUIRED','DENIED')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS course_authorizations (
+    id BIGSERIAL PRIMARY KEY,
+    course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    decision TEXT NOT NULL CHECK (decision IN ('APPROVED','APPROVED_WITH_CONDITIONS','REVISION_REQUIRED','DENIED')),
+    decided_by TEXT NOT NULL,
+    decision_notes TEXT,
+    review_snapshot JSONB NOT NULL DEFAULT '{}'::jsonb,
+    decided_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS course_authorizations_course_idx ON course_authorizations(course_id,decided_at DESC)`;
+
   await q`CREATE TABLE IF NOT EXISTS leads (
     id BIGSERIAL PRIMARY KEY,
     educator_id BIGINT NOT NULL REFERENCES educators(id),

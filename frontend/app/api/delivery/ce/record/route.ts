@@ -8,7 +8,8 @@ export async function POST(req:Request){
  const founder=await requireFounder(); if(!founder)return NextResponse.json({error:"Founder access required"},{status:403});
  await ensureSchema(); const q=sql(); const body:any=await req.json().catch(()=>({}));
  const enrollmentId=Number(body.enrollment_id||0); if(!enrollmentId)return NextResponse.json({error:"enrollment_id required"},{status:400});
- const rows:any=await q`SELECT * FROM learning_enrollments WHERE id=${enrollmentId} LIMIT 1`; if(!rows.length)return NextResponse.json({error:"Enrollment not found"},{status:404});
+ const rows:any=await q`SELECT e.*,c.authorization_status,c.course_status FROM learning_enrollments e LEFT JOIN courses c ON c.course_code=e.course_code WHERE e.id=${enrollmentId} LIMIT 1`; if(!rows.length)return NextResponse.json({error:"Enrollment not found"},{status:404});
+ if(rows[0].authorization_status!=="APPROVED")return NextResponse.json({error:"Course has not been internally authorized for CE completion"},{status:409});
  const eligibility:any=ceEligibility(body);
  const rec:any=await q`INSERT INTO ce_completion_records(enrollment_id,ce_hours,attendance_verified,assessment_passed,evaluation_completed,eligibility_status,evidence,verified_by,verified_at)
  VALUES(${enrollmentId},${Number(body.ce_hours||0)},${Boolean(body.attendance_verified)},${Boolean(body.assessment_passed)},${Boolean(body.evaluation_completed)},${eligibility.status},${JSON.stringify(body.evidence||{})}::jsonb,${founder.email},now())
