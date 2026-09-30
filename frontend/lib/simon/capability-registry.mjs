@@ -8,7 +8,7 @@ export const AUTHORITY = Object.freeze({
 
 export const EMPLOYEES = Object.freeze([
   "Simon","Marie","Scout","Claire","Atlas","Sofia","Maven",
-  "Mark","Cammy","Lucy","Tube","Helios","Eyes","Eve","Alice","Devon","Mercedes","Snake",
+  "Mark","Cammy","Lucy","Tube","Helios","Eyes","Evan","Alice","Devon","Mercedes","Snake",
   "Gatekeeper","Echo","Booker","Flow","Ledger","Delivery/CE"
 ]);
 
@@ -34,7 +34,7 @@ export const CAPABILITIES = Object.freeze({
 
   "research.deep": {owner:"Claire", provider:"Academic Research MCP + KMCE knowledge", authority:AUTHORITY.AUTO},
   "media.youtube_research": {owner:"Tube", provider:"YouTube MCP", authority:AUTHORITY.AUTO},
-  "commerce.shopify_intelligence": {owner:"Eve", provider:"E-Commerce MCP", authority:AUTHORITY.AUTO},
+  "commerce.shopify_intelligence": {owner:"Evan", provider:"E-Commerce MCP", authority:AUTHORITY.AUTO},
   "website.quality_audit": {owner:"Alice", provider:"KMCE Tool Registry", authority:AUTHORITY.AUTO},
   "course.quiz_generate": {owner:"Delivery/CE", provider:"KMCE Tool Registry", authority:AUTHORITY.CONTROLLED},
   "code.sandbox": {owner:"Simon", provider:"Sandboxed execution provider", authority:AUTHORITY.CONTROLLED},
