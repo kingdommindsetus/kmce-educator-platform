@@ -509,8 +509,7 @@ export async function ensureSchema(){
     UNIQUE(dentist_id,gallery_slug)
   )`;
   await q`CREATE INDEX IF NOT EXISTS smile_mockup_gallery_dentist_idx ON smile_mockup_gallery(dentist_id,updated_at DESC)`;
-  await q`CREATE INDEX IF NOT EXISTS smile_mockup_gallery_public_idx ON smile_mockup_gallery(is_public) WHERE is_public=true`
-  )`;
+  await q`CREATE INDEX IF NOT EXISTS smile_mockup_gallery_public_idx ON smile_mockup_gallery(is_public) WHERE is_public=true`;
 
   await q`CREATE INDEX IF NOT EXISTS nervs_meeting_reports_meeting_idx ON nervs_meeting_reports(meeting_id,speaking_order,id)`;
   await q`CREATE INDEX IF NOT EXISTS nervs_meeting_actions_meeting_idx ON nervs_meeting_actions(meeting_id,status,priority)`;
