@@ -14,7 +14,7 @@ function routeAgent(text:string){
   if(/market|competitor|research|trend|intelligence/.test(t)) return "Eyes";
   if(/campaign|ad spend|budget|economics|offer/.test(t)) return "Cammy";
   if(/marketing|funnel|promotion|positioning/.test(t)) return "Mark";
-  if(/brand|catalog|collection|visual/.test(t)) return "Eve";
+  if(/brand|catalog|collection|visual/.test(t)) return "Evan";
   if(/youtube|video|thumbnail|script/.test(t)) return "Tube";
   if(/social|instagram|facebook|tiktok|post/.test(t)) return "Lucy";
   if(/metric|analytics|conversion|growth|numbers|performance/.test(t)) return "Snake";
