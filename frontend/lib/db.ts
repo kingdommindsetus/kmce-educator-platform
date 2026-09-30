@@ -535,23 +535,23 @@ async function runSchema(q:SchemaQuery){
   await q`UPDATE agent_tasks SET assigned_agent='Evan' WHERE assigned_agent='Eve'`;
   await q`DELETE FROM agent_voice_profiles WHERE agent_name='Eve'`;
 
-  await q`DO $$ BEGIN
-    IF to_regclass('public.pegasus_meeting_runs') IS NOT NULL AND to_regclass('public.pegasus_meeting_runs') IS NULL THEN
-      ALTER TABLE pegasus_meeting_runs RENAME TO pegasus_meeting_runs;
+  await q`DO $ BEGIN
+    IF to_regclass('public.nervs_meeting_runs') IS NOT NULL AND to_regclass('public.pegasus_meeting_runs') IS NULL THEN
+      ALTER TABLE nervs_meeting_runs RENAME TO pegasus_meeting_runs;
     END IF;
-    IF to_regclass('public.pegasus_meeting_reports') IS NOT NULL AND to_regclass('public.pegasus_meeting_reports') IS NULL THEN
-      ALTER TABLE pegasus_meeting_reports RENAME TO pegasus_meeting_reports;
+    IF to_regclass('public.nervs_meeting_reports') IS NOT NULL AND to_regclass('public.pegasus_meeting_reports') IS NULL THEN
+      ALTER TABLE nervs_meeting_reports RENAME TO pegasus_meeting_reports;
     END IF;
-    IF to_regclass('public.pegasus_meeting_actions') IS NOT NULL AND to_regclass('public.pegasus_meeting_actions') IS NULL THEN
-      ALTER TABLE pegasus_meeting_actions RENAME TO pegasus_meeting_actions;
+    IF to_regclass('public.nervs_meeting_actions') IS NOT NULL AND to_regclass('public.pegasus_meeting_actions') IS NULL THEN
+      ALTER TABLE nervs_meeting_actions RENAME TO pegasus_meeting_actions;
     END IF;
-    IF to_regclass('public.pegasus_meeting_reports_meeting_idx') IS NOT NULL AND to_regclass('public.pegasus_meeting_reports_meeting_idx') IS NULL THEN
-      ALTER INDEX pegasus_meeting_reports_meeting_idx RENAME TO pegasus_meeting_reports_meeting_idx;
+    IF to_regclass('public.nervs_meeting_reports_meeting_idx') IS NOT NULL AND to_regclass('public.pegasus_meeting_reports_meeting_idx') IS NULL THEN
+      ALTER INDEX nervs_meeting_reports_meeting_idx RENAME TO pegasus_meeting_reports_meeting_idx;
     END IF;
-    IF to_regclass('public.pegasus_meeting_actions_meeting_idx') IS NOT NULL AND to_regclass('public.pegasus_meeting_actions_meeting_idx') IS NULL THEN
-      ALTER INDEX pegasus_meeting_actions_meeting_idx RENAME TO pegasus_meeting_actions_meeting_idx;
+    IF to_regclass('public.nervs_meeting_actions_meeting_idx') IS NOT NULL AND to_regclass('public.pegasus_meeting_actions_meeting_idx') IS NULL THEN
+      ALTER INDEX nervs_meeting_actions_meeting_idx RENAME TO pegasus_meeting_actions_meeting_idx;
     END IF;
-  END $$;`
+  END $;`
 
   await q`CREATE TABLE IF NOT EXISTS pegasus_meeting_runs (
     id BIGSERIAL PRIMARY KEY,
