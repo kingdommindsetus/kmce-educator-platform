@@ -8,6 +8,33 @@ export async function seedPilot(){
  ON CONFLICT(public_name) DO UPDATE SET credentials=EXCLUDED.credentials,professional_title=EXCLUDED.professional_title
  RETURNING *`;
  const educator=e[0];
+
+ // First controlled KMCE course file. Creation does not authorize CE.
+ await q`INSERT INTO courses(
+   course_code,educator_id,title,course_format,target_audience,educational_need,
+   learning_objectives,agenda,instructional_minutes,proposed_ce_hours,
+   attendance_method,completion_criteria,evaluation_method,assessment_plan,
+   course_status,authorization_status
+ ) VALUES(
+   'KM-2026-001',
+   ${educator.id},
+   'Craniofacial Biodentistry & Advanced Airway Integration',
+   'Live seminar',
+   'Dentists and dental professionals',
+   'Advanced continuing education in craniofacial biodentistry and airway integration; formal educational-need documentation pending faculty review.',
+   '[]'::jsonb,
+   '',
+   0,
+   0,
+   '',
+   '',
+   '',
+   NULL,
+   'Development',
+   'NOT_SUBMITTED'
+ )
+ ON CONFLICT(course_code) DO NOTHING`;
+
  for(const l of seedLeads){
    const rows=await q`INSERT INTO leads(educator_id,practice_name,decision_maker,city,state,email,phone,evidence,qualification_reason,qualification_score,pipeline_stage,assigned_agent,approval_status)
    VALUES(${educator.id},${l.practice_name},${l.decision_maker},${l.city},${l.state},${l.email},${l.phone},${l.evidence},${l.qualification_reason},${l.qualification_score},'PENDING_APPROVAL','Gatekeeper','PENDING')
@@ -27,9 +54,10 @@ export async function seedPilot(){
 export async function workspace(){
  const educator=await seedPilot(); const q=sql();
  const leads=await q`SELECT * FROM leads WHERE educator_id=${educator.id} ORDER BY id`;
+ const courses=await q`SELECT * FROM courses WHERE educator_id=${educator.id} ORDER BY updated_at DESC,id DESC`;
  const pending=await q`SELECT o.*,l.practice_name,l.decision_maker,l.email,l.phone FROM outreach_jobs o JOIN leads l ON l.id=o.lead_id WHERE l.educator_id=${educator.id} AND o.status='PENDING_APPROVAL' ORDER BY o.id`;
  const activity=await q`SELECT a.*,l.practice_name,l.pipeline_stage FROM lead_activities a JOIN leads l ON l.id=a.lead_id WHERE l.educator_id=${educator.id} ORDER BY a.created_at DESC,a.id DESC LIMIT 250`;
- return {educator,leads,courses:[{id:1,title:"Craniofacial Biodentistry & Advanced Airway Integration",course_status:"PLANNING"}],campaigns:[{id:1,name:"Dr. Timothy Adams — Phoenix Pilot 10",status:"RESEARCH"}],pending_approvals:pending,agent_activity:activity};
+ return {educator,leads,courses,campaigns:[{id:1,name:"Dr. Timothy Adams — Phoenix Pilot 10",status:"RESEARCH"}],pending_approvals:pending,agent_activity:activity};
 }
 
 export async function leadDetail(id:number){
