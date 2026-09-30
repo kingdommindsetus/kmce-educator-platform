@@ -6,7 +6,7 @@
     "start": "next start",
     "test:simon-approval": "node tests/simon-approval-gate.test.mjs",
     "test:marie": "node tests/marie-v1.test.mjs",
-    "test:gates": "npm run test:echo && npm run test:echo-delivery && npm run test:echo-replies && npm run test:simon-approval && npm run test:marie && npm run test:scout-claire && npm run test:atlas && npm run test:maven-echo && npm run test:booker-flow && npm run test:autonomy && npm run test:ledger-delivery && npm run test:sofia && npm run test:knowledge-provider && npm run test:launch-e2e",
+    "test:gates": "npm run test:echo && npm run test:echo-delivery && npm run test:echo-replies && npm run test:simon-approval && npm run test:marie && npm run test:scout-claire && npm run test:atlas && npm run test:maven-echo && npm run test:booker-flow && npm run test:autonomy && npm run test:ledger-delivery && npm run test:sofia && npm run test:knowledge-provider && npm run test:launch-e2e && npm run test:snake",
     "test:scout-claire": "node tests/scout-claire-v1.test.mjs",
     "test:atlas": "node tests/atlas-v1.test.mjs",
     "test:maven-echo": "node tests/maven-echo-v1.test.mjs",
@@ -17,7 +17,8 @@
     "test:knowledge-provider": "node tests/knowledge-provider-v1.test.mjs",
     "test:launch-e2e": "node tests/launch-e2e-v1.test.mjs",
     "test:echo-delivery": "node tests/echo-delivery-v1.test.mjs",
-    "test:echo-replies": "node tests/echo-replies-v1.test.mjs"
+    "test:echo-replies": "node tests/echo-replies-v1.test.mjs",
+    "test:snake": "node tests/snake-brain-v1.test.mjs"
   },
   "dependencies": {
     "@composio/core": "^0.18.1",
