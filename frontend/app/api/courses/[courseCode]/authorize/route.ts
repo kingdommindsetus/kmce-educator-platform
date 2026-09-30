@@ -6,6 +6,7 @@ export const runtime="nodejs";
 
 function missingForAuthorization(course:any){
   const objectives=Array.isArray(course.learning_objectives)?course.learning_objectives:[];
+  const resources=Array.isArray(course.reference_resources)?course.reference_resources:[];
   return [
     !course.title&&"title",
     !course.educator_id&&"faculty owner",
@@ -14,6 +15,7 @@ function missingForAuthorization(course:any){
     !course.agenda&&"agenda",
     Number(course.instructional_minutes)<=0&&"instructional time",
     Number(course.proposed_ce_hours)<=0&&"proposed CE hours",
+    resources.length===0&&"references/resources",
     !course.attendance_method&&"attendance method",
     !course.completion_criteria&&"completion criteria",
     !course.evaluation_method&&"evaluation method",

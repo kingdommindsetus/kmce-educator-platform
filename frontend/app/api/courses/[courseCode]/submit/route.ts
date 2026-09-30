@@ -6,7 +6,8 @@ export const runtime="nodejs";
 
 function missing(course:any){
   const objectives=Array.isArray(course.learning_objectives)?course.learning_objectives:[];
-  return [!course.educational_need&&"educational need",objectives.length===0&&"learning objectives",!course.agenda&&"agenda",Number(course.instructional_minutes)<=0&&"instructional time",Number(course.proposed_ce_hours)<=0&&"proposed CE hours",!course.attendance_method&&"attendance method",!course.completion_criteria&&"completion criteria",!course.evaluation_method&&"evaluation method"].filter(Boolean);
+  const resources=Array.isArray(course.reference_resources)?course.reference_resources:[];
+  return [!course.educational_need&&"educational need",objectives.length===0&&"learning objectives",!course.agenda&&"agenda",Number(course.instructional_minutes)<=0&&"instructional time",Number(course.proposed_ce_hours)<=0&&"proposed CE hours",resources.length===0&&"references/resources",!course.attendance_method&&"attendance method",!course.completion_criteria&&"completion criteria",!course.evaluation_method&&"evaluation method"].filter(Boolean);
 }
 
 export async function POST(_:Request,{params}:{params:Promise<{courseCode:string}>}){

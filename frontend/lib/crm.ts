@@ -10,9 +10,10 @@ export async function seedPilot(){
  const educator=e[0];
 
  // First controlled KMCE course file. Creation does not authorize CE.
+ const km2026001EducationalNeed=`Sleep-related breathing disorders, obstructive sleep apnea in particular, are common and widely underdiagnosed. General dentists can identify craniofacial and airway findings early, yet many practices lack a structured workflow to recognize risk factors, document findings, refer to a physician for diagnosis, and integrate airway findings into restorative, orthodontic, and TMJ/TMD treatment planning. This draft uses a craniofacial-development and biologic-dentistry perspective while staying within dental scope of practice. Faculty confirmation and KMCE needs evidence remain required before submission.`;
  await q`INSERT INTO courses(
    course_code,educator_id,title,course_format,target_audience,educational_need,
-   learning_objectives,agenda,instructional_minutes,proposed_ce_hours,
+   learning_objectives,agenda,instructional_minutes,proposed_ce_hours,subject_code,reference_resources,
    attendance_method,completion_criteria,evaluation_method,assessment_plan,
    course_status,authorization_status
  ) VALUES(
@@ -21,19 +22,23 @@ export async function seedPilot(){
    'Craniofacial Biodentistry & Advanced Airway Integration',
    'Live seminar',
    'Dentists and dental professionals',
-   'Advanced continuing education in craniofacial biodentistry and airway integration; formal educational-need documentation pending faculty review.',
-   '[]'::jsonb,
-   '',
-   0,
-   0,
-   '',
-   '',
-   '',
-   NULL,
+   ${km2026001EducationalNeed},
+   '["Describe the craniofacial growth and developmental factors that influence upper-airway size and function across the lifespan.","Identify clinical and radiographic signs associated with airway compromise and sleep-related breathing disorders during a routine dental examination.","Apply a validated screening instrument and a structured airway examination to determine when to refer a patient to a physician for sleep evaluation.","Explain the dentist''s role and scope of practice in interdisciplinary management of obstructive sleep apnea, including oral appliance therapy.","Integrate airway findings into comprehensive restorative, orthodontic, and TMJ/TMD treatment planning.","Outline a practice workflow for airway screening, documentation, physician communication, and follow-up."]'::jsonb,
+   '8:00–8:15 Registration and sign-in (not counted)\n8:15–10:15 Module 1: Craniofacial growth, development, and the airway (120 min)\n10:15–10:30 Break (not counted)\n10:30–12:00 Module 2: Recognizing airway compromise — clinical and radiographic findings, screening instruments, airway exam (90 min)\n12:00–1:00 Lunch (not counted)\n1:00–2:30 Module 3: Interdisciplinary care — referral pathway, physician collaboration, oral appliance therapy principles, scope of practice (90 min)\n2:30–2:45 Break (not counted)\n2:45–3:45 Module 4: Treatment-plan integration and practice workflow — case reviews (60 min)\n3:45–4:00 Post-course assessment, evaluation, sign-out (not counted)\n\nInstructional time: 120 + 90 + 90 + 60 = 360 minutes = 6.0 CE hours. Registration, breaks, lunch, and evaluation are excluded. Faculty confirmation required before submission.',
+   360,
+   6,
+   '730 (proposed; confirm current AGD subject code)',
+   '["ADA Policy Statement on the Role of Dentistry in the Treatment of Sleep-Related Breathing Disorders (2017)","Ramar K, et al. J Clin Sleep Med. 2015;11(7):773–827.","Benjafield AV, et al. Lancet Respir Med. 2019;7(8):687–698.","KMCE needs evidence: attendee surveys, practice requests, or Phoenix pilot lead research — pending attachment."]'::jsonb,
+   'Sign-in and sign-out sheet with printed name, license number, and signature, checked by KMCE staff at registration, after lunch, and at dismissal. Late arrivals and early departures are recorded with times, and credit is given only for time attended.',
+   'Attend all 360 instructional minutes as the attendance record shows, and submit the course evaluation. Participants who miss part of the program get credit only for the instructional time they attended, with no rounding up. Certificates are issued after both requirements are met.',
+   'Written participant evaluation collected before certificates are issued. It covers learning objectives, faculty effectiveness, content relevance and balance, facility, and future topics. Results are summarized and retained in the course file.',
+   '10-question post-course knowledge check covering Modules 1–4, reviewed before dismissal. It measures learning only and is not a condition of credit.',
    'Development',
    'NOT_SUBMITTED'
  )
- ON CONFLICT(course_code) DO NOTHING`;
+ ON CONFLICT(course_code) DO UPDATE SET
+   course_format=EXCLUDED.course_format,target_audience=EXCLUDED.target_audience,educational_need=EXCLUDED.educational_need,learning_objectives=EXCLUDED.learning_objectives,agenda=EXCLUDED.agenda,instructional_minutes=EXCLUDED.instructional_minutes,proposed_ce_hours=EXCLUDED.proposed_ce_hours,subject_code=EXCLUDED.subject_code,reference_resources=EXCLUDED.reference_resources,attendance_method=EXCLUDED.attendance_method,completion_criteria=EXCLUDED.completion_criteria,evaluation_method=EXCLUDED.evaluation_method,assessment_plan=EXCLUDED.assessment_plan,updated_at=now()
+ WHERE courses.authorization_status='NOT_SUBMITTED' AND courses.learning_objectives='[]'::jsonb AND courses.agenda=''`;
 
  for(const l of seedLeads){
    const rows=await q`INSERT INTO leads(educator_id,practice_name,decision_maker,city,state,email,phone,evidence,qualification_reason,qualification_score,pipeline_stage,assigned_agent,approval_status)

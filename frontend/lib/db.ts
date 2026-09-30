@@ -6,7 +6,7 @@ export function sql(){
   return neon(url);
 }
 
-export const SCHEMA_VERSION=4;
+export const SCHEMA_VERSION=5;
 const SCHEMA_LOCK=727201;
 let schemaPromise:Promise<void>|null=null;
 
@@ -106,6 +106,7 @@ async function runSchema(q:SchemaQuery){
     instructional_minutes INTEGER NOT NULL DEFAULT 0 CHECK (instructional_minutes >= 0),
     proposed_ce_hours NUMERIC(6,2) NOT NULL DEFAULT 0 CHECK (proposed_ce_hours >= 0),
     subject_code TEXT,
+    reference_resources JSONB NOT NULL DEFAULT '[]'::jsonb,
     attendance_method TEXT NOT NULL DEFAULT '',
     completion_criteria TEXT NOT NULL DEFAULT '',
     evaluation_method TEXT NOT NULL DEFAULT '',
@@ -134,6 +135,7 @@ async function runSchema(q:SchemaQuery){
     packet_snapshot JSONB NOT NULL,
     submitted_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS reference_resources JSONB NOT NULL DEFAULT '[]'::jsonb`;
   await q`CREATE INDEX IF NOT EXISTS course_review_submissions_course_idx ON course_review_submissions(course_id,submitted_at DESC)`;
 
   await q`CREATE TABLE IF NOT EXISTS leads (

@@ -8,7 +8,7 @@ const empty={
   course_code:"KM-2026-001", educator_id:"", title:"", course_format:"Live webinar",
   target_audience:"Dental professionals", educational_need:"", learning_objectives:"",
   agenda:"", instructional_minutes:"", proposed_ce_hours:"", subject_code:"",
-  attendance_method:"", completion_criteria:"", evaluation_method:"", assessment_plan:"",
+  reference_resources:"", attendance_method:"", completion_criteria:"", evaluation_method:"", assessment_plan:"",
 };
 
 export default function CourseControl({educators}:Props){
@@ -30,14 +30,14 @@ export default function CourseControl({educators}:Props){
   function editPacket(course:any){
     setEditing(course);
     setForm({
-      course_code:course.course_code,educator_id:String(course.educator_id||""),title:course.title||"",course_format:course.course_format||"",target_audience:course.target_audience||"",educational_need:course.educational_need||"",learning_objectives:Array.isArray(course.learning_objectives)?course.learning_objectives.join("\n"):"",agenda:course.agenda||"",instructional_minutes:String(course.instructional_minutes||""),proposed_ce_hours:String(course.proposed_ce_hours||""),subject_code:course.subject_code||"",attendance_method:course.attendance_method||"",completion_criteria:course.completion_criteria||"",evaluation_method:course.evaluation_method||"",assessment_plan:course.assessment_plan||"",
+      course_code:course.course_code,educator_id:String(course.educator_id||""),title:course.title||"",course_format:course.course_format||"",target_audience:course.target_audience||"",educational_need:course.educational_need||"",learning_objectives:Array.isArray(course.learning_objectives)?course.learning_objectives.join("\n"):"",agenda:course.agenda||"",instructional_minutes:String(course.instructional_minutes||""),proposed_ce_hours:String(course.proposed_ce_hours||""),subject_code:course.subject_code||"",reference_resources:Array.isArray(course.reference_resources)?course.reference_resources.join("\n"):"",attendance_method:course.attendance_method||"",completion_criteria:course.completion_criteria||"",evaluation_method:course.evaluation_method||"",assessment_plan:course.assessment_plan||"",
     });
     setNotice(`${course.course_code} · EDIT PACKET`);
   }
 
   async function create(){
     setNotice("Saving course file…");
-    const payload={...form,educator_id:Number(form.educator_id||0),instructional_minutes:Number(form.instructional_minutes||0),proposed_ce_hours:Number(form.proposed_ce_hours||0),learning_objectives:form.learning_objectives.split("\n").map((x:string)=>x.trim()).filter(Boolean)};
+    const payload={...form,educator_id:Number(form.educator_id||0),instructional_minutes:Number(form.instructional_minutes||0),proposed_ce_hours:Number(form.proposed_ce_hours||0),learning_objectives:form.learning_objectives.split("\n").map((x:string)=>x.trim()).filter(Boolean),reference_resources:form.reference_resources.split("\n").map((x:string)=>x.trim()).filter(Boolean)};
     const r=await fetch("/api/courses",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     const data=await r.json().catch(()=>({}));
     if(!r.ok){setNotice(data?.error||"Could not save course file");return;}
@@ -49,7 +49,7 @@ export default function CourseControl({educators}:Props){
   async function savePacket(){
     if(!editing)return;
     setNotice("Saving packet…");
-    const payload={...form,instructional_minutes:Number(form.instructional_minutes||0),proposed_ce_hours:Number(form.proposed_ce_hours||0),learning_objectives:form.learning_objectives.split("\n").map((x:string)=>x.trim()).filter(Boolean)};
+    const payload={...form,instructional_minutes:Number(form.instructional_minutes||0),proposed_ce_hours:Number(form.proposed_ce_hours||0),learning_objectives:form.learning_objectives.split("\n").map((x:string)=>x.trim()).filter(Boolean),reference_resources:form.reference_resources.split("\n").map((x:string)=>x.trim()).filter(Boolean)};
     const r=await fetch(`/api/courses/${encodeURIComponent(editing.course_code)}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
     const data=await r.json().catch(()=>({}));
     if(!r.ok){setNotice(data?.error||"Could not save course packet");return;}
@@ -92,6 +92,7 @@ export default function CourseControl({educators}:Props){
     <textarea value={form.educational_need} onChange={e=>update("educational_need",e.target.value)} placeholder="Educational need" />
     <textarea value={form.learning_objectives} onChange={e=>update("learning_objectives",e.target.value)} placeholder="Learning objectives — one per line" />
     <textarea value={form.agenda} onChange={e=>update("agenda",e.target.value)} placeholder="Agenda and instructional-time calculation" />
+    <textarea value={form.reference_resources} onChange={e=>update("reference_resources",e.target.value)} placeholder="References/resources — one per line" />
     <div className="grid" style={{gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:10}}>
       <input value={form.attendance_method} onChange={e=>update("attendance_method",e.target.value)} placeholder="Attendance method" />
       <input value={form.completion_criteria} onChange={e=>update("completion_criteria",e.target.value)} placeholder="Completion criteria" />
