@@ -940,4 +940,35 @@ async function runSchema(q:SchemaQuery){
     summary JSONB NOT NULL DEFAULT '{}'::jsonb
   )`;
 
+
+  await q`CREATE TABLE IF NOT EXISTS circle_builder_projects (
+    id BIGSERIAL PRIMARY KEY,
+    educator_id BIGINT REFERENCES educators(id) ON DELETE SET NULL,
+    project_name TEXT NOT NULL,
+    brief TEXT NOT NULL,
+    blueprint JSONB NOT NULL DEFAULT '{}'::jsonb,
+    status TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','APPROVED','PROVISIONING','LIVE','FAILED')),
+    circle_community_id TEXT,
+    circle_community_url TEXT,
+    approved_by TEXT,
+    approved_at TIMESTAMPTZ,
+    provisioned_at TIMESTAMPTZ,
+    last_error TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS circle_builder_projects_recent_idx ON circle_builder_projects(status,updated_at DESC,id DESC)`;
+
+  await q`CREATE TABLE IF NOT EXISTS circle_builder_actions (
+    id BIGSERIAL PRIMARY KEY,
+    project_id BIGINT NOT NULL REFERENCES circle_builder_projects(id) ON DELETE CASCADE,
+    action_type TEXT NOT NULL,
+    actor TEXT NOT NULL,
+    detail TEXT,
+    payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS circle_builder_actions_project_idx ON circle_builder_actions(project_id,created_at DESC,id DESC)`;
+
 }
