@@ -49,7 +49,7 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
     personality:"Professional, numbers-aware, campaign-focused",
   },
   {
-    id:"eve", name:"Evan", role:"Brand / Catalog Curator", voiceId:"AZnzlk1XvdvUeBnXmlld", voiceName:"Domi - polished female brand voice",
+    id:"eve", name:"Evan", role:"Brand / Catalog Curator", voiceId:"VR6AewLTigWG4xSOukaG", voiceName:"Arnold - polished male brand voice",
     referenceFile:"eve.mp4", mediaUrl:"https://resource2.heygen.ai/video/c989ddbe118c41988c8b36c54d70e51c/original.mp4", durationSeconds:10,
     liveTalkingAvatarId:"kmce_eve_v1",
     liveTalkingModel:"musetalk",
@@ -77,7 +77,7 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
     personality:"Dry, sarcastic, observant; quietly watches the system",
   },
   {
-    id:"alice", name:"Adam", role:"Storefront / Website Quality", voiceId:"Xb7hH8MSUJpSbSDYk0k2", voiceName:"Alice - clear educator female",
+    id:"alice", name:"Alice", role:"Storefront / Website Quality", voiceId:"Xb7hH8MSUJpSbSDYk0k2", voiceName:"Alice - clear educator female",
     referenceFile:"alice.mp4", mediaUrl:"https://resource2.heygen.ai/video/4ef3e69dc575487b8eba3a02300fdee2/original.mp4", durationSeconds:10,
     liveTalkingAvatarId:"kmce_alice_v1",
     liveTalkingModel:"musetalk",
