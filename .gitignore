@@ -20,3 +20,18 @@ yarn.lock
 package-lock.json
 next-env.d.ts
 tsconfig.json
+
+# Video generation artifacts
+/tmp/videos/
+*.mp4
+*.mov
+*.mkv
+/backend/models/
+backend/vendor/ltx-2/models/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+/backend/.venv/
+/backend/venv/

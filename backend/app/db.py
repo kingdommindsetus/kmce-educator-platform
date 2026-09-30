@@ -200,10 +200,50 @@ def init_db():
       FOREIGN KEY (campaign_id) REFERENCES campaigns(id)
     );
 
+    CREATE TABLE IF NOT EXISTS video_generation_jobs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      educator_id INTEGER NOT NULL,
+      campaign_id INTEGER,
+      prompt TEXT NOT NULL,
+      title TEXT,
+      duration_seconds INTEGER DEFAULT 60,
+      status TEXT NOT NULL DEFAULT 'PENDING',
+      output_path TEXT,
+      output_url TEXT,
+      error_message TEXT,
+      model_version TEXT DEFAULT 'ltx-2.5',
+      metadata TEXT,
+      created_at TEXT NOT NULL,
+      started_at TEXT,
+      completed_at TEXT,
+      FOREIGN KEY (educator_id) REFERENCES educators(id),
+      FOREIGN KEY (campaign_id) REFERENCES campaigns(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS video_assets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      video_job_id INTEGER NOT NULL,
+      educator_id INTEGER NOT NULL,
+      outreach_job_id INTEGER,
+      asset_type TEXT NOT NULL DEFAULT 'MARKETING',
+      url TEXT NOT NULL,
+      thumbnail_url TEXT,
+      duration_seconds INTEGER,
+      file_size_bytes INTEGER,
+      use_count INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (video_job_id) REFERENCES video_generation_jobs(id),
+      FOREIGN KEY (educator_id) REFERENCES educators(id),
+      FOREIGN KEY (outreach_job_id) REFERENCES outreach_jobs(id)
+    );
+
     CREATE INDEX IF NOT EXISTS idx_leads_educator_stage ON leads(educator_id, pipeline_stage);
     CREATE INDEX IF NOT EXISTS idx_activity_lead_time ON lead_activities(lead_id, created_at);
     CREATE INDEX IF NOT EXISTS idx_outreach_status ON outreach_jobs(status);
     CREATE INDEX IF NOT EXISTS idx_agent_runs_educator ON agent_runs(educator_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_video_jobs_educator ON video_generation_jobs(educator_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_video_jobs_status ON video_generation_jobs(status);
+    CREATE INDEX IF NOT EXISTS idx_video_assets_job ON video_assets(video_job_id);
     """)
     conn.commit()
     conn.close()

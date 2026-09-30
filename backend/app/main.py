@@ -1,10 +1,13 @@
+import asyncio
 from datetime import datetime, timezone
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
 from app.config import settings
 from app.db import get_connection, init_db, PIPELINE_STAGES
+from app.video_service import VideoGenerationService
 
 app = FastAPI(title=settings.app_name, version="1.0.0")
+video_service = VideoGenerationService()
 
 def now_iso():
     return datetime.now(timezone.utc).isoformat()
@@ -157,6 +160,18 @@ class DraftEdit(BaseModel):
     draft_content: str = Field(min_length=10, max_length=10000)
     note: str | None = None
 
+class VideoGenerationRequest(BaseModel):
+    prompt: str = Field(min_length=10, max_length=5000)
+    title: str | None = None
+    campaign_id: int | None = None
+    duration_seconds: int = 60
+
+class VideoGenerationResponse(BaseModel):
+    job_id: int
+    status: str
+    educator_id: int
+    created_at: str
+
 @app.get("/admin/educators")
 def admin_educators():
     conn=get_connection()
@@ -212,3 +227,73 @@ def edit_outreach_draft(job_id: int, payload: DraftEdit):
                     payload.note or "Founder edited pending outreach draft.",ts))
     conn.commit(); conn.close()
     return {"job_id":job_id,"status":"PENDING_APPROVAL","updated_at":ts}
+
+@app.post("/educators/{educator_id}/videos/generate")
+def create_video(educator_id: int, payload: VideoGenerationRequest, background_tasks: BackgroundTasks):
+    conn = get_connection()
+    educator = conn.execute("SELECT id FROM educators WHERE id = ?", (educator_id,)).fetchone()
+    if not educator:
+        conn.close()
+        raise HTTPException(404, "Educator not found")
+    conn.close()
+
+    job = video_service.create_video_job(
+        educator_id=educator_id,
+        prompt=payload.prompt,
+        title=payload.title,
+        campaign_id=payload.campaign_id,
+        duration_seconds=payload.duration_seconds,
+    )
+
+    background_tasks.add_task(
+        asyncio.run,
+        video_service.generate_video(
+            job["id"], payload.prompt, payload.duration_seconds
+        ),
+    )
+
+    return VideoGenerationResponse(**job)
+
+@app.get("/educators/{educator_id}/videos")
+def list_educator_videos(educator_id: int, limit: int = 20):
+    conn = get_connection()
+    educator = conn.execute("SELECT id FROM educators WHERE id = ?", (educator_id,)).fetchone()
+    if not educator:
+        conn.close()
+        raise HTTPException(404, "Educator not found")
+    conn.close()
+
+    videos = video_service.list_educator_videos(educator_id, limit)
+    return videos
+
+@app.get("/videos/job/{job_id}")
+def get_video_job(job_id: int):
+    job = video_service.get_video_job(job_id)
+    if not job:
+        raise HTTPException(404, "Video job not found")
+    return job
+
+@app.post("/videos/job/{job_id}/link-to-outreach/{outreach_job_id}")
+def link_video_to_outreach(job_id: int, outreach_job_id: int):
+    conn = get_connection()
+    outreach_job = conn.execute(
+        "SELECT educator_id FROM outreach_jobs WHERE id = ?", (outreach_job_id,)
+    ).fetchone()
+    if not outreach_job:
+        conn.close()
+        raise HTTPException(404, "Outreach job not found")
+
+    video_job = video_service.get_video_job(job_id)
+    if not video_job:
+        conn.close()
+        raise HTTPException(404, "Video job not found")
+
+    conn.close()
+
+    success = video_service.link_video_to_outreach(
+        job_id, outreach_job_id, outreach_job["educator_id"]
+    )
+    if not success:
+        raise HTTPException(400, "Failed to link video to outreach")
+
+    return {"status": "linked", "video_job_id": job_id, "outreach_job_id": outreach_job_id}

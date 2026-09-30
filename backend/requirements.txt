@@ -5,3 +5,11 @@ pydantic-settings==2.5.0
 python-multipart==0.0.9
 python-dotenv==1.0.1
 email-validator==2.2.0
+# Video generation with LTX-2
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.24.0
+pillow>=10.0.0
+# Optional: for GPU acceleration
+# nvidia-cuda-runtime-cu12>=12.1
+# nvidia-cudnn-cu12>=9.0
