@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
-import {requireFounder} from "../../../lib/auth";
-import {ensureSchema,sql} from "../../../lib/db";
-import {buildCommunityBlueprint} from "../../../lib/km-community-blueprint";
+import {requireFounder} from "../../../../lib/auth";
+import {ensureSchema,sql} from "../../../../lib/db";
+import {buildCommunityBlueprint} from "../../../../lib/km-community-blueprint";
 
 export const runtime="nodejs";
 
