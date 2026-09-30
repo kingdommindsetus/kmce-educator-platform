@@ -4,20 +4,20 @@ import {requireFounder} from "../../../../lib/auth";
 export const runtime="nodejs";
 export const maxDuration=30;
 
-const PRIMARY_MS=12000;
-const FALLBACK_MS=10000;
+const PRIMARY_MS=9000;
+const FALLBACK_MS=7000;
 
 const OPENAI_VOICES={
   simon:"cedar",
   marie:"marin",
   eyes:"nova",
   mark:"onyx",
-  cammy:"coral",
+  cammy:"sage",
   eve:"alloy",
   tube:"verse",
   lucy:"shimmer",
-  snake:"onyx",
-  alice:"ballad",
+  snake:"fable",
+  alice:"coral",
   echo:"echo",
   booker:"ash",
 } as const;
@@ -34,7 +34,7 @@ const OPENAI_STYLE:Record<AgentId,string>={
   tube:"Speak energetic, creator-friendly, engaging, and confident without sounding exaggerated.",
   lucy:"Speak bright, energetic, social, and audience-aware with clear projection.",
   snake:"Speak analytical, controlled, precise, and confident like a growth-measurement lead.",
-  alice:"Speak clearly, professionally, and confidently like a storefront and website quality lead.",
+  alice:"Speak in a clearly female, warm, polished, and confident voice like a storefront and website quality lead. Sound professional, decisive, and easy to hear.",
   echo:"Speak smoothly, confidently, and persuasively like a trusted sales-outreach professional.",
   booker:"Speak in a clearly male, warm, polished scheduling-coordinator voice. Sound friendly, organized, upbeat, professional, and easy to hear.",
 };
@@ -210,6 +210,7 @@ export async function POST(req:Request){
   const text=String(body.text||"").trim();
   const meetingId=body.meeting_id??null;
   const turnId=body.turn_id??null;
+  const responseMode=body.response_mode==="binary"?"binary":"json";
 
   if(!(agentId in OPENAI_VOICES)){
     return NextResponse.json({error:"Unknown NERVS agent"},{status:400});
@@ -307,6 +308,17 @@ export async function POST(req:Request){
     ms,
     attempts:attempts.length,
   });
+
+  if(responseMode==="binary"){
+    return new NextResponse(audio,{
+      headers:{
+        "Content-Type":"audio/mpeg",
+        "Cache-Control":"no-store",
+        "X-NERVS-Provider":provider,
+        "X-NERVS-Voice-Source":voiceSource,
+      },
+    });
+  }
 
   return NextResponse.json({
     status:"AUDIO_READY",

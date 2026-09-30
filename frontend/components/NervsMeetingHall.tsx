@@ -25,13 +25,13 @@ type QueueItem={
 
 type TurnState="QUEUED"|"GENERATING"|"PLAYING"|"COMPLETE"|"SKIPPED"|"INTERRUPTED";
 type TurnResult="complete"|"skipped"|"interrupted";
-type AudioPayload={audio_base64:string;content_type?:string};
+type AudioPayload={audio:Blob;content_type?:string};
 
 type Props={
   onOpenHistory?:()=>void;
 };
 
-const SPEAK_TIMEOUT_MS=27000;
+const SPEAK_TIMEOUT_MS=17000;
 const PLAYBACK_WATCHDOG_MS=120000;
 
 function buildQueue(list:DailyReport[]):QueueItem[]{
@@ -71,6 +71,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
   const stopCurrentRef=useRef<(()=>void)|null>(null);
   const fetchAbortRefs=useRef<Set<AbortController>>(new Set());
   const meetingIdRef=useRef<number|null>(null);
+  const preparedAudioRef=useRef<Record<string,Promise<AudioPayload|null>>>({});
 
   const activeReport=reports.find(report=>report.agent_id===activeAgentId)||null;
   const activeAgent=NERVS_AVATAR_PACK_V1.find(agent=>agent.id===activeAgentId)||NERVS_AVATAR_PACK_V1[0];
@@ -84,6 +85,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
     stopRequestedRef.current=true;
     for(const controller of fetchAbortRefs.current) controller.abort();
     fetchAbortRefs.current.clear();
+    preparedAudioRef.current={};
     stopCurrentRef.current?.();
     stopCurrentRef.current=null;
     if(audioRef.current){
@@ -104,20 +106,18 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
         const r=await fetch("/api/nervs/speak",{
           method:"POST",
           signal:controller.signal,
-          headers:{"Content-Type":"application/json"},
+          headers:{"Content-Type":"application/json",Accept:"audio/mpeg"},
           body:JSON.stringify({
             agent_id:agentId,
             text,
             meeting_id:meetingIdRef.current,
             turn_id:turnId,
+            response_mode:"binary",
           }),
         });
-        const data=await r.json().catch(()=>null);
-        if(r.ok&&data?.audio_base64){
-          return {
-            audio_base64:String(data.audio_base64),
-            content_type:data.content_type?String(data.content_type):undefined,
-          };
+        const contentType=r.headers.get("content-type")||"";
+        if(r.ok&&contentType.startsWith("audio/")){
+          return {audio:await r.blob(),content_type:contentType};
         }
       }catch{
         if(stopRequestedRef.current) return null;
@@ -167,6 +167,15 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
     setNotesStatus("NOT FINALIZED");
     setTurnStates({});
     if(nextReports[0]) setActiveAgentId(nextReports[0].agent_id);
+    preparedAudioRef.current={};
+    const first=buildQueue(nextReports).find(item=>!item.closing);
+    if(first){
+      preparedAudioRef.current[first.key]=fetchAudio(
+        first.agent_id,
+        first.script,
+        first.key,
+      );
+    }
     return {reports:nextReports,meetingId:nextMeetingId};
   }
 
@@ -192,13 +201,15 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
 
     return new Promise<TurnResult>(resolve=>{
       let settled=false;
-      const audio=new Audio(`data:${data.content_type||"audio/mpeg"};base64,${data.audio_base64}`);
+      const audioUrl=URL.createObjectURL(data.audio);
+      const audio=new Audio(audioUrl);
       audioRef.current=audio;
 
       const finish=(result:TurnResult)=>{
         if(settled) return;
         settled=true;
         clearTimeout(watchdog);
+        URL.revokeObjectURL(audioUrl);
         audio.onplay=null;
         audio.onended=null;
         audio.onerror=null;
@@ -245,7 +256,8 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
       setTurnStates(queued);
 
       let skipped=0;
-      const prefetch:Record<string,Promise<AudioPayload|null>>={};
+      const prefetch=preparedAudioRef.current;
+      preparedAudioRef.current={};
       const warm=(it?:QueueItem)=>{
         if(!it||it.closing||prefetch[it.key]) return;
         prefetch[it.key]=fetchAudio(it.agent_id,it.script,it.key);
