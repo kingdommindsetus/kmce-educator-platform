@@ -1,19 +1,20 @@
-import { NextResponse } from "next/server";
-import { sql } from "../../../../../lib/db";
-import { requireFounder } from "../../../../../lib/auth";
+import { NextResponse, NextRequest } from "next/server";
+import { sql } from "../../../../../../lib/db";
+import { requireFounder } from "../../../../../../lib/auth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function POST(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const u = await requireFounder();
   if (!u) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   try {
-    const educatorId = parseInt(params.id);
+    const { id } = await params;
+    const educatorId = parseInt(id);
     const { faculty, title, format, audience, educationalNeed } = await req.json();
 
     if (!faculty || !title || !format || !audience || !educationalNeed) {
@@ -51,14 +52,15 @@ export async function POST(
 }
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const u = await requireFounder();
   if (!u) return NextResponse.json({ error: "forbidden" }, { status: 403 });
 
   try {
-    const educatorId = parseInt(params.id);
+    const { id } = await params;
+    const educatorId = parseInt(id);
     const q = sql();
 
     const courses = await q`
