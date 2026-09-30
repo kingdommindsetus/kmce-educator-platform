@@ -32,6 +32,7 @@ export async function POST(req:Request,{params}:{params:Promise<{courseCode:stri
   const rows:any=await q`SELECT * FROM courses WHERE course_code=${courseCode} LIMIT 1`;
   if(!rows.length)return NextResponse.json({error:"Course not found"},{status:404});
   const course=rows[0];
+  if(course.authorization_status!=="UNDER_REVIEW")return NextResponse.json({error:"Submit the complete course packet for internal review before recording a decision"},{status:409});
   const missing=missingForAuthorization(course);
   if((decision==="APPROVED"||decision==="APPROVED_WITH_CONDITIONS")&&missing.length)return NextResponse.json({error:"Course file is incomplete",missing},{status:409});
   const notes=String(body.decision_notes||"").trim()||null;

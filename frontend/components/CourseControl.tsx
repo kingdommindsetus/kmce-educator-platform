@@ -14,6 +14,7 @@ const empty={
 export default function CourseControl({educators}:Props){
   const [courses,setCourses]=useState<any[]>([]);
   const [form,setForm]=useState<any>(empty);
+  const [editing,setEditing]=useState<any>(null);
   const [notice,setNotice]=useState("");
 
   async function load(){
@@ -26,6 +27,14 @@ export default function CourseControl({educators}:Props){
 
   function update(key:string,value:string){setForm((current:any)=>({...current,[key]:value}));}
 
+  function editPacket(course:any){
+    setEditing(course);
+    setForm({
+      course_code:course.course_code,educator_id:String(course.educator_id||""),title:course.title||"",course_format:course.course_format||"",target_audience:course.target_audience||"",educational_need:course.educational_need||"",learning_objectives:Array.isArray(course.learning_objectives)?course.learning_objectives.join("\n"):"",agenda:course.agenda||"",instructional_minutes:String(course.instructional_minutes||""),proposed_ce_hours:String(course.proposed_ce_hours||""),subject_code:course.subject_code||"",attendance_method:course.attendance_method||"",completion_criteria:course.completion_criteria||"",evaluation_method:course.evaluation_method||"",assessment_plan:course.assessment_plan||"",
+    });
+    setNotice(`${course.course_code} · EDIT PACKET`);
+  }
+
   async function create(){
     setNotice("Saving course file…");
     const payload={...form,educator_id:Number(form.educator_id||0),instructional_minutes:Number(form.instructional_minutes||0),proposed_ce_hours:Number(form.proposed_ce_hours||0),learning_objectives:form.learning_objectives.split("\n").map((x:string)=>x.trim()).filter(Boolean)};
@@ -35,6 +44,25 @@ export default function CourseControl({educators}:Props){
     setNotice("COURSE FILE CREATED · READY FOR INTERNAL REVIEW");
     setForm(empty);
     await load();
+  }
+
+  async function savePacket(){
+    if(!editing)return;
+    setNotice("Saving packet…");
+    const payload={...form,instructional_minutes:Number(form.instructional_minutes||0),proposed_ce_hours:Number(form.proposed_ce_hours||0),learning_objectives:form.learning_objectives.split("\n").map((x:string)=>x.trim()).filter(Boolean)};
+    const r=await fetch(`/api/courses/${encodeURIComponent(editing.course_code)}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok){setNotice(data?.error||"Could not save course packet");return;}
+    setNotice(`${editing.course_code} · PACKET SAVED AS DRAFT`);
+    await load();
+  }
+
+  async function submit(course:any){
+    if(!window.confirm(`Submit ${course.course_code} for internal review? The packet will lock until a review decision is recorded.`))return;
+    const r=await fetch(`/api/courses/${encodeURIComponent(course.course_code)}/submit`,{method:"POST"});
+    const data=await r.json().catch(()=>({}));
+    if(!r.ok){setNotice(data?.missing?.length?`MISSING BEFORE SUBMISSION: ${data.missing.join(", ")}`:(data?.error||"Could not submit course"));return;}
+    setEditing(null); setNotice(`${course.course_code} · SUBMITTED FOR INTERNAL REVIEW`); await load();
   }
 
   async function decide(course:any,decision:string){
@@ -70,14 +98,16 @@ export default function CourseControl({educators}:Props){
       <input value={form.evaluation_method} onChange={e=>update("evaluation_method",e.target.value)} placeholder="Evaluation method" />
       <input value={form.assessment_plan} onChange={e=>update("assessment_plan",e.target.value)} placeholder="Assessment plan if applicable" />
     </div>
-    <button className="btn primary" onClick={()=>void create()} style={{marginTop:10}}>Create Course File</button>
+    <button className="btn primary" onClick={()=>void (editing?savePacket():create())} style={{marginTop:10}}>{editing?`Save ${editing.course_code} Packet`:"Create Course File"}</button>
+    {editing&&<button className="btn" onClick={()=>{setEditing(null);setForm(empty);}} style={{marginLeft:8}}>Cancel edit</button>}
     {notice&&<p><b>{notice}</b></p>}
     <div className="eyebrow" style={{marginTop:24}}>COURSE REGISTER</div>
     {courses.map(course=><div className="lead" key={course.id}>
       <div><b>{course.course_code} · {course.title}</b><div className="muted">{course.faculty_name} · {course.course_format} · {course.proposed_ce_hours} hours</div></div>
       <span className="pill">{course.authorization_status}</span>
-      <button className="btn" onClick={()=>void decide(course,"REVISION_REQUIRED")}>Request revision</button>
-      <button className="btn primary" onClick={()=>void decide(course,"APPROVED")}>Authorize</button>
+      {course.authorization_status!=="UNDER_REVIEW"&&<button className="btn" onClick={()=>editPacket(course)}>Edit packet</button>}
+      {course.authorization_status==="NOT_SUBMITTED"&&<button className="btn" onClick={()=>void submit(course)}>Submit for review</button>}
+      {course.authorization_status==="UNDER_REVIEW"&&<><button className="btn" onClick={()=>void decide(course,"REVISION_REQUIRED")}>Request revision</button><button className="btn primary" onClick={()=>void decide(course,"APPROVED")}>Authorize</button></>}
     </div>)}
     {!courses.length&&<p className="muted">No course files yet. Create the first one above.</p>}
   </div>;

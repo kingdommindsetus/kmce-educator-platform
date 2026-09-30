@@ -6,7 +6,7 @@ export function sql(){
   return neon(url);
 }
 
-export const SCHEMA_VERSION=3;
+export const SCHEMA_VERSION=4;
 const SCHEMA_LOCK=727201;
 let schemaPromise:Promise<void>|null=null;
 
@@ -126,6 +126,15 @@ async function runSchema(q:SchemaQuery){
     decided_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
   await q`CREATE INDEX IF NOT EXISTS course_authorizations_course_idx ON course_authorizations(course_id,decided_at DESC)`;
+
+  await q`CREATE TABLE IF NOT EXISTS course_review_submissions (
+    id BIGSERIAL PRIMARY KEY,
+    course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    submitted_by TEXT NOT NULL,
+    packet_snapshot JSONB NOT NULL,
+    submitted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS course_review_submissions_course_idx ON course_review_submissions(course_id,submitted_at DESC)`;
 
   await q`CREATE TABLE IF NOT EXISTS leads (
     id BIGSERIAL PRIMARY KEY,
