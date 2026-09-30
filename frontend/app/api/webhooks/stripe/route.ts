@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2024-04-10",
+  apiVersion: "2025-08-27.basil",
 });
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -71,7 +71,8 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription, q: an
   const dentists = await q`SELECT id FROM dentist_accounts WHERE stripe_customer_id = ${customerId}`;
   if (!dentists || dentists.length === 0) return;
   const dentistId = dentists[0].id;
-  await q`UPDATE dentist_accounts SET subscription_status = ${subscription.status}, current_period_start = to_timestamp(${subscription.current_period_start}), current_period_end = to_timestamp(${subscription.current_period_end}), updated_at = now() WHERE id = ${dentistId}`;
+  const item = subscription.items.data[0];
+  await q`UPDATE dentist_accounts SET subscription_status = ${subscription.status}, current_period_start = to_timestamp(${item?.current_period_start ?? 0}), current_period_end = to_timestamp(${item?.current_period_end ?? 0}), updated_at = now() WHERE id = ${dentistId}`;
 }
 
 async function handleSubscriptionCanceled(subscription: Stripe.Subscription, q: any) {

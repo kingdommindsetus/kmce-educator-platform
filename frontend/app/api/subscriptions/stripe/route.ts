@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2024-04-10",
+  apiVersion: "2025-08-27.basil",
 });
 
 export async function POST(req: Request) {
@@ -74,7 +74,6 @@ async function createSubscription(dentistId: number, email: string, plan: string
       },
       product_data: {
         name: `Smile Designer - ${plan}`,
-        description: `Smile design and Shopify integration tool for dentists`,
       },
     });
 
@@ -93,8 +92,8 @@ async function createSubscription(dentistId: number, email: string, plan: string
           subscription_plan = ${plan},
           subscription_status = ${subscription.status as string},
           trial_ends_at = to_timestamp(${subscription.trial_end || 0}),
-          current_period_start = to_timestamp(${subscription.current_period_start}),
-          current_period_end = to_timestamp(${subscription.current_period_end}),
+          current_period_start = to_timestamp(${subscription.items.data[0]?.current_period_start ?? 0}),
+          current_period_end = to_timestamp(${subscription.items.data[0]?.current_period_end ?? 0}),
           updated_at = now()
       WHERE id = ${dentistId}
     `;
@@ -120,8 +119,8 @@ async function createSubscription(dentistId: number, email: string, plan: string
         ${plan},
         ${selectedPlan.price},
         ${subscription.status},
-        to_timestamp(${subscription.current_period_start}),
-        to_timestamp(${subscription.current_period_end}),
+        to_timestamp(${subscription.items.data[0]?.current_period_start ?? 0}),
+        to_timestamp(${subscription.items.data[0]?.current_period_end ?? 0}),
         to_timestamp(${subscription.trial_start || 0}),
         to_timestamp(${subscription.trial_end || 0}),
         ${JSON.stringify(subscription)}::jsonb
@@ -172,8 +171,8 @@ async function getSubscription(dentistId: number) {
       status: subscription.status,
       plan: dentist.subscription_plan,
       customer_id: dentist.stripe_customer_id,
-      current_period_start: new Date(subscription.current_period_start * 1000),
-      current_period_end: new Date(subscription.current_period_end * 1000),
+      current_period_start: new Date((subscription.items.data[0]?.current_period_start ?? 0) * 1000),
+      current_period_end: new Date((subscription.items.data[0]?.current_period_end ?? 0) * 1000),
     });
 
   } catch (error) {

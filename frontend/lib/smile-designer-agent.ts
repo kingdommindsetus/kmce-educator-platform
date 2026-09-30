@@ -89,16 +89,40 @@ export async function executeSmileDesignerAction(
 
   switch (action) {
     case "GENERATE_MOCKUP":
-      return generateSmileMockup(dentistId, params);
+      if (typeof params.image_url !== "string" || typeof params.treatment_type !== "string") {
+        return { success: false, error: "image_url and treatment_type are required" };
+      }
+      return generateSmileMockup(dentistId, {
+        image_url: params.image_url,
+        treatment_type: params.treatment_type,
+        description: typeof params.description === "string" ? params.description : undefined,
+      });
 
     case "PUBLISH_TO_SHOPIFY":
-      return publishToShopify(dentistId, params);
+      if (typeof params.mockup_id !== "number") {
+        return { success: false, error: "mockup_id is required" };
+      }
+      return publishToShopify(dentistId, {
+        mockup_id: params.mockup_id,
+        title: typeof params.title === "string" ? params.title : undefined,
+        description: typeof params.description === "string" ? params.description : undefined,
+        price: typeof params.price === "number" ? params.price : undefined,
+      });
 
     case "TRACK_ENGAGEMENT":
-      return trackEngagement(dentistId, params);
+      if (typeof params.mockup_id !== "number") {
+        return { success: false, error: "mockup_id is required" };
+      }
+      return trackEngagement(dentistId, { mockup_id: params.mockup_id });
 
     case "SCHEDULE_CONSULTATION":
-      return scheduleConsultation(dentistId, params);
+      if (typeof params.patient_email !== "string" || typeof params.treatment_type !== "string") {
+        return { success: false, error: "patient_email and treatment_type are required" };
+      }
+      return scheduleConsultation(dentistId, {
+        patient_email: params.patient_email,
+        treatment_type: params.treatment_type,
+      });
 
     default:
       return { success: false, error: "Unknown action" };
