@@ -6,7 +6,7 @@ import AgentConversation from "../components/AgentConversation";
 import CourseControl from "../components/CourseControl";
 import {NERVS_AVATAR_PACK_V1} from "../lib/nervs-avatar-registry";
 const API=process.env.NEXT_PUBLIC_API_URL||"/api";
-const nav=["Overview","Educators","Courses","Leads","Campaigns","Meeting Hall","NERVS Room","Simon Inbox","Approvals","Revenue","Compliance"];
+const nav=["Overview","Educators","Courses","Leads","Campaigns","NERVS Room","Simon Inbox","Approvals","Revenue","Compliance"];
 const simon={name:"Simon",icon:"🎙️",role:"Executive AI Chief of Staff"};
 const nervsOfficeAgents=NERVS_AVATAR_PACK_V1.filter(a=>a.name!=="Simon").map(a=>({name:a.name,icon:"◉",role:a.role,stages:[]}));
 const agents=[{name:"Marie",icon:"🧭",role:"Executive Operations",stages:[]},{name:"Scout",icon:"🔎",role:"Lead Discovery",stages:["DISCOVERED"]},{name:"Claire",icon:"📋",role:"Research & Enrichment",stages:["ENRICHING"]},{name:"Atlas",icon:"🎯",role:"Qualification",stages:["ENRICHED","QUALIFIED"]},{name:"Sofia",icon:"📣",role:"Growth & Digital Presence",stages:[]},{name:"Maven",icon:"✍️",role:"Campaigns & Content",stages:["QUALIFIED","OUTREACH_READY"]},{name:"Gatekeeper",icon:"🛡️",role:"Approval & Compliance",stages:["PENDING_APPROVAL"]},{name:"Echo",icon:"📧",role:"Outreach & Follow-Up",stages:["APPROVED","CONTACTED","FOLLOW_UP"]},{name:"Booker",icon:"📅",role:"Appointments",stages:["REPLIED","INTERESTED","CALL_BOOKED"]},{name:"Flow",icon:"🧩",role:"Client Onboarding",stages:[]},{name:"Ledger",icon:"💰",role:"Revenue & Finance",stages:["OPPORTUNITY","CONVERTED"]}];
@@ -49,7 +49,7 @@ export default function Home(){
  return <main className="shell">
  <header className="topbar">
   <div className="brand-lockup"><div className="brand-mark">KM</div><div><b>KMCE</b><span>Founder Command Center</span></div></div>
-  <nav className="topnav">{["Overview","Courses","Leads","Campaigns","Meeting Hall"].map(n=><button key={"top-"+n} className={view===n&&!agent?"active":""} onClick={()=>{setView(n);setAgent(null)}}>{n}</button>)}</nav>
+  <nav className="topnav">{["Overview","Courses","Leads","Campaigns","NERVS Room"].map(n=><button key={"top-"+n} className={view===n&&!agent?"active":""} onClick={()=>{setView(n);setAgent(null)}}>{n}</button>)}</nav>
   <div className="top-actions"><div className="search-pill">⌕ Search command center</div><button className="status-dot" title="System status">●</button><div className="founder-badge">KJ</div></div>
  </header>
  <div className="command-head"><div><div className="eyebrow">KINGDOM MINDSET CE · AI OPERATIONS</div><h1>KMCE Command Center</h1><p>Real-time operating visibility across education, growth, approvals and NERVS execution.</p></div><div className="command-filters"><span>LIVE DATA</span><span>{workspace?.educator?.public_name||"Faculty workspace"}</span><span>{launch?.overall||"CHECKING"}</span></div></div>
