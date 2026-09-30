@@ -1,6 +1,7 @@
 import {NextResponse} from "next/server";
 import {requireFounder} from "../../../../../lib/auth";
 import {ensureSchema,sql} from "../../../../../lib/db";
+import {labelAgentTask} from "../../../../../lib/course-task-labels";
 
 export const runtime="nodejs";
 
@@ -179,13 +180,15 @@ export async function POST(){
 
   await ensureSchema();
   const q=sql();
-  const tasks=await q`
+  const rawTasks=await q`
     SELECT id,assigned_agent,title,instruction,status,source,requested_by,created_at,updated_at
     FROM agent_tasks
     WHERE lower(assigned_agent) IN ('simon','marie','eyes','mark','cammy','eve','tube','lucy','snake','alice','echo','booker')
     ORDER BY updated_at DESC,id DESC
     LIMIT 400
   `;
+  const courses:any=await q`SELECT c.course_code,c.working_name,c.title,c.course_format,e.public_name AS faculty_name FROM courses c JOIN educators e ON e.id=c.educator_id`;
+  const tasks=(rawTasks as any[]).map(task=>labelAgentTask(task,courses as any[]));
 
   const reports=AGENTS.map((agent,index)=>reportFor(agent,tasks as any[],index+1));
   const date=meetingDate();
@@ -205,7 +208,7 @@ export async function POST(){
       'READY',
       ${JSON.stringify(agenda)}::jsonb,
       ${JSON.stringify(snapshot)}::jsonb,
-      'NERVS'
+      'HUDDLE'
     )
     ON CONFLICT(meeting_date,meeting_type) DO UPDATE SET
       timezone=EXCLUDED.timezone,
@@ -255,9 +258,9 @@ export async function POST(){
     status:"READY",
     meeting_id:meetingId,
     meeting_date:date,
-    meeting_type:"NERVS_DAILY_V1",
+    meeting_type:"HUDDLE_DAILY_V1",
     generated_at:new Date().toISOString(),
     reports,
-    authority_note:"Prepared reports are read-only meeting evidence. Spoken statements do not create external effects.",
+    authority_note:"Prepared Huddle reports are read-only meeting evidence. Spoken statements do not create external effects.",
   });
 }
