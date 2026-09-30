@@ -6,7 +6,7 @@ export function sql(){
   return neon(url);
 }
 
-export const SCHEMA_VERSION=10;
+export const SCHEMA_VERSION=11;
 const SCHEMA_LOCK=727201;
 let schemaPromise:Promise<void>|null=null;
 
@@ -140,6 +140,26 @@ async function runSchema(q:SchemaQuery){
   await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS authorization_status TEXT NOT NULL DEFAULT 'NOT_SUBMITTED'`;
   await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()`;
   await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`;
+
+  // Legacy course tables may contain obsolete required columns from the pre-Controlled-CE schema.
+  // Keep the data, but remove NOT NULL requirements from columns the current course model no longer writes.
+  await q`DO $ DECLARE c RECORD; BEGIN
+    FOR c IN
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema='public'
+        AND table_name='courses'
+        AND is_nullable='NO'
+        AND column_name NOT IN (
+          'id','course_code','working_name','educator_id','title','course_format','target_audience',
+          'educational_need','learning_objectives','agenda','instructional_minutes','proposed_ce_hours',
+          'reference_resources','attendance_method','completion_criteria','evaluation_method',
+          'course_status','authorization_status','created_at','updated_at'
+        )
+    LOOP
+      EXECUTE format('ALTER TABLE courses ALTER COLUMN %I DROP NOT NULL',c.column_name);
+    END LOOP;
+  END $;`;
 
   await q`UPDATE courses
     SET educator_id=(SELECT id FROM educators ORDER BY id LIMIT 1)
