@@ -44,7 +44,7 @@ function normalizeEmail(value?: string) {
   return (m ? m[1] : raw).trim();
 }
 
-function inferDraft(subject: string, sender: string) {
+function inferDraft(subject: string) {
   return `Subject: Re: ${subject || "KMCE follow-up"}\n\nHello,\n\nThank you for reaching out to Kingdom Mindset CE. We received your message and are reviewing the next step. We will follow up shortly.\n\nBest,\nKingdom Mindset CE`;
 }
 
@@ -116,11 +116,7 @@ export async function POST(req: Request) {
   const account = String(body.account).trim().toLowerCase();
   const messageId = String(body.message_id).trim();
   const leadEmail = normalizeEmail(body.lead_email || body.from);
-  const key = idempotencyKey({
-    capability: "inbox_ingest",
-    resourceId: `${provider}:${account}:${messageId}`,
-    version: 1,
-  });
+  const key = idempotencyKey(["inbox_ingest", provider, account, messageId, "v1"]);
 
   const existing: any = await q`
     SELECT id,status,provider_message_id,created_at
@@ -197,7 +193,7 @@ export async function POST(req: Request) {
   }
 
   const draftSubject = body.subject ? `Re: ${body.subject}` : "KMCE follow-up";
-  const draftBody = inferDraft(body.subject || "", body.from || "");
+  const draftBody = inferDraft(body.subject || "");
   await q`
     INSERT INTO simon_followup_drafts(inbox_message_id,recipient_email,subject,draft_body,status)
     VALUES(${inboxId},${leadEmail || null},${draftSubject},${draftBody},'DRAFT_ONLY')
