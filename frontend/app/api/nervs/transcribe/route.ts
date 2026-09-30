@@ -24,7 +24,7 @@ export async function POST(req:Request){
   form.set("language","en");
   form.set(
     "prompt",
-    "KMCE, Kingdom Mindset CE, Simon, Snake, Marie, Eyes, Booker, Eve, Lucy, dental sleep medicine, AGD PACE, Dr. Timothy Adams."
+    "KMCE, Kingdom Mindset CE, Simon, Snake, Marie, Eyes, Booker, Evan, Lucy, dental sleep medicine, AGD PACE, Dr. Timothy Adams."
   );
 
   const r=await fetch("https://api.openai.com/v1/audio/transcriptions",{
