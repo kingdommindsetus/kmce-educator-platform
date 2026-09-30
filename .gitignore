@@ -18,3 +18,5 @@ dist/
 pnpm-lock.yaml
 yarn.lock
 package-lock.json
+next-env.d.ts
+tsconfig.json
