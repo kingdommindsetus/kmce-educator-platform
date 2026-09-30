@@ -371,7 +371,7 @@ async function handleJob(q:any,job:any){
     const instruction=String(p.instruction||"Prepare the internal marketing deliverable using KMCE product-marketing context and approved brand rules. Do not publish externally.");
     const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Mark' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
     if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true,external_actions_executed:false}};
-    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Mark',${title},${instruction},'AUTONOMY','NERVS') RETURNING id`;
+    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Mark',${title},${instruction},'AUTONOMY','PEGASUS') RETURNING id`;
     return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false,external_actions_executed:false}};
   }
 
@@ -388,7 +388,7 @@ async function handleJob(q:any,job:any){
     const instruction=String(p.instruction||defaultInstruction);
     const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Cammy' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
     if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true,external_actions_executed:false}};
-    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Cammy',${title},${instruction},'AUTONOMY','NERVS') RETURNING id`;
+    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Cammy',${title},${instruction},'AUTONOMY','PEGASUS') RETURNING id`;
     return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false,external_actions_executed:false}};
   }
 
@@ -406,7 +406,7 @@ async function handleJob(q:any,job:any){
     const instruction=String(p.instruction||defaultInstruction);
     const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Lucy' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
     if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true,external_actions_executed:false}};
-    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Lucy',${title},${instruction},'AUTONOMY','NERVS') RETURNING id`;
+    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Lucy',${title},${instruction},'AUTONOMY','PEGASUS') RETURNING id`;
     return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false,external_actions_executed:false}};
   }
 
@@ -419,7 +419,7 @@ async function handleJob(q:any,job:any){
     const instruction=String(p.instruction||"Prepare the requested video deliverable using approved KMCE claims, evidence, and brand direction. Helios may generate internal motion assets. Do not publish externally.");
     const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Tube' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
     if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true,external_actions_executed:false}};
-    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Tube',${title},${instruction},'AUTONOMY','NERVS') RETURNING id`;
+    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Tube',${title},${instruction},'AUTONOMY','PEGASUS') RETURNING id`;
     return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false,external_actions_executed:false}};
   }
 
@@ -431,7 +431,7 @@ async function handleJob(q:any,job:any){
     const title="Growth campaign needs content: "+campaigns[0].name;
     const existing:any=await q`SELECT id FROM agent_tasks WHERE assigned_agent='Mark' AND title=${title} AND status IN ('QUEUED','IN_PROGRESS') LIMIT 1`;
     if(existing.length)return {status:"SUCCEEDED",result:{task_id:Number(existing[0].id),deduped:true}};
-    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Mark',${title},'Create or refresh the campaign content plan, then hand approved social distribution work to Lucy. Draft only; external publishing remains approval-gated.','AUTONOMY','NERVS') RETURNING id`;
+    const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Mark',${title},'Create or refresh the campaign content plan, then hand approved social distribution work to Lucy. Draft only; external publishing remains approval-gated.','AUTONOMY','PEGASUS') RETURNING id`;
     return {status:"SUCCEEDED",result:{task_id:Number(rows[0].id),deduped:false}};
   }
 

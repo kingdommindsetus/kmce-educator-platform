@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
 import {requireFounder} from "../../../../../lib/auth";
 import {ensureSchema,sql} from "../../../../../lib/db";
-import {NERVS_AVATAR_PACK_V1} from "../../../../../lib/nervs-avatar-registry";
+import {PEGASUS_AVATAR_PACK_V1} from "../../../../../lib/pegasus-avatar-registry";
 import {generateAgentReply,type AgentLlmMessage} from "../../../../../lib/agent-llm";
 
 export const runtime="nodejs";
@@ -32,26 +32,26 @@ export async function POST(req:Request){
   const userText=clean(body.message,3000);
   if(!userText) return NextResponse.json({error:"message required"},{status:400});
   const requested=clean(body.agent_name,80);
-  const responderName=requested&&NERVS_AVATAR_PACK_V1.some(a=>a.name===requested)?requested:routeAgent(userText);
-  const agent=NERVS_AVATAR_PACK_V1.find(a=>a.name===responderName)!;
+  const responderName=requested&&PEGASUS_AVATAR_PACK_V1.some(a=>a.name===requested)?requested:routeAgent(userText);
+  const agent=PEGASUS_AVATAR_PACK_V1.find(a=>a.name===responderName)!;
 
   await ensureSchema();
   const q=sql();
-  const allNames=NERVS_AVATAR_PACK_V1.map(a=>a.name);
+  const allNames=PEGASUS_AVATAR_PACK_V1.map(a=>a.name);
   for(const name of allNames){
     await q`INSERT INTO agent_memories(agent_name,memory_type,content,importance,topics,metadata)
-      VALUES(${name},'BROADCAST',${"Founder to NERVS room: "+userText},70,'[]'::jsonb,${JSON.stringify({source:"NERVS_ROOM"})}::jsonb)`;
+      VALUES(${name},'BROADCAST',${"Founder to PEGASUS room: "+userText},70,'[]'::jsonb,${JSON.stringify({source:"PEGASUS_ROOM"})}::jsonb)`;
   }
 
-  let sessions=await q`SELECT id FROM agent_conversation_sessions WHERE agent_name='NERVS_ROOM' AND founder_email=${founder.email} AND status='ACTIVE' ORDER BY updated_at DESC LIMIT 1`;
+  let sessions=await q`SELECT id FROM agent_conversation_sessions WHERE agent_name='PEGASUS_ROOM' AND founder_email=${founder.email} AND status='ACTIVE' ORDER BY updated_at DESC LIMIT 1`;
   let session=(sessions as any[])[0];
   if(!session){
     const rows=await q`INSERT INTO agent_conversation_sessions(agent_name,founder_email,title,metadata)
-      VALUES('NERVS_ROOM',${founder.email},'NERVS Room Conversation','{"scope":"ROOM"}'::jsonb) RETURNING id`;
+      VALUES('PEGASUS_ROOM',${founder.email},'PEGASUS Room Conversation','{"scope":"ROOM"}'::jsonb) RETURNING id`;
     session=(rows as any[])[0];
   }
   await q`INSERT INTO agent_conversation_messages(session_id,agent_name,role,content,metadata)
-    VALUES(${Number(session.id)},'NERVS_ROOM','FOUNDER',${userText},${JSON.stringify({broadcast:true})}::jsonb)`;
+    VALUES(${Number(session.id)},'PEGASUS_ROOM','FOUNDER',${userText},${JSON.stringify({broadcast:true})}::jsonb)`;
 
   const [historyRows,memoryRows,taskRows,knowledgeRows]=await Promise.all([
     q`SELECT role,content,metadata FROM agent_conversation_messages WHERE session_id=${Number(session.id)} ORDER BY id DESC LIMIT 14`,
@@ -66,7 +66,7 @@ export async function POST(req:Request){
   const tasks=(taskRows as any[]).map(t=>"- ["+t.status+"] "+clean(t.title,300)+": "+clean(t.instruction,600)).join("\n")||"- None.";
   const knowledge=(knowledgeRows as any[]).map(k=>"- "+clean(k.title||k.source_path,200)+": "+clean(k.excerpt,1200)).join("\n")||"- No direct canonical match.";
   const system=[
-    "You are "+agent.name+", "+agent.role+", responding inside the KMCE NERVS Meeting Hall.",
+    "You are "+agent.name+", "+agent.role+", responding inside the KMCE PEGASUS Meeting Hall.",
     "Personality: "+agent.personality+".",
     "The founder just addressed the entire room. You were routed to answer first because your role is the best match.",
     "Answer naturally like a colleague in a live meeting. Do not read labels or produce a report template.",
@@ -79,10 +79,10 @@ export async function POST(req:Request){
   if(!generated.ok) return NextResponse.json({error:generated.error,detail:generated.detail,responder:agent.name},{status:503});
 
   const inserted=await q`INSERT INTO agent_conversation_messages(session_id,agent_name,role,content,metadata)
-    VALUES(${Number(session.id)},'NERVS_ROOM','AGENT',${generated.text},${JSON.stringify({responder:agent.name,agent_id:agent.id,provider:generated.provider,model:generated.model})}::jsonb)
+    VALUES(${Number(session.id)},'PEGASUS_ROOM','AGENT',${generated.text},${JSON.stringify({responder:agent.name,agent_id:agent.id,provider:generated.provider,model:generated.model})}::jsonb)
     RETURNING id,role,content,metadata,created_at`;
   await q`INSERT INTO agent_memories(agent_name,memory_type,content,importance,source_session_id,metadata)
-    VALUES(${agent.name},'INTERACTION',${"Room reply to founder: "+generated.text},60,${Number(session.id)},${JSON.stringify({source:"NERVS_ROOM_REPLY"})}::jsonb)`;
+    VALUES(${agent.name},'INTERACTION',${"Room reply to founder: "+generated.text},60,${Number(session.id)},${JSON.stringify({source:"PEGASUS_ROOM_REPLY"})}::jsonb)`;
   await q`UPDATE agent_conversation_sessions SET updated_at=now() WHERE id=${Number(session.id)}`;
 
   return NextResponse.json({status:"REPLIED",session_id:Number(session.id),responder:{id:agent.id,name:agent.name,role:agent.role},message:(inserted as any[])[0],broadcast_to:allNames});

@@ -1,7 +1,7 @@
 "use client";
 
 import {useEffect,useRef,useState} from "react";
-import {NERVS_AVATAR_PACK_V1} from "../lib/nervs-avatar-registry";
+import {PEGASUS_AVATAR_PACK_V1} from "../lib/pegasus-avatar-registry";
 import {useKmceRealtimeBus} from "../hooks/useKmceRealtimeBus";
 import VoiceOrb from "./VoiceOrb";
 
@@ -9,7 +9,7 @@ type Msg={id?:number;role:"FOUNDER"|"AGENT"|"SYSTEM";content:string;created_at?:
 type Props={agentName:string;role?:string};
 
 export default function AgentConversation({agentName,role}:Props){
-  const agent=NERVS_AVATAR_PACK_V1.find(a=>a.name.toLowerCase()===agentName.toLowerCase());
+  const agent=PEGASUS_AVATAR_PACK_V1.find(a=>a.name.toLowerCase()===agentName.toLowerCase());
   const [messages,setMessages]=useState<Msg[]>([]);
   const [sessionId,setSessionId]=useState<number|null>(null);
   const [input,setInput]=useState("");
@@ -63,7 +63,7 @@ export default function AgentConversation({agentName,role}:Props){
 
   async function speak(text:string){
     if(!agent) return;
-    const r=await fetch("/api/nervs/speak",{
+    const r=await fetch("/api/pegasus/speak",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({agent_id:agent.id,text:text.slice(0,1200)}),

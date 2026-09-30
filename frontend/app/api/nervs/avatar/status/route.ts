@@ -1,6 +1,6 @@
 import {NextResponse} from "next/server";
 import {requireFounder} from "../../../../../lib/auth";
-import {NERVS_AVATAR_PACK_V1} from "../../../../../lib/nervs-avatar-registry";
+import {PEGASUS_AVATAR_PACK_V1} from "../../../../../lib/pegasus-avatar-registry";
 
 export const runtime="nodejs";
 export const dynamic="force-dynamic";
@@ -19,7 +19,7 @@ export async function GET(){
     base_url_configured:configured,
     transport:"webrtc",
     fallback:"motion_loop",
-    avatars:NERVS_AVATAR_PACK_V1.map(agent=>({
+    avatars:PEGASUS_AVATAR_PACK_V1.map(agent=>({
       agent_id:agent.id,
       agent_name:agent.name,
       avatar_id:agent.liveTalkingAvatarId,

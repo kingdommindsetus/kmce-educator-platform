@@ -546,7 +546,7 @@ async function runSchema(q:SchemaQuery){
     summary TEXT,
     started_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ,
-    created_by TEXT NOT NULL DEFAULT 'NERVS',
+    created_by TEXT NOT NULL DEFAULT 'PEGASUS',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE(meeting_date,meeting_type)
   )`;

@@ -1,11 +1,11 @@
 # KMCE × Paperclip Integration
 
-Paperclip is deployed as a separate orchestration service. KMCE remains the business system of record for CRM, CE/course controls, revenue planning, NERVS conversations, and founder approval gates.
+Paperclip is deployed as a separate orchestration service. KMCE remains the business system of record for CRM, CE/course controls, revenue planning, PEGASUS conversations, and founder approval gates.
 
 ## Role split
 
 - **Paperclip:** org chart, goals, task assignment, atomic checkout, heartbeats, budgets, run history, governance, schedules.
-- **KMCE/NERVS:** Simon and the 11 specialist agents, company-specific CRM/CE logic, business records, founder command center, external-action gates.
+- **KMCE/PEGASUS:** Simon and the 11 specialist agents, company-specific CRM/CE logic, business records, founder command center, external-action gates.
 
 ## First bridge
 
@@ -30,7 +30,7 @@ Paperclip heartbeat body is accepted in its native form:
 }
 ```
 
-The bridge maps the Paperclip agent to the canonical NERVS name, creates/deduplicates a KMCE `agent_tasks` row with source `PAPERCLIP`, and writes an audit event.
+The bridge maps the Paperclip agent to the canonical PEGASUS name, creates/deduplicates a KMCE `agent_tasks` row with source `PAPERCLIP`, and writes an audit event.
 
 ## Canonical agent keys
 

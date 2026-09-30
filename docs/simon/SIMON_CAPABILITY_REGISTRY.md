@@ -27,7 +27,7 @@ Permanent forbidden actions:
 
 - **Kimberly** — Founder / final human authority.
 - **Simon** — Chief Operating Brain; prioritizes, resolves cross-department conflicts, delegates, and reports.
-- **NERVS** — Neural Executive Routing & Verification System; the orchestration layer for routing, jobs, workflow state, verification, approvals, and audit evidence. NERVS is infrastructure, not an authority-bearing employee.
+- **PEGASUS** — Neural Executive Routing & Verification System; the orchestration layer for routing, jobs, workflow state, verification, approvals, and audit evidence. PEGASUS is infrastructure, not an authority-bearing employee.
 - **Marie** — Executive Operations Assistant; triages, routes, follows up, escalates, and briefs Simon.
 
 ## Employee capability map
@@ -77,8 +77,8 @@ Permanent forbidden actions:
 | research.deep | Claire | HyperResearch-derived pipeline | AUTO |
 | lead.enrich | Claire | research providers + provenance | CONTROLLED |
 | lead.qualify | Atlas | deterministic scoring + evidence | CONTROLLED |
-| campaign.plan | Mark | NERVS + KMCE marketing skills | AUTO |
-| marketing.campaign.prepare | Mark | NERVS campaign workflow | CONTROLLED |
+| campaign.plan | Mark | PEGASUS + KMCE marketing skills | AUTO |
+| marketing.campaign.prepare | Mark | PEGASUS campaign workflow | CONTROLLED |
 | campaign.generate | Cammy | KMCE campaign generation engine | CONTROLLED |
 | campaign.cost.estimate | Cammy | KMCE campaign economics model | CONTROLLED |
 | campaign.target.score | Cammy | KMCE audience scoring model | CONTROLLED |
@@ -87,10 +87,10 @@ Permanent forbidden actions:
 | blog.prepare | Mark | KMCE marketing skills | CONTROLLED |
 | marketing.show.plan | Mark | KMCE editorial workflow | CONTROLLED |
 | social.plan | Mark | KMCE marketing skills | AUTO |
-| social.content.adapt | Lucy | NERVS social adapter layer | CONTROLLED |
-| social.calendar.prepare | Lucy | NERVS scheduler | CONTROLLED |
+| social.content.adapt | Lucy | PEGASUS social adapter layer | CONTROLLED |
+| social.calendar.prepare | Lucy | PEGASUS scheduler | CONTROLLED |
 | social.comment.triage | Lucy | approved social connectors | CONTROLLED |
-| social.reply.draft | Lucy | NERVS social adapter layer | CONTROLLED |
+| social.reply.draft | Lucy | PEGASUS social adapter layer | CONTROLLED |
 | social.reply.send | Lucy | approved social connectors | APPROVAL |
 | social.performance.collect | Lucy | approved social analytics connectors | CONTROLLED |
 | social.publish | Lucy | approved platform connectors | APPROVAL |
@@ -193,7 +193,7 @@ EYES/SNAKE opportunity brief → MERCEDES artwork/product spec → PRINTIFY draf
 The Printify token and shop ID are server-only environment variables. Mercedes may create product drafts when a complete blueprint/provider/variant/print-area spec exists. Publishing requires the store.merch.printify.publish policy gate plus alice_approved=true. The agent never embeds credentials in code or job payloads.
 
 
-## NERVS marketing/content operating loop
+## PEGASUS marketing/content operating loop
 
 EYES signal → MARK campaign brief → CAMMY campaign generation/economics → EVE visual/brand rules → TUBE/MERCEDES/DEVON asset production → LUCY channel adaptation/calendar → ALICE/GATEKEEPER validation where applicable → FOUNDER/POLICY GATE → LUCY/TUBE approved publish → SNAKE measurement → EYES/MARK learning loop.
 

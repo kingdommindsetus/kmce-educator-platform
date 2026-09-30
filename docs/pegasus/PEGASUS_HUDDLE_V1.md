@@ -1,8 +1,8 @@
-# NERVS DAILY v1
+# PEGASUS HUDDLE v1
 
 ## Purpose
 
-NERVS DAILY is KMCE's spoken 8:00 AM operating meeting. It converts live company state into concise spoken status reports, blockers, cross-agent decisions, auditable follow-up actions, and a founder-readable executive summary.
+PEGASUS DAILY is KMCE's spoken 8:00 AM operating meeting. It converts live company state into concise spoken status reports, blockers, cross-agent decisions, auditable follow-up actions, and a founder-readable executive summary.
 
 ## Standard report contract
 
@@ -28,13 +28,13 @@ Reports must reference live evidence from tasks, jobs, sales, campaigns, store o
 
 Each speaker receives one persistent voice profile. ElevenLabs is the initial provider.
 
-The existing Simon ElevenLabs route is the reference implementation. NERVS should generalize that provider pattern to per-agent voice IDs and per-agent voice settings while keeping API keys server-side.
+The existing Simon ElevenLabs route is the reference implementation. PEGASUS should generalize that provider pattern to per-agent voice IDs and per-agent voice settings while keeping API keys server-side.
 
 ## Meeting lifecycle
 
 PREPARING -> READY -> RUNNING -> COMPLETED
 
-During PREPARING, NERVS snapshots:
+During PREPARING, PEGASUS snapshots:
 - autonomy jobs and failures,
 - agent tasks,
 - lead and sales pipeline movement,
@@ -53,7 +53,7 @@ Meeting decisions can generate internal action records. Any later conversion to 
 
 - One active speaker at a time.
 - Maximum one primary blocker per agent.
-- No recursive agent-to-agent conversation without NERVS routing.
+- No recursive agent-to-agent conversation without PEGASUS routing.
 - No external publish, send, or spend from spoken statements alone.
 - Every cross-agent ask names one accountable owner.
 - Duplicate asks collapse into one action.

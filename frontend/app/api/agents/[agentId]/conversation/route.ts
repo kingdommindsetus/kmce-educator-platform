@@ -1,7 +1,7 @@
 import {NextResponse} from "next/server";
 import {requireFounder} from "../../../../../lib/auth";
 import {ensureSchema,sql} from "../../../../../lib/db";
-import {NERVS_AVATAR_PACK_V1} from "../../../../../lib/nervs-avatar-registry";
+import {PEGASUS_AVATAR_PACK_V1} from "../../../../../lib/pegasus-avatar-registry";
 import {generateAgentReply,type AgentLlmMessage} from "../../../../../lib/agent-llm";
 
 export const runtime="nodejs";
@@ -15,7 +15,7 @@ export async function GET(_req:Request,{params}:{params:Promise<{agentId:string}
   const founder=await requireFounder();
   if(!founder) return NextResponse.json({error:"Founder access required"},{status:403});
   const {agentId}=await params;
-  const agent=NERVS_AVATAR_PACK_V1.find(a=>a.id===String(agentId).toLowerCase());
+  const agent=PEGASUS_AVATAR_PACK_V1.find(a=>a.id===String(agentId).toLowerCase());
   if(!agent) return NextResponse.json({error:"Unknown agent"},{status:404});
   await ensureSchema();
   const q=sql();
@@ -42,7 +42,7 @@ export async function POST(req:Request,{params}:{params:Promise<{agentId:string}
   const founder=await requireFounder();
   if(!founder) return NextResponse.json({error:"Founder access required"},{status:403});
   const {agentId}=await params;
-  const agent=NERVS_AVATAR_PACK_V1.find(a=>a.id===String(agentId).toLowerCase());
+  const agent=PEGASUS_AVATAR_PACK_V1.find(a=>a.id===String(agentId).toLowerCase());
   if(!agent) return NextResponse.json({error:"Unknown agent"},{status:404});
   const body=await req.json().catch(()=>({}));
   const userText=clean(body.message,3000);

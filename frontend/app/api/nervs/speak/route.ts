@@ -213,7 +213,7 @@ export async function POST(req:Request){
   const responseMode=body.response_mode==="binary"?"binary":"json";
 
   if(!(agentId in OPENAI_VOICES)){
-    return NextResponse.json({error:"Unknown NERVS agent"},{status:400});
+    return NextResponse.json({error:"Unknown PEGASUS agent"},{status:400});
   }
   if(!text){
     return NextResponse.json({error:"Text required"},{status:400});
@@ -277,7 +277,7 @@ export async function POST(req:Request){
   const ms=Date.now()-started;
 
   if(!audio||!provider){
-    log("nervs_speak_failed",{
+    log("pegasus_speak_failed",{
       meetingId,
       turnId,
       agentId,
@@ -286,7 +286,7 @@ export async function POST(req:Request){
     });
 
     return NextResponse.json({
-      error:"NERVS_VOICE_UNAVAILABLE",
+      error:"PEGASUS_VOICE_UNAVAILABLE",
       failed:true,
       skip_turn:true,
       agent_id:agentId,
@@ -299,7 +299,7 @@ export async function POST(req:Request){
     },{status:502});
   }
 
-  log("nervs_speak_ok",{
+  log("pegasus_speak_ok",{
     meetingId,
     turnId,
     agentId,
@@ -314,8 +314,8 @@ export async function POST(req:Request){
       headers:{
         "Content-Type":"audio/mpeg",
         "Cache-Control":"no-store",
-        "X-NERVS-Provider":provider,
-        "X-NERVS-Voice-Source":voiceSource,
+        "X-PEGASUS-Provider":provider,
+        "X-PEGASUS-Voice-Source":voiceSource,
       },
     });
   }

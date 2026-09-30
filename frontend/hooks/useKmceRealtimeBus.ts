@@ -65,7 +65,7 @@ export function useKmceRealtimeBus({enabled,onFinalTranscript,onBargeIn,disabled
       const form=new FormData();
       form.set("audio",new File([blob],`kmce-live.${ext}`,{type}));
 
-      const r=await fetch("/api/nervs/transcribe",{method:"POST",body:form});
+      const r=await fetch("/api/pegasus/transcribe",{method:"POST",body:form});
       const data=await r.json().catch(()=>({}));
       if(!r.ok) throw new Error(String(data?.detail||data?.error||"Transcription failed"));
 

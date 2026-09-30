@@ -78,7 +78,7 @@ export async function mirrorMeetingToNotion(input:NotionMeetingArchiveInput){
   ].slice(0,100);
 
   const properties=[
-    {name:"Meeting",type:"title",value:"NERVS Daily — "+input.meetingDate+" · #"+input.meetingId},
+    {name:"Meeting",type:"title",value:"PEGASUS Daily — "+input.meetingDate+" · #"+input.meetingId},
     {name:"Meeting ID",type:"number",value:String(input.meetingId)},
     {name:"Meeting Date",type:"date",value:input.meetingDate},
     {name:"Status",type:"select",value:"COMPLETED"},
@@ -88,7 +88,7 @@ export async function mirrorMeetingToNotion(input:NotionMeetingArchiveInput){
     {name:"Blockers",type:"number",value:String(input.blockers)},
     {name:"Actions",type:"number",value:String(input.actions)},
     {name:"Founder Approvals",type:"number",value:String(input.founderApprovals)},
-    {name:"Source",type:"select",value:"KMCE NERVS"},
+    {name:"Source",type:"select",value:"KMCE PEGASUS"},
   ];
 
   const response=await fetch(

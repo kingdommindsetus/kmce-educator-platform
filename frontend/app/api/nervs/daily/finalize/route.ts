@@ -57,7 +57,7 @@ export async function POST(req:Request){
   const nexts=(reports as any[]).filter(r=>meaningful(r.next_action,["No queued task recorded."]));
 
   const sections=[
-    "NERVS Daily Meeting #"+meetingId+" — "+clean(meeting.meeting_date),
+    "PEGASUS Daily Meeting #"+meetingId+" — "+clean(meeting.meeting_date),
     "Executive summary: "+wins.length+" verified win(s), "+blockers.length+" blocker(s), "+asks.length+" team/founder ask(s), "+nexts.length+" actionable next move(s).",
     wins.length?"Wins: "+wins.map(r=>clean(r.agent_name)+": "+clean(r.win)).join(" | "):"Wins: none verified.",
     blockers.length?"Blockers: "+blockers.map(r=>clean(r.agent_name)+": "+clean(r.blocker)).join(" | "):"Blockers: none active.",
@@ -96,7 +96,7 @@ export async function POST(req:Request){
       hasAsk?"Ask: "+ask:"",
       hasNext?"Next: "+next:"",
     ].filter(Boolean).join(" ");
-    const fingerprint=["NERVS",meetingId,agent,title].join(":").toLowerCase();
+    const fingerprint=["PEGASUS",meetingId,agent,title].join(":").toLowerCase();
 
     const rows=await q`
       INSERT INTO nervs_meeting_actions(
@@ -112,7 +112,7 @@ export async function POST(req:Request){
         ${authority},
         ${status},
         ${JSON.stringify({
-          source:"NERVS_DAILY_FINALIZE",
+          source:"PEGASUS_DAILY_FINALIZE",
           fingerprint,
           evidence_task_ids:report?.evidence?.task_ids||[],
         })}::jsonb

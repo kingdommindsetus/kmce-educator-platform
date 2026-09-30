@@ -1,8 +1,8 @@
 "use client";
 
 import {useRef,useState} from "react";
-import {NERVS_AVATAR_PACK_V1} from "../lib/nervs-avatar-registry";
-import NervsRoomConversation from "./NervsRoomConversation";
+import {PEGASUS_AVATAR_PACK_V1} from "../lib/pegasus-avatar-registry";
+import PegasusHuddleConversation from "./PegasusHuddleConversation";
 
 type DailyReport={
   agent_id:string;
@@ -35,7 +35,7 @@ const SPEAK_TIMEOUT_MS=17000;
 const PLAYBACK_WATCHDOG_MS=120000;
 
 function buildQueue(list:DailyReport[]):QueueItem[]{
-  const roleOf=(id:string)=>NERVS_AVATAR_PACK_V1.find(a=>a.id===id)?.role||"";
+  const roleOf=(id:string)=>PEGASUS_AVATAR_PACK_V1.find(a=>a.id===id)?.role||"";
   const items:QueueItem[]=list.map((r,i)=>{
     const next=list[i+1];
     let script=r.script.trim();
@@ -56,7 +56,7 @@ function buildQueue(list:DailyReport[]):QueueItem[]{
   return items;
 }
 
-export default function NervsMeetingHall({onOpenHistory}:Props){
+export default function PegasusMeetingHall({onOpenHistory}:Props){
   const [reports,setReports]=useState<DailyReport[]>([]);
   const [meetingId,setMeetingId]=useState<number|null>(null);
   const [meetingStatus,setMeetingStatus]=useState("NOT PREPARED");
@@ -74,7 +74,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
   const preparedAudioRef=useRef<Record<string,Promise<AudioPayload|null>>>({});
 
   const activeReport=reports.find(report=>report.agent_id===activeAgentId)||null;
-  const activeAgent=NERVS_AVATAR_PACK_V1.find(agent=>agent.id===activeAgentId)||NERVS_AVATAR_PACK_V1[0];
+  const activeAgent=PEGASUS_AVATAR_PACK_V1.find(agent=>agent.id===activeAgentId)||PEGASUS_AVATAR_PACK_V1[0];
 
   function setTurn(turnId:string,state:TurnState){
     setTurnStates(current=>({...current,[turnId]:state}));
@@ -103,7 +103,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
       fetchAbortRefs.current.add(controller);
       const timer=setTimeout(()=>controller.abort(),SPEAK_TIMEOUT_MS);
       try{
-        const r=await fetch("/api/nervs/speak",{
+        const r=await fetch("/api/pegasus/speak",{
           method:"POST",
           signal:controller.signal,
           headers:{"Content-Type":"application/json",Accept:"audio/mpeg"},
@@ -131,7 +131,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
 
   async function updateMeetingStatus(status:"RUNNING"|"COMPLETED"|"FAILED"|"CANCELLED",id:number|null=meetingId){
     if(!id) return;
-    const r=await fetch("/api/nervs/daily/status",{
+    const r=await fetch("/api/pegasus/daily/status",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({meeting_id:id,status}),
@@ -143,7 +143,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
   async function finalizeMeeting(id:number|null){
     if(!id) return;
     setNotesStatus("FINALIZING");
-    const r=await fetch("/api/nervs/daily/finalize",{
+    const r=await fetch("/api/pegasus/daily/finalize",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({meeting_id:id}),
@@ -155,9 +155,9 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
 
   async function prepareMeeting(){
     setMeetingStatus("PREPARING");
-    const r=await fetch("/api/nervs/daily/prepare",{method:"POST"});
+    const r=await fetch("/api/pegasus/daily/prepare",{method:"POST"});
     const data=await r.json();
-    if(!r.ok) throw new Error(data?.error||"Could not prepare NERVS Daily");
+    if(!r.ok) throw new Error(data?.error||"Could not prepare PEGASUS Daily");
     const nextReports=(data.reports||[]) as DailyReport[];
     setReports(nextReports);
     const nextMeetingId=Number(data.meeting_id)||null;
@@ -267,7 +267,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
         if(stopRequestedRef.current) break;
         let script=item.script;
         if(item.closing){
-          script=`That concludes today's NERVS Daily. ${skipped?`${skipped} report${skipped===1?"":"s"} could not be voiced and ${skipped===1?"was":"were"} skipped, but the written notes are saved. `:""}Thank you, team. Meeting adjourned.`;
+          script=`That concludes today's PEGASUS Daily. ${skipped?`${skipped} report${skipped===1?"":"s"} could not be voiced and ${skipped===1?"was":"were"} skipped, but the written notes are saved. `:""}Thank you, team. Meeting adjourned.`;
         }
         warm(item);
         warm(activeQueue[i+1]);
@@ -304,7 +304,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
   return <div className="panel">
     <div style={{display:"flex",justifyContent:"space-between",gap:16,alignItems:"flex-start",flexWrap:"wrap"}}>
       <div>
-        <div className="eyebrow">NERVS · VOICE BOARDROOM</div>
+        <div className="eyebrow">PEGASUS · VOICE BOARDROOM</div>
         <h2 style={{margin:"4px 0"}}>Meeting Hall</h2>
         <p className="muted" style={{maxWidth:760}}>
           Hear the full KMCE AI workforce report in sequence. One speaker is live at a time; failed turns are skipped so the meeting keeps moving.
@@ -317,7 +317,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
       </div>
     </div>
 
-    <NervsRoomConversation onResponder={setActiveAgentId}/>
+    <PegasusHuddleConversation onResponder={setActiveAgentId}/>
 
     <div style={{display:"flex",gap:8,flexWrap:"wrap",margin:"14px 0"}}>
       <button className="btn" onClick={()=>prepareMeeting().catch(error=>setMeetingStatus(error instanceof Error?error.message:"PREPARE FAILED"))}>Prepare Meeting</button>
@@ -329,7 +329,7 @@ export default function NervsMeetingHall({onOpenHistory}:Props){
     <div style={{display:"grid",gridTemplateColumns:"minmax(0,2.2fr) minmax(300px,0.8fr)",gap:16}}>
       <div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:10}}>
-          {NERVS_AVATAR_PACK_V1.map(agent=>{
+          {PEGASUS_AVATAR_PACK_V1.map(agent=>{
             const isActive=agent.id===activeAgentId;
             const matchingTurn=Object.entries(turnStates).find(([key])=>key.endsWith(`:${agent.id}`));
             const state=matchingTurn?.[1]||"QUEUED";

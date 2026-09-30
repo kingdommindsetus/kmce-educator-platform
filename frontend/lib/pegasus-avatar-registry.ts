@@ -1,4 +1,4 @@
-export type NervsAvatarAgent = {
+export type PegasusAvatarAgent = {
   id: "simon" | "marie" | "eyes" | "mark" | "cammy" | "eve" | "tube" | "lucy" | "snake" | "alice" | "echo" | "booker";
   name: string;
   role: string;
@@ -12,7 +12,7 @@ export type NervsAvatarAgent = {
   personality: string;
 };
 
-export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
+export const PEGASUS_AVATAR_PACK_V1: PegasusAvatarAgent[] = [
   {
     id:"simon", name:"Simon", role:"Executive / Orchestrator", voiceId:"pNInz6obpgDQGcFmaJgB", voiceName:"Simon - confident male executive",
     referenceFile:"simon.mp4", mediaUrl:"https://resource2.heygen.ai/video/f55d6cfb26d84479836f9bba79d80170/original.mp4", durationSeconds:10,
@@ -99,6 +99,6 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
   },
 ];
 
-export function avatarMediaUrl(agentId:NervsAvatarAgent["id"]) {
-  return NERVS_AVATAR_PACK_V1.find(agent=>agent.id===agentId)?.mediaUrl ?? null;
+export function avatarMediaUrl(agentId:PegasusAvatarAgent["id"]) {
+  return PEGASUS_AVATAR_PACK_V1.find(agent=>agent.id===agentId)?.mediaUrl ?? null;
 }

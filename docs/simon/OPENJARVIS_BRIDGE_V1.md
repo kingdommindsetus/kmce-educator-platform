@@ -1,6 +1,6 @@
 # KMCE OpenJarvis Bridge
 
-OpenJarvis is used as an optional execution/runtime layer behind Simon and the NERVS agent offices. It does not replace the Next.js command center, Neon memory, authority gates, or ElevenLabs voices.
+OpenJarvis is used as an optional execution/runtime layer behind Simon and the PEGASUS agent offices. It does not replace the Next.js command center, Neon memory, authority gates, or ElevenLabs voices.
 
 ## Why this integration is lightweight
 

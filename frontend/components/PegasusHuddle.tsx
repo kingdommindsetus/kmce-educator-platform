@@ -1,7 +1,7 @@
 "use client";
 
 import {useRef,useState} from "react";
-import {NERVS_AVATAR_PACK_V1} from "../lib/nervs-avatar-registry";
+import {PEGASUS_AVATAR_PACK_V1} from "../lib/pegasus-avatar-registry";
 import VoiceOrb from "./VoiceOrb";
 
 type DailyReport={
@@ -62,7 +62,7 @@ type HistoryMeeting={
   actions:HistoryAction[];
 };
 
-export default function NervsRoom(){
+export default function PegasusHuddle(){
   const [activeIndex,setActiveIndex]=useState(0);
   const [running,setRunning]=useState(false);
   const [speechText,setSpeechText]=useState("Give your Huddle update: one win, one blocker, and your next move.");
@@ -78,7 +78,7 @@ export default function NervsRoom(){
   const stopRequestedRef=useRef(false);
   const playbackResolveRef=useRef<(()=>void)|null>(null);
 
-  const active=NERVS_AVATAR_PACK_V1[activeIndex];
+  const active=PEGASUS_AVATAR_PACK_V1[activeIndex];
 
   function resolvePlayback(){
     if(playbackResolveRef.current){
@@ -106,11 +106,11 @@ export default function NervsRoom(){
   }
 
   function next(){
-    activate((activeIndex+1)%NERVS_AVATAR_PACK_V1.length);
+    activate((activeIndex+1)%PEGASUS_AVATAR_PACK_V1.length);
   }
 
   async function requestSpeech(agentId:string,text:string){
-    const r=await fetch("/api/nervs/speak",{
+    const r=await fetch("/api/pegasus/speak",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({agent_id:agentId,text}),
@@ -126,7 +126,7 @@ export default function NervsRoom(){
     setSpeechStatus("GENERATING VOICE");
     await new Promise(resolve=>setTimeout(resolve,80));
 
-    const target=NERVS_AVATAR_PACK_V1[index];
+    const target=PEGASUS_AVATAR_PACK_V1[index];
     const data=await requestSpeech(target.id,text);
 
     return new Promise<void>((resolve,reject)=>{
@@ -175,7 +175,7 @@ export default function NervsRoom(){
 
   async function loadDailyReports():Promise<PreparedDaily>{
     setMeetingStatus("PREPARING");
-    const r=await fetch("/api/nervs/daily/prepare",{method:"POST"});
+    const r=await fetch("/api/pegasus/daily/prepare",{method:"POST"});
     const data=await r.json();
     if(!r.ok) throw new Error(data?.error||"Could not prepare Huddle");
 
@@ -192,7 +192,7 @@ export default function NervsRoom(){
     id:number|null=meetingId,
   ){
     if(!id) return;
-    const r=await fetch("/api/nervs/daily/status",{
+    const r=await fetch("/api/pegasus/daily/status",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({meeting_id:id,status}),
@@ -227,7 +227,7 @@ export default function NervsRoom(){
       for(let i=0;i<reports.length;i++){
         if(stopRequestedRef.current) break;
         const report=reports[i];
-        const index=NERVS_AVATAR_PACK_V1.findIndex(agent=>agent.id===report.agent_id);
+        const index=PEGASUS_AVATAR_PACK_V1.findIndex(agent=>agent.id===report.agent_id);
         if(index<0) continue;
 
         const nextName=reports[i+1]?.agent_name||"Simon";
@@ -255,7 +255,7 @@ export default function NervsRoom(){
       }
 
       if(!stopRequestedRef.current){
-        const simonIndex=NERVS_AVATAR_PACK_V1.findIndex(agent=>agent.id==="simon");
+        const simonIndex=PEGASUS_AVATAR_PACK_V1.findIndex(agent=>agent.id==="simon");
         if(simonIndex>=0){
           await new Promise(resolve=>setTimeout(resolve,450));
           await playAgent(
@@ -287,7 +287,7 @@ export default function NervsRoom(){
   async function loadHistory(){
     setHistoryStatus("LOADING");
     try{
-      const r=await fetch("/api/nervs/daily/history");
+      const r=await fetch("/api/pegasus/daily/history");
       const data=await r.json();
       if(!r.ok) throw new Error(data?.error||"Could not load meeting history");
       const meetings=(data.meetings||[]) as HistoryMeeting[];
@@ -457,7 +457,7 @@ export default function NervsRoom(){
 
       <div>
         <div className="eyebrow">SPEAKER QUEUE</div>
-        {NERVS_AVATAR_PACK_V1.map((person,index)=>
+        {PEGASUS_AVATAR_PACK_V1.map((person,index)=>
           <button
             key={person.id}
             className={"agent-chip "+(index===activeIndex?"active":"")}
