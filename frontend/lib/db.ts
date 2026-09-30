@@ -6,7 +6,7 @@ export function sql(){
   return neon(url);
 }
 
-export const SCHEMA_VERSION=6;
+export const SCHEMA_VERSION=7;
 const SCHEMA_LOCK=727201;
 let schemaPromise:Promise<void>|null=null;
 
@@ -182,6 +182,25 @@ async function runSchema(q:SchemaQuery){
   )`;
   await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS reference_resources JSONB NOT NULL DEFAULT '[]'::jsonb`;
   await q`CREATE INDEX IF NOT EXISTS course_review_submissions_course_idx ON course_review_submissions(course_id,submitted_at DESC)`;
+
+  await q`CREATE TABLE IF NOT EXISTS faculty_revenue_plans (
+    id BIGSERIAL PRIMARY KEY,
+    course_id BIGINT NOT NULL UNIQUE REFERENCES courses(id) ON DELETE CASCADE,
+    faculty_investment_minor BIGINT NOT NULL DEFAULT 0 CHECK (faculty_investment_minor >= 0),
+    course_price_minor BIGINT CHECK (course_price_minor IS NULL OR course_price_minor >= 0),
+    capacity INTEGER NOT NULL DEFAULT 0 CHECK (capacity >= 0),
+    target_registrations INTEGER NOT NULL DEFAULT 0 CHECK (target_registrations >= 0),
+    processing_fee_bps INTEGER NOT NULL DEFAULT 300 CHECK (processing_fee_bps BETWEEN 0 AND 10000),
+    approved_direct_expenses_minor BIGINT NOT NULL DEFAULT 0 CHECK (approved_direct_expenses_minor >= 0),
+    faculty_share_bps INTEGER NOT NULL DEFAULT 8000 CHECK (faculty_share_bps BETWEEN 0 AND 10000),
+    kmce_share_bps INTEGER NOT NULL DEFAULT 2000 CHECK (kmce_share_bps BETWEEN 0 AND 10000),
+    target_return_multiple NUMERIC(6,2) NOT NULL DEFAULT 2 CHECK (target_return_multiple >= 0),
+    pipeline JSONB NOT NULL DEFAULT '[]'::jsonb,
+    updated_by TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    CHECK (faculty_share_bps + kmce_share_bps = 10000)
+  )`;
 
   await q`CREATE TABLE IF NOT EXISTS leads (
     id BIGSERIAL PRIMARY KEY,

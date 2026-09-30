@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect,useState} from "react";
+import CourseRevenuePlan from "./CourseRevenuePlan";
 
 type Props={educators:any[]};
 
@@ -111,5 +112,6 @@ export default function CourseControl({educators}:Props){
       {course.authorization_status==="UNDER_REVIEW"&&<><button className="btn" onClick={()=>void decide(course,"REVISION_REQUIRED")}>Request revision</button><button className="btn primary" onClick={()=>void decide(course,"APPROVED")}>Authorize</button></>}
     </div>)}
     {!courses.length&&<p className="muted">No course files yet. Create the first one above.</p>}
+    {courses.length>0&&<CourseRevenuePlan courses={courses}/>}
   </div>;
 }
