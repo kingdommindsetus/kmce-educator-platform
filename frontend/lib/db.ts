@@ -6,7 +6,7 @@ export function sql(){
   return neon(url);
 }
 
-export const SCHEMA_VERSION=2;
+export const SCHEMA_VERSION=3;
 const SCHEMA_LOCK=727201;
 let schemaPromise:Promise<void>|null=null;
 
@@ -386,7 +386,7 @@ async function runSchema(q:SchemaQuery){
       ('Eyes','Eyes','Intelligence','elevenlabs','EXAVITQu4vr4xnSDxMaL','READY','{"voice_name":"Bella - clear analytical female","voice_resolution":"fixed_agent_voice"}'::jsonb),
       ('Mark','Mark','Marketing','elevenlabs','IKne3meq5aSn9XLyUdCD','READY','{"voice_name":"Charlie - confident marketing male","voice_resolution":"fixed_agent_voice"}'::jsonb),
       ('Cammy','Cammy','Campaigns','elevenlabs','XrExE9yKIg1WjnnlVkGX','READY','{"voice_name":"Matilda - professional female","voice_resolution":"fixed_agent_voice"}'::jsonb),
-      ('Eve','Eve','Brand','elevenlabs','AZnzlk1XvdvUeBnXmlld','READY','{"voice_name":"Domi - polished female brand voice","voice_resolution":"fixed_agent_voice"}'::jsonb),
+      ('Evan','Evan','Brand','elevenlabs','AZnzlk1XvdvUeBnXmlld','READY','{"voice_name":"Domi - polished female brand voice","voice_resolution":"fixed_agent_voice"}'::jsonb),
       ('Tube','Tube','Video','elevenlabs','TX3LPaxmHKxFdv7VOQHJ','READY','{"voice_name":"Liam - energetic creator male","voice_resolution":"fixed_agent_voice"}'::jsonb),
       ('Lucy','Lucy','Social','elevenlabs','MF3mGyEYCl7XYWbV9V6O','READY','{"voice_name":"Elli - bright social female","voice_resolution":"fixed_agent_voice"}'::jsonb),
       ('Snake','Snake','Growth','elevenlabs','TxGEqnHWrfWFTfGW9XjX','READY','{"voice_name":"Josh - direct analytical male","voice_resolution":"fixed_agent_voice"}'::jsonb),
@@ -401,6 +401,9 @@ async function runSchema(q:SchemaQuery){
       voice_status=EXCLUDED.voice_status,
       metadata=EXCLUDED.metadata,
       updated_at=now()`;
+
+  await q`UPDATE agent_tasks SET assigned_agent='Evan' WHERE assigned_agent='Eve'`;
+  await q`DELETE FROM agent_voice_profiles WHERE agent_name='Eve'`;
 
   await q`CREATE TABLE IF NOT EXISTS nervs_meeting_runs (
     id BIGSERIAL PRIMARY KEY,
@@ -683,7 +686,7 @@ async function runSchema(q:SchemaQuery){
     fit_score INTEGER NOT NULL DEFAULT 0 CHECK (fit_score BETWEEN 0 AND 100),
     rationale TEXT,
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
-    created_by TEXT NOT NULL DEFAULT 'Eve',
+    created_by TEXT NOT NULL DEFAULT 'Evan',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE(store_code,provider,provider_item_id)
@@ -700,10 +703,13 @@ async function runSchema(q:SchemaQuery){
     visual_direction JSONB NOT NULL DEFAULT '{}'::jsonb,
     collection_direction JSONB NOT NULL DEFAULT '[]'::jsonb,
     source_favorite_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
-    created_by TEXT NOT NULL DEFAULT 'Eve',
+    created_by TEXT NOT NULL DEFAULT 'Evan',
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
+
+  await q`UPDATE store_catalog_favorites SET created_by='Evan' WHERE created_by='Eve'`;
+  await q`UPDATE store_brand_briefs SET created_by='Evan' WHERE created_by='Eve'`;
 
   await q`CREATE TABLE IF NOT EXISTS store_pulse_reports (
     id BIGSERIAL PRIMARY KEY,
