@@ -1,5 +1,5 @@
 import {NextResponse} from "next/server";
-import {requireFounder} from "../../../lib/auth";
+import {requireFounder} from "../../../../lib/auth";
 
 export async function GET(){
   const founder=await requireFounder();
