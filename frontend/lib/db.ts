@@ -535,7 +535,25 @@ async function runSchema(q:SchemaQuery){
   await q`UPDATE agent_tasks SET assigned_agent='Evan' WHERE assigned_agent='Eve'`;
   await q`DELETE FROM agent_voice_profiles WHERE agent_name='Eve'`;
 
-  await q`CREATE TABLE IF NOT EXISTS nervs_meeting_runs (
+  await q`DO $$ BEGIN
+    IF to_regclass('public.pegasus_meeting_runs') IS NOT NULL AND to_regclass('public.pegasus_meeting_runs') IS NULL THEN
+      ALTER TABLE pegasus_meeting_runs RENAME TO pegasus_meeting_runs;
+    END IF;
+    IF to_regclass('public.pegasus_meeting_reports') IS NOT NULL AND to_regclass('public.pegasus_meeting_reports') IS NULL THEN
+      ALTER TABLE pegasus_meeting_reports RENAME TO pegasus_meeting_reports;
+    END IF;
+    IF to_regclass('public.pegasus_meeting_actions') IS NOT NULL AND to_regclass('public.pegasus_meeting_actions') IS NULL THEN
+      ALTER TABLE pegasus_meeting_actions RENAME TO pegasus_meeting_actions;
+    END IF;
+    IF to_regclass('public.pegasus_meeting_reports_meeting_idx') IS NOT NULL AND to_regclass('public.pegasus_meeting_reports_meeting_idx') IS NULL THEN
+      ALTER INDEX pegasus_meeting_reports_meeting_idx RENAME TO pegasus_meeting_reports_meeting_idx;
+    END IF;
+    IF to_regclass('public.pegasus_meeting_actions_meeting_idx') IS NOT NULL AND to_regclass('public.pegasus_meeting_actions_meeting_idx') IS NULL THEN
+      ALTER INDEX pegasus_meeting_actions_meeting_idx RENAME TO pegasus_meeting_actions_meeting_idx;
+    END IF;
+  END $$;`
+
+  await q`CREATE TABLE IF NOT EXISTS pegasus_meeting_runs (
     id BIGSERIAL PRIMARY KEY,
     meeting_date DATE NOT NULL,
     meeting_type TEXT NOT NULL DEFAULT 'DAILY_8AM',
@@ -551,14 +569,14 @@ async function runSchema(q:SchemaQuery){
     UNIQUE(meeting_date,meeting_type)
   )`;
 
-  await q`ALTER TABLE nervs_meeting_runs ADD COLUMN IF NOT EXISTS notion_sync_status TEXT NOT NULL DEFAULT 'NOT_CONFIGURED'`;
-  await q`ALTER TABLE nervs_meeting_runs ADD COLUMN IF NOT EXISTS notion_page_id TEXT`;
-  await q`ALTER TABLE nervs_meeting_runs ADD COLUMN IF NOT EXISTS notion_page_url TEXT`;
-  await q`ALTER TABLE nervs_meeting_runs ADD COLUMN IF NOT EXISTS notion_synced_at TIMESTAMPTZ`;
-  await q`ALTER TABLE nervs_meeting_runs ADD COLUMN IF NOT EXISTS notion_sync_error TEXT`;
-  await q`CREATE TABLE IF NOT EXISTS nervs_meeting_reports (
+  await q`ALTER TABLE pegasus_meeting_runs ADD COLUMN IF NOT EXISTS notion_sync_status TEXT NOT NULL DEFAULT 'NOT_CONFIGURED'`;
+  await q`ALTER TABLE pegasus_meeting_runs ADD COLUMN IF NOT EXISTS notion_page_id TEXT`;
+  await q`ALTER TABLE pegasus_meeting_runs ADD COLUMN IF NOT EXISTS notion_page_url TEXT`;
+  await q`ALTER TABLE pegasus_meeting_runs ADD COLUMN IF NOT EXISTS notion_synced_at TIMESTAMPTZ`;
+  await q`ALTER TABLE pegasus_meeting_runs ADD COLUMN IF NOT EXISTS notion_sync_error TEXT`;
+  await q`CREATE TABLE IF NOT EXISTS pegasus_meeting_reports (
     id BIGSERIAL PRIMARY KEY,
-    meeting_id BIGINT NOT NULL REFERENCES nervs_meeting_runs(id) ON DELETE CASCADE,
+    meeting_id BIGINT NOT NULL REFERENCES pegasus_meeting_runs(id) ON DELETE CASCADE,
     agent_name TEXT NOT NULL,
     department TEXT,
     speaking_order INTEGER,
@@ -575,9 +593,9 @@ async function runSchema(q:SchemaQuery){
     UNIQUE(meeting_id,agent_name)
   )`;
 
-  await q`CREATE TABLE IF NOT EXISTS nervs_meeting_actions (
+  await q`CREATE TABLE IF NOT EXISTS pegasus_meeting_actions (
     id BIGSERIAL PRIMARY KEY,
-    meeting_id BIGINT NOT NULL REFERENCES nervs_meeting_runs(id) ON DELETE CASCADE,
+    meeting_id BIGINT NOT NULL REFERENCES pegasus_meeting_runs(id) ON DELETE CASCADE,
     source_agent TEXT,
     assigned_agent TEXT NOT NULL,
     title TEXT NOT NULL,
@@ -590,8 +608,8 @@ async function runSchema(q:SchemaQuery){
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
 
-  await q`CREATE INDEX IF NOT EXISTS nervs_meeting_reports_meeting_idx ON nervs_meeting_reports(meeting_id,speaking_order,id)`;
-  await q`CREATE INDEX IF NOT EXISTS nervs_meeting_actions_meeting_idx ON nervs_meeting_actions(meeting_id,status,priority)`;
+  await q`CREATE INDEX IF NOT EXISTS pegasus_meeting_reports_meeting_idx ON pegasus_meeting_reports(meeting_id,speaking_order,id)`;
+  await q`CREATE INDEX IF NOT EXISTS pegasus_meeting_actions_meeting_idx ON pegasus_meeting_actions(meeting_id,status,priority)`;
 
   await q`CREATE TABLE IF NOT EXISTS service_catalog (
     service_code TEXT PRIMARY KEY,
