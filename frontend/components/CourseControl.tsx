@@ -81,7 +81,7 @@ export default function CourseControl({educators}:Props){
     <div className="eyebrow">KMCE · COURSE CONTROL</div>
     <h2>Course File & Internal Authorization</h2>
     <p className="muted">A course is not authorized merely because it is created. Approval is a separate founder decision recorded in the course file.</p>
-    <div className="grid" style={{gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:10}}>
+    <div className="course-form-grid">
       <input value={form.course_code} onChange={e=>update("course_code",e.target.value)} placeholder="KM-YYYY-###" />
       <input value={form.working_name} onChange={e=>update("working_name",e.target.value)} placeholder="Working name — e.g., Dr. Tim Course 2026" />
       <select value={form.educator_id} onChange={e=>update("educator_id",e.target.value)}><option value="">Faculty owner</option>{educators.map(e=><option value={e.id} key={e.id}>{e.public_name}</option>)}</select>
@@ -96,7 +96,7 @@ export default function CourseControl({educators}:Props){
     <textarea value={form.learning_objectives} onChange={e=>update("learning_objectives",e.target.value)} placeholder="Learning objectives — one per line" />
     <textarea value={form.agenda} onChange={e=>update("agenda",e.target.value)} placeholder="Agenda and instructional-time calculation" />
     <textarea value={form.reference_resources} onChange={e=>update("reference_resources",e.target.value)} placeholder="References/resources — one per line" />
-    <div className="grid" style={{gridTemplateColumns:"repeat(auto-fit,minmax(230px,1fr))",gap:10}}>
+    <div className="course-form-grid">
       <input value={form.attendance_method} onChange={e=>update("attendance_method",e.target.value)} placeholder="Attendance method" />
       <input value={form.completion_criteria} onChange={e=>update("completion_criteria",e.target.value)} placeholder="Completion criteria" />
       <input value={form.evaluation_method} onChange={e=>update("evaluation_method",e.target.value)} placeholder="Evaluation method" />
