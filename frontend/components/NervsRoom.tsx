@@ -65,7 +65,7 @@ type HistoryMeeting={
 export default function NervsRoom(){
   const [activeIndex,setActiveIndex]=useState(0);
   const [running,setRunning]=useState(false);
-  const [speechText,setSpeechText]=useState("Give your NERVS DAILY update: one win, one blocker, and your next move.");
+  const [speechText,setSpeechText]=useState("Give your Huddle update: one win, one blocker, and your next move.");
   const [speechStatus,setSpeechStatus]=useState("READY");
   const [dailyReports,setDailyReports]=useState<DailyReport[]>([]);
   const [meetingStatus,setMeetingStatus]=useState("NOT PREPARED");
@@ -177,7 +177,7 @@ export default function NervsRoom(){
     setMeetingStatus("PREPARING");
     const r=await fetch("/api/nervs/daily/prepare",{method:"POST"});
     const data=await r.json();
-    if(!r.ok) throw new Error(data?.error||"Could not prepare NERVS Daily");
+    if(!r.ok) throw new Error(data?.error||"Could not prepare Huddle");
 
     const reports=(data.reports||[]) as DailyReport[];
     const preparedMeetingId=Number(data.meeting_id)||null;
@@ -260,7 +260,7 @@ export default function NervsRoom(){
           await new Promise(resolve=>setTimeout(resolve,450));
           await playAgent(
             simonIndex,
-            "Thank you, team. Kimberly, that concludes today’s NERVS Daily. The priorities, blockers, and next moves are captured. Meeting closed."
+            "Thank you, team. Kimberly, that concludes today’s Huddle. The priorities, blockers, and next moves are captured. Meeting closed."
           );
         }
       }
@@ -302,12 +302,12 @@ export default function NervsRoom(){
   const selectedHistory=history.find(item=>item.id===selectedHistoryId)||null;
 
   return <div className="panel">
-    <div className="eyebrow">NERVS DAILY · LIVE VOICE ORB · SPEECH V1</div>
-    <h2>Speaker Room</h2>
-    <p className="muted">One active speaker at a time. NERVS can prepare evidence-based WIN / BLOCKER / NEXT / ASK reports and speak them in deterministic order.</p>
+    <div className="eyebrow">HUDDLE · LIVE VOICE ORB · SPEECH V1</div>
+    <h2>AI Team Huddle</h2>
+    <p className="muted">One active speaker at a time. Pegasus prepares evidence-based WIN / BLOCKER / NEXT / ASK reports and keeps each handoff traceable.</p>
 
     <div className="tomorrow" style={{marginTop:14}}>
-      <div className="eyebrow">NERVS DAILY AUTO RUN</div>
+      <div className="eyebrow">HUDDLE AUTO RUN</div>
       <p><b>Meeting:</b> {meetingStatus}</p>
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         <button className="btn" onClick={prepareDaily}>Prepare Daily</button>
@@ -323,7 +323,7 @@ export default function NervsRoom(){
       <div style={{display:"flex",justifyContent:"space-between",gap:12,alignItems:"center",flexWrap:"wrap"}}>
         <div>
           <div className="eyebrow">MEETING HISTORY</div>
-          <div className="muted" style={{fontSize:12}}>Founder-only audit trail of persisted NERVS Daily meetings and agent reports.</div>
+          <div className="muted" style={{fontSize:12}}>Founder-only audit trail of persisted Huddle meetings and agent reports.</div>
         </div>
         <button className="btn" onClick={loadHistory}>Load History</button>
       </div>
