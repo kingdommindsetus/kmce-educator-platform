@@ -5,9 +5,13 @@ import Stripe from "stripe";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2025-08-27.basil",
-});
+function getStripe() {
+  const apiKey = process.env.STRIPE_SECRET_KEY;
+  if (!apiKey) {
+    throw new Error("STRIPE_SECRET_KEY is not configured");
+  }
+  return new Stripe(apiKey, { apiVersion: "2025-08-27.basil" });
+}
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
@@ -29,7 +33,7 @@ export async function POST(req: Request) {
 
     let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+      event = getStripe().webhooks.constructEvent(body, signature, webhookSecret);
     } catch (error) {
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
     }

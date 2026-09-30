@@ -5,9 +5,13 @@ import Stripe from "stripe";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2025-08-27.basil",
-});
+function getStripe() {
+  const apiKey = process.env.STRIPE_SECRET_KEY;
+  if (!apiKey) {
+    throw new Error("STRIPE_SECRET_KEY is not configured");
+  }
+  return new Stripe(apiKey, { apiVersion: "2025-08-27.basil" });
+}
 
 export async function POST(req: Request) {
   try {
@@ -39,6 +43,7 @@ export async function POST(req: Request) {
 
 async function createSubscription(dentistId: number, email: string, plan: string = "starter") {
   try {
+    const stripe = getStripe();
     const q = sql();
 
     // Verify dentist exists
@@ -147,6 +152,7 @@ async function createSubscription(dentistId: number, email: string, plan: string
 
 async function getSubscription(dentistId: number) {
   try {
+    const stripe = getStripe();
     const q = sql();
 
     const result = await q`
@@ -186,6 +192,7 @@ async function getSubscription(dentistId: number) {
 
 async function cancelSubscription(dentistId: number) {
   try {
+    const stripe = getStripe();
     const q = sql();
 
     const result = await q`
