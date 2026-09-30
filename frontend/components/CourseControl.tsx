@@ -2,6 +2,7 @@
 
 import {useEffect,useState} from "react";
 import CourseRevenuePlan from "./CourseRevenuePlan";
+import CourseOfferLanes from "./CourseOfferLanes";
 
 type Props={educators:any[]};
 
@@ -113,5 +114,6 @@ export default function CourseControl({educators}:Props){
     </div>)}
     {!courses.length&&<p className="muted">No course files yet. Create the first one above.</p>}
     {courses.length>0&&<CourseRevenuePlan courses={courses}/>}
+    {courses.length>0&&<CourseOfferLanes courses={courses}/>}
   </div>;
 }

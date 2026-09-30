@@ -6,7 +6,7 @@ export function sql(){
   return neon(url);
 }
 
-export const SCHEMA_VERSION=7;
+export const SCHEMA_VERSION=9;
 const SCHEMA_LOCK=727201;
 let schemaPromise:Promise<void>|null=null;
 
@@ -201,6 +201,24 @@ async function runSchema(q:SchemaQuery){
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     CHECK (faculty_share_bps + kmce_share_bps = 10000)
   )`;
+
+  await q`CREATE TABLE IF NOT EXISTS faculty_offers (
+    id BIGSERIAL PRIMARY KEY,
+    course_id BIGINT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    lane TEXT NOT NULL CHECK (lane IN ('DIGITAL','LIVE_IN_PERSON','LIVE_IN_OFFICE','ONLINE')),
+    offer_name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    proposed_price_minor BIGINT CHECK (proposed_price_minor IS NULL OR proposed_price_minor >= 0),
+    offer_status TEXT NOT NULL DEFAULT 'IDEA' CHECK (offer_status IN ('IDEA','DEVELOPMENT','REVIEW','READY_TO_LAUNCH','LIVE','PAUSED','RETIRED')),
+    ce_credit_offered BOOLEAN NOT NULL DEFAULT false,
+    next_action TEXT NOT NULL DEFAULT '',
+    updated_by TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(course_id,lane)
+  )`;
+  await q`ALTER TABLE faculty_offers DROP CONSTRAINT IF EXISTS faculty_offers_lane_check`;
+  await q`ALTER TABLE faculty_offers ADD CONSTRAINT faculty_offers_lane_check CHECK (lane IN ('DIGITAL','LIVE_IN_PERSON','LIVE_IN_OFFICE','ONLINE'))`;
 
   await q`CREATE TABLE IF NOT EXISTS leads (
     id BIGSERIAL PRIMARY KEY,
