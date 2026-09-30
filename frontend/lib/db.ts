@@ -119,34 +119,34 @@ async function runSchema(q:SchemaQuery){
 
 
   // Upgrade legacy course tables created before controlled CE course files.
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_code TEXT\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS educator_id BIGINT REFERENCES educators(id)\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_format TEXT NOT NULL DEFAULT 'Legacy'\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS target_audience TEXT NOT NULL DEFAULT ''\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS educational_need TEXT NOT NULL DEFAULT ''\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS learning_objectives JSONB NOT NULL DEFAULT '[]'::jsonb\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS agenda TEXT NOT NULL DEFAULT ''\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS instructional_minutes INTEGER NOT NULL DEFAULT 0\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS proposed_ce_hours NUMERIC(6,2) NOT NULL DEFAULT 0\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS subject_code TEXT\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS reference_resources JSONB NOT NULL DEFAULT '[]'::jsonb\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS attendance_method TEXT NOT NULL DEFAULT ''\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS completion_criteria TEXT NOT NULL DEFAULT ''\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS evaluation_method TEXT NOT NULL DEFAULT ''\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS assessment_plan TEXT\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_status TEXT NOT NULL DEFAULT 'Development'\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS authorization_status TEXT NOT NULL DEFAULT 'NOT_SUBMITTED'\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()\`;
-  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()\`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_code TEXT`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS educator_id BIGINT REFERENCES educators(id)`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_format TEXT NOT NULL DEFAULT 'Legacy'`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS target_audience TEXT NOT NULL DEFAULT ''`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS educational_need TEXT NOT NULL DEFAULT ''`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS learning_objectives JSONB NOT NULL DEFAULT '[]'::jsonb`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS agenda TEXT NOT NULL DEFAULT ''`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS instructional_minutes INTEGER NOT NULL DEFAULT 0`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS proposed_ce_hours NUMERIC(6,2) NOT NULL DEFAULT 0`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS subject_code TEXT`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS reference_resources JSONB NOT NULL DEFAULT '[]'::jsonb`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS attendance_method TEXT NOT NULL DEFAULT ''`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS completion_criteria TEXT NOT NULL DEFAULT ''`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS evaluation_method TEXT NOT NULL DEFAULT ''`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS assessment_plan TEXT`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_status TEXT NOT NULL DEFAULT 'Development'`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS authorization_status TEXT NOT NULL DEFAULT 'NOT_SUBMITTED'`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now()`;
+  await q`ALTER TABLE courses ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`;
 
   await q`UPDATE courses
     SET educator_id=(SELECT id FROM educators ORDER BY id LIMIT 1)
-    WHERE educator_id IS NULL\`;
+    WHERE educator_id IS NULL`;
 
   await q`UPDATE courses
     SET course_code='KM-2026-001'
     WHERE course_code IS NULL
-      AND title='Craniofacial Biodentistry & Advanced Airway Integration'\`;
+      AND title='Craniofacial Biodentistry & Advanced Airway Integration'`;
 
   await q`WITH legacy AS (
       SELECT id,row_number() OVER (ORDER BY id) AS rn
@@ -156,11 +156,11 @@ async function runSchema(q:SchemaQuery){
     UPDATE courses c
     SET course_code='KM-2025-' || lpad(legacy.rn::text,3,'0')
     FROM legacy
-    WHERE c.id=legacy.id\`;
+    WHERE c.id=legacy.id`;
 
-  await q`CREATE UNIQUE INDEX IF NOT EXISTS courses_course_code_uidx ON courses(course_code)\`;
-  await q`ALTER TABLE courses ALTER COLUMN course_code SET NOT NULL\`;
-  await q`ALTER TABLE courses ALTER COLUMN educator_id SET NOT NULL\`;
+  await q`CREATE UNIQUE INDEX IF NOT EXISTS courses_course_code_uidx ON courses(course_code)`;
+  await q`ALTER TABLE courses ALTER COLUMN course_code SET NOT NULL`;
+  await q`ALTER TABLE courses ALTER COLUMN educator_id SET NOT NULL`;
 
   await q`CREATE TABLE IF NOT EXISTS course_authorizations (
     id BIGSERIAL PRIMARY KEY,
