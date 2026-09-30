@@ -941,15 +941,31 @@ async function runSchema(q:SchemaQuery){
   )`;
 
 
-  await q`CREATE TABLE IF NOT EXISTS circle_builder_projects (
+  await q`DO $$ BEGIN
+    IF to_regclass('public.circle_builder_projects') IS NOT NULL AND to_regclass('public.community_builder_projects') IS NULL THEN
+      ALTER TABLE circle_builder_projects RENAME TO community_builder_projects;
+    END IF;
+    IF to_regclass('public.circle_builder_actions') IS NOT NULL AND to_regclass('public.community_builder_actions') IS NULL THEN
+      ALTER TABLE circle_builder_actions RENAME TO community_builder_actions;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='community_builder_projects' AND column_name='circle_community_id') THEN
+      ALTER TABLE community_builder_projects RENAME COLUMN circle_community_id TO legacy_external_community_id;
+    END IF;
+    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='community_builder_projects' AND column_name='circle_community_url') THEN
+      ALTER TABLE community_builder_projects RENAME COLUMN circle_community_url TO legacy_external_community_url;
+    END IF;
+  END $$;`
+
+  await q`CREATE TABLE IF NOT EXISTS community_builder_projects (
     id BIGSERIAL PRIMARY KEY,
     educator_id BIGINT REFERENCES educators(id) ON DELETE SET NULL,
     project_name TEXT NOT NULL,
     brief TEXT NOT NULL,
     blueprint JSONB NOT NULL DEFAULT '{}'::jsonb,
     status TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','APPROVED','PROVISIONING','LIVE','FAILED')),
-    circle_community_id TEXT,
-    circle_community_url TEXT,
+    community_instance_id BIGINT,
+    legacy_external_community_id TEXT,
+    legacy_external_community_url TEXT,
     approved_by TEXT,
     approved_at TIMESTAMPTZ,
     provisioned_at TIMESTAMPTZ,
@@ -958,17 +974,144 @@ async function runSchema(q:SchemaQuery){
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
-  await q`CREATE INDEX IF NOT EXISTS circle_builder_projects_recent_idx ON circle_builder_projects(status,updated_at DESC,id DESC)`;
+  await q`ALTER TABLE community_builder_projects ADD COLUMN IF NOT EXISTS community_instance_id BIGINT`;
+  await q`ALTER TABLE community_builder_projects ADD COLUMN IF NOT EXISTS legacy_external_community_id TEXT`;
+  await q`ALTER TABLE community_builder_projects ADD COLUMN IF NOT EXISTS legacy_external_community_url TEXT`;
+  await q`CREATE INDEX IF NOT EXISTS community_builder_projects_recent_idx ON community_builder_projects(status,updated_at DESC,id DESC)`;
 
-  await q`CREATE TABLE IF NOT EXISTS circle_builder_actions (
+  await q`CREATE TABLE IF NOT EXISTS community_builder_actions (
     id BIGSERIAL PRIMARY KEY,
-    project_id BIGINT NOT NULL REFERENCES circle_builder_projects(id) ON DELETE CASCADE,
+    project_id BIGINT NOT NULL REFERENCES community_builder_projects(id) ON DELETE CASCADE,
     action_type TEXT NOT NULL,
     actor TEXT NOT NULL,
     detail TEXT,
     payload JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
-  await q`CREATE INDEX IF NOT EXISTS circle_builder_actions_project_idx ON circle_builder_actions(project_id,created_at DESC,id DESC)`;
+  await q`CREATE INDEX IF NOT EXISTS community_builder_actions_project_idx ON community_builder_actions(project_id,created_at DESC,id DESC)`;
+
+  await q`CREATE TABLE IF NOT EXISTS community_instances (
+    id BIGSERIAL PRIMARY KEY,
+    project_id BIGINT NOT NULL UNIQUE REFERENCES community_builder_projects(id) ON DELETE CASCADE,
+    educator_id BIGINT REFERENCES educators(id) ON DELETE SET NULL,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','LIVE','ARCHIVED')),
+    created_by TEXT NOT NULL DEFAULT 'Pegasus',
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS community_tiers (
+    id BIGSERIAL PRIMARY KEY,
+    community_id BIGINT NOT NULL REFERENCES community_instances(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    price_minor BIGINT,
+    access_key TEXT NOT NULL,
+    promise TEXT,
+    position INTEGER NOT NULL DEFAULT 0,
+    active BOOLEAN NOT NULL DEFAULT true,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(community_id,name)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS community_spaces (
+    id BIGSERIAL PRIMARY KEY,
+    community_id BIGINT NOT NULL REFERENCES community_instances(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    space_type TEXT NOT NULL DEFAULT 'discussion',
+    visibility TEXT NOT NULL DEFAULT 'All members',
+    position INTEGER NOT NULL DEFAULT 0,
+    active BOOLEAN NOT NULL DEFAULT true,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(community_id,name),
+    UNIQUE(community_id,slug)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS community_access_grants (
+    id BIGSERIAL PRIMARY KEY,
+    community_id BIGINT NOT NULL REFERENCES community_instances(id) ON DELETE CASCADE,
+    tier_id BIGINT NOT NULL REFERENCES community_tiers(id) ON DELETE CASCADE,
+    space_id BIGINT NOT NULL REFERENCES community_spaces(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(community_id,tier_id,space_id)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS community_course_sections (
+    id BIGSERIAL PRIMARY KEY,
+    community_id BIGINT NOT NULL REFERENCES community_instances(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    position INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','PUBLISHED','ARCHIVED')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(community_id,title)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS community_lessons (
+    id BIGSERIAL PRIMARY KEY,
+    section_id BIGINT NOT NULL REFERENCES community_course_sections(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    body TEXT,
+    video_url TEXT,
+    position INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','PUBLISHED','ARCHIVED')),
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(section_id,title)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS community_members (
+    id BIGSERIAL PRIMARY KEY,
+    community_id BIGINT NOT NULL REFERENCES community_instances(id) ON DELETE CASCADE,
+    tier_id BIGINT REFERENCES community_tiers(id) ON DELETE SET NULL,
+    email TEXT NOT NULL,
+    display_name TEXT,
+    role TEXT NOT NULL DEFAULT 'MEMBER' CHECK (role IN ('MEMBER','MODERATOR','ADMIN','OWNER')),
+    status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('INVITED','ACTIVE','SUSPENDED','REMOVED')),
+    joined_at TIMESTAMPTZ,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(community_id,email)
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS community_posts (
+    id BIGSERIAL PRIMARY KEY,
+    community_id BIGINT NOT NULL REFERENCES community_instances(id) ON DELETE CASCADE,
+    space_id BIGINT NOT NULL REFERENCES community_spaces(id) ON DELETE CASCADE,
+    author_member_id BIGINT REFERENCES community_members(id) ON DELETE SET NULL,
+    title TEXT,
+    body TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PUBLISHED' CHECK (status IN ('DRAFT','PUBLISHED','HIDDEN','ARCHIVED')),
+    pinned BOOLEAN NOT NULL DEFAULT false,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+
+  await q`CREATE TABLE IF NOT EXISTS community_events (
+    id BIGSERIAL PRIMARY KEY,
+    community_id BIGINT NOT NULL REFERENCES community_instances(id) ON DELETE CASCADE,
+    space_id BIGINT REFERENCES community_spaces(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    starts_at TIMESTAMPTZ,
+    ends_at TIMESTAMPTZ,
+    event_url TEXT,
+    status TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','SCHEDULED','LIVE','COMPLETED','CANCELLED')),
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+
 
 }

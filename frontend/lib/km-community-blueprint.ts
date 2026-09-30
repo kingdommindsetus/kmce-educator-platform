@@ -6,7 +6,7 @@ export type CircleTier={
   spaces:string[];
 };
 
-export type CircleBlueprint={
+export type CommunityBlueprint={
   name:string;
   summary:string;
   tiers:CircleTier[];
@@ -23,7 +23,7 @@ function moneyValues(input:string){
 
 function has(input:string,pattern:RegExp){return pattern.test(input.toLowerCase());}
 
-export function buildCircleBlueprint(brief:string,educatorName?:string):CircleBlueprint{
+export function buildCommunityBlueprint(brief:string,educatorName?:string):CommunityBlueprint{
   const text=String(brief||"").trim();
   const prices=moneyValues(text);
   const wantsFree=has(text,/\bfree\b/);

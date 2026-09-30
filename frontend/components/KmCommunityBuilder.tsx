@@ -3,7 +3,7 @@ import {useEffect,useMemo,useState} from "react";
 
 type Props={educators:any[]};
 
-export default function KmCircleBuilder({educators}:Props){
+export default function KmCommunityBuilder({educators}:Props){
   const [brief,setBrief]=useState("I want a free tier with community, a $97 paid tier with courses, and a $297 VIP tier with 1-on-1 coaching.");
   const [educatorId,setEducatorId]=useState("");
   const [project,setProject]=useState<any>(null);
@@ -13,7 +13,7 @@ export default function KmCircleBuilder({educators}:Props){
   const [notice,setNotice]=useState("");
 
   async function load(){
-    const [p,s]=await Promise.all([fetch("/api/circle/projects"),fetch("/api/circle/status")]);
+    const [p,s]=await Promise.all([fetch("/api/community/projects"),fetch("/api/community/status")]);
     const pd=await p.json().catch(()=>({projects:[]})); const sd=await s.json().catch(()=>null);
     if(p.ok)setProjects(pd.projects||[]); if(s.ok)setStatus(sd);
   }
@@ -21,7 +21,7 @@ export default function KmCircleBuilder({educators}:Props){
 
   async function generate(){
     setBusy(true);setNotice("Pegasus is building the community blueprint…");
-    const r=await fetch("/api/circle/projects",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({brief,educator_id:educatorId||null})});
+    const r=await fetch("/api/community/projects",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({brief,educator_id:educatorId||null})});
     const d=await r.json().catch(()=>({}));
     setBusy(false);
     if(!r.ok){setNotice(d.error||"Could not build community blueprint");return;}
@@ -30,10 +30,22 @@ export default function KmCircleBuilder({educators}:Props){
 
   async function approve(){
     if(!project)return;
-    const r=await fetch(`/api/circle/projects/${project.id}/approve`,{method:"POST"});
+    const r=await fetch(`/api/community/projects/${project.id}/approve`,{method:"POST"});
     const d=await r.json().catch(()=>({}));
     if(!r.ok){setNotice(d.error||"Could not approve blueprint");return;}
-    setProject(d.project);setNotice("APPROVED · READY FOR CIRCLE PROVISIONING");await load();
+    setProject(d.project);setNotice("APPROVED · READY TO BUILD NATIVE COMMUNITY");await load();
+  }
+
+  async function provision(){
+    if(!project)return;
+    setBusy(true);setNotice("Pegasus is building the native community…");
+    const r=await fetch(`/api/community/projects/${project.id}/provision`,{method:"POST"});
+    const d=await r.json().catch(()=>({}));
+    setBusy(false);
+    if(!r.ok){setNotice(d.error||"Could not build native community");return;}
+    setProject(d.project);
+    setNotice(`COMMUNITY LIVE · ${d.summary?.tiers||0} tiers · ${d.summary?.spaces||0} spaces · ${d.summary?.lessons||0} lessons`);
+    await load();
   }
 
   const bp=project?.blueprint;
@@ -42,14 +54,14 @@ export default function KmCircleBuilder({educators}:Props){
   return <div className="panel circle-builder">
     <div className="circle-hero">
       <div><div className="eyebrow">KM CIRCLE · POWERED BY PEGASUS</div><h2>Build a community by conversation.</h2><p className="muted">Describe the membership business you want. Pegasus turns the brief into tiers, spaces, access groups, course structure and a controlled provisioning plan.</p></div>
-      <div className={"circle-connection "+(status?.provisioning_enabled?"online":"offline")}><span>●</span><div><b>Circle Admin API</b><small>{status?.provisioning_enabled?"Connected · provisioning available":"Not connected · blueprint mode"}</small></div></div>
+      <div className={"circle-connection "+(status?.provisioning_enabled?"online":"offline")}><span>●</span><div><b>Pegasus Community Engine</b><small>{status?.provisioning_enabled?"Native · Neon-backed":"Native engine ready"}</small></div></div>
     </div>
 
     <div className="circle-layout">
       <section className="circle-chat">
         <div className="circle-chat-head"><div><span className="eyebrow">CONVERSATION BUILDER</span><h3>Tell Pegasus what to build</h3></div><span className="pill">DRAFT SAFE</span></div>
         <label className="course-field"><span>Faculty / Community Owner</span><select value={educatorId} onChange={e=>setEducatorId(e.target.value)}><option value="">KMCE / unassigned</option>{educators.map(e=><option key={e.id} value={e.id}>{e.public_name}</option>)}</select></label>
-        <div className="circle-message assistant"><b>Pegasus</b><p>Describe the community, tiers, price points, courses, coaching, events, or member experience you want. I’ll structure it before anything is created in Circle.</p></div>
+        <div className="circle-message assistant"><b>Pegasus</b><p>Describe the community, tiers, price points, courses, coaching, events, or member experience you want. I’ll structure it before anything is created in Pegasus.</p></div>
         <div className="circle-message founder"><b>{educator?.public_name||"Founder"}</b><textarea value={brief} onChange={e=>setBrief(e.target.value)} rows={7}/></div>
         <button className="btn primary circle-build-btn" disabled={busy} onClick={()=>void generate()}>{busy?"Building blueprint…":"Generate Community Blueprint"}</button>
         {notice&&<div className="circle-notice">{notice}</div>}
@@ -73,8 +85,8 @@ export default function KmCircleBuilder({educators}:Props){
           <div className="circle-steps">{bp.provisioning_steps?.map((s:string,i:number)=><div key={s}><span>{i+1}</span><p>{s}</p></div>)}</div>
 
           <div className="circle-actions">
-            {project.status==="DRAFT"?<button className="btn primary" onClick={()=>void approve()}>Approve Blueprint</button>:<button className="btn primary" disabled={!status?.provisioning_enabled}>{status?.provisioning_enabled?"Provision to Circle":"Connect Circle to Provision"}</button>}
-            <span>{status?.provisioning_enabled?"Founder approval required before external creation.":"No Circle changes can occur until Admin API credentials are configured."}</span>
+            {project.status==="DRAFT"?<button className="btn primary" onClick={()=>void approve()}>Approve Blueprint</button>:project.status==="APPROVED"?<button className="btn primary" disabled={busy} onClick={()=>void provision()}>{busy?"Building Community…":"Build Native Community"}</button>:<button className="btn primary" disabled>Community Live</button>}
+            <span>{project.status==="LIVE"?"Built inside Pegasus · tiers, spaces, access rules and curriculum are now native records.":"Founder approval is required before Pegasus creates the community."}</span>
           </div>
         </>}
       </section>
