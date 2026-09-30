@@ -20,6 +20,21 @@ export async function ensureSchema(){
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
 
+  await q`CREATE TABLE IF NOT EXISTS courses (
+    id BIGSERIAL PRIMARY KEY,
+    educator_id BIGINT NOT NULL REFERENCES educators(id),
+    plain_language_name TEXT NOT NULL,
+    formal_id TEXT NOT NULL,
+    format TEXT NOT NULL,
+    audience TEXT NOT NULL,
+    educational_need TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PLANNING' CHECK (status IN ('PLANNING','ACTIVE','ARCHIVED')),
+    created_by TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(educator_id, plain_language_name)
+  )`;
+
   await q`CREATE TABLE IF NOT EXISTS leads (
     id BIGSERIAL PRIMARY KEY,
     educator_id BIGINT NOT NULL REFERENCES educators(id),
