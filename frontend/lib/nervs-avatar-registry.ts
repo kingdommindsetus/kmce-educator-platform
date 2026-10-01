@@ -28,7 +28,7 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
     personality:"Reassuring, organized, operationally disciplined",
   },
   {
-    id:"eyes", name:"Eyes", role:"Market Intelligence", voiceId:"CwhRBWXzGAHq8TQ4Fs17",
+    id:"eyes", name:"IRIS", role:"Intelligence / Observability", voiceId:"CwhRBWXzGAHq8TQ4Fs17",
     referenceFile:"eyes.mp4", mediaUrl:"https://resource2.heygen.ai/video/2667f12ff04e4352b445177f24ddc370/original.mp4", durationSeconds:10,
     liveTalkingAvatarId:"kmce_eyes_v1",
     liveTalkingModel:"musetalk",
@@ -49,7 +49,7 @@ export const NERVS_AVATAR_PACK_V1: NervsAvatarAgent[] = [
     personality:"Professional, numbers-aware, campaign-focused",
   },
   {
-    id:"eve", name:"Eve", role:"Brand / Catalog Curator", voiceId:"pFZP5JQG7iQjIQuC4Bku",
+    id:"eve", name:"Evan", role:"Brand / Content Studio", voiceId:"pFZP5JQG7iQjIQuC4Bku",
     referenceFile:"eve.mp4", mediaUrl:"https://resource2.heygen.ai/video/c989ddbe118c41988c8b36c54d70e51c/original.mp4", durationSeconds:10,
     liveTalkingAvatarId:"kmce_eve_v1",
     liveTalkingModel:"musetalk",
