@@ -767,5 +767,14 @@ export async function ensureSchema(){
   )`;
   await q`CREATE INDEX IF NOT EXISTS pegasus_task_transitions_task_idx ON pegasus_task_transitions(task_id,created_at DESC,id DESC)`;
 
+
+  // Pegasus workflow graph: parent/child task relationships let Simon fan work out
+  // across offices while preserving one executive correlation trail.
+  await q`ALTER TABLE autonomy_jobs ADD COLUMN IF NOT EXISTS parent_task_id BIGINT REFERENCES autonomy_jobs(id) ON DELETE SET NULL`;
+  await q`ALTER TABLE autonomy_jobs ADD COLUMN IF NOT EXISTS workflow_key TEXT`;
+  await q`ALTER TABLE autonomy_jobs ADD COLUMN IF NOT EXISTS sequence_no INTEGER`;
+  await q`CREATE INDEX IF NOT EXISTS autonomy_jobs_parent_idx ON autonomy_jobs(parent_task_id,status,sequence_no,id)`;
+  await q`CREATE INDEX IF NOT EXISTS autonomy_jobs_workflow_idx ON autonomy_jobs(workflow_key,status,sequence_no,id) WHERE workflow_key IS NOT NULL`;
+
   initialized=true;
 }
