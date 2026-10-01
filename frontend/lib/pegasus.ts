@@ -1,6 +1,6 @@
 import {ensureSchema,sql} from "./db";
 
-export const PEGASUS_STATUSES=["PENDING","RUNNING","WAITING_APPROVAL","SUCCEEDED","FAILED","DEAD","CANCELLED"] as const;
+export const PEGASUS_STATUSES=["PENDING","RUNNING","BLOCKED","WAITING_APPROVAL","SUCCEEDED","FAILED","DEAD","CANCELLED"] as const;
 export type PegasusStatus=typeof PEGASUS_STATUSES[number];
 
 export function authorityFor(policy:string){
@@ -140,6 +140,53 @@ export async function createPegasusWorkflow(input:{
     tasks.push(task);
   }
   return {parent,tasks,correlation_id:correlation};
+}
+
+
+export async function reconcilePegasusWorkflow(parentTaskId:number,actor="PEGASUS"){
+  await ensureSchema(); const q=sql();
+  const parentRows:any=await q`SELECT * FROM autonomy_jobs WHERE id=${parentTaskId} LIMIT 1`;
+  if(!parentRows[0])return {error:"Workflow not found",status:404} as const;
+  const parent=parentRows[0];
+  const children:any=await q`
+    SELECT * FROM autonomy_jobs WHERE parent_task_id=${parentTaskId}
+    ORDER BY sequence_no NULLS LAST,id
+  `;
+  if(!children.length)return {parent,children,changed:false} as const;
+
+  // Enforce sequential handoffs. A downstream step may be visible, but cannot
+  // become runnable until its predecessor completed with evidence.
+  for(let i=1;i<children.length;i++){
+    const prev=children[i-1], child=children[i];
+    if(child.status==="PENDING" && prev.status!=="SUCCEEDED"){
+      await q`UPDATE autonomy_jobs SET status='BLOCKED',updated_at=now() WHERE id=${child.id}`;
+      await q`INSERT INTO pegasus_task_transitions(task_id,from_status,to_status,actor,reason)
+        VALUES(${child.id},'PENDING','BLOCKED',${actor},'WAITING_FOR_PREDECESSOR')`;
+      child.status="BLOCKED";
+    }else if(child.status==="BLOCKED" && prev.status==="SUCCEEDED"){
+      const nextStatus=child.approval_policy==="none"?"PENDING":"WAITING_APPROVAL";
+      await q`UPDATE autonomy_jobs SET status=${nextStatus},updated_at=now() WHERE id=${child.id}`;
+      await q`INSERT INTO pegasus_task_transitions(task_id,from_status,to_status,actor,reason)
+        VALUES(${child.id},'BLOCKED',${nextStatus},${actor},'PREDECESSOR_COMPLETE')`;
+      child.status=nextStatus;
+    }
+  }
+
+  const failed=children.some((x:any)=>["FAILED","DEAD","CANCELLED"].includes(x.status));
+  const complete=children.every((x:any)=>x.status==="SUCCEEDED");
+  const desired=failed?"FAILED":complete?"SUCCEEDED":"RUNNING";
+  if(parent.status!==desired){
+    await q`UPDATE autonomy_jobs SET status=${desired},updated_at=now() WHERE id=${parentTaskId}`;
+    await q`INSERT INTO pegasus_task_transitions(task_id,from_status,to_status,actor,reason)
+      VALUES(${parentTaskId},${parent.status},${desired},${actor},'WORKFLOW_RECONCILED')`;
+    if(complete){
+      await q`INSERT INTO pegasus_task_evidence(task_id,evidence_type,label,value,metadata,recorded_by)
+        VALUES(${parentTaskId},'WORKFLOW','Child workflow complete',${String(children.length)},
+        ${JSON.stringify({children:children.map((x:any)=>({id:x.id,agent:x.owner_agent,status:x.status}))})}::jsonb,${actor})`;
+    }
+    parent.status=desired;
+  }
+  return {parent,children,changed:true} as const;
 }
 
 export async function getPegasusWorkflow(parentTaskId:number){
