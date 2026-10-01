@@ -29,6 +29,8 @@ type InboxMessage = {
   metadata?: Record<string, unknown>;
 };
 
+type InboxKind = "LEAD" | "FACULTY_DOCUMENT" | "PAYMENT" | "GENERAL";
+
 function authorized(req: Request) {
   const expected = process.env.SIMON_WEBHOOK_SECRET || "";
   const supplied =
@@ -42,6 +44,35 @@ function normalizeEmail(value?: string) {
   const raw = String(value || "").trim().toLowerCase();
   const m = raw.match(/<([^>]+)>/);
   return (m ? m[1] : raw).trim();
+}
+
+function classifyInbox(body: InboxMessage): InboxKind {
+  const source = String(body.source || "").toLowerCase();
+  const subject = String(body.subject || "").toLowerCase();
+  const text = String(body.body || "").toLowerCase();
+  const attachmentNames = (body.attachments || []).map(a => String(a.filename || "").toLowerCase()).join(" ");
+  if (
+    source.includes("formspree") ||
+    source.includes("lead") ||
+    subject.includes("interest") ||
+    subject.includes("inquiry") ||
+    subject.includes("request") ||
+    subject.includes("contact form")
+  ) return "LEAD";
+  if (
+    attachmentNames.includes("signed") ||
+    attachmentNames.includes("agreement") ||
+    subject.includes("signed agreement") ||
+    subject.includes("executed agreement") ||
+    text.includes("signed agreement")
+  ) return "FACULTY_DOCUMENT";
+  if (
+    subject.includes("payment") ||
+    subject.includes("receipt") ||
+    subject.includes("paid") ||
+    text.includes("payment received")
+  ) return "PAYMENT";
+  return "GENERAL";
 }
 
 function inferDraft(subject: string) {
@@ -116,24 +147,8 @@ export async function POST(req: Request) {
   const account = String(body.account).trim().toLowerCase();
   const messageId = String(body.message_id).trim();
   const leadEmail = normalizeEmail(body.lead_email || body.from);
-  const key = idempotencyKey(["inbox_ingest", provider, account, messageId, "v1"]);
-
-  const existing: any = await q`
-    SELECT id,status,provider_message_id,created_at
-    FROM simon_inbox_messages
-    WHERE provider=${provider} AND account=${account} AND provider_message_id=${messageId}
-    LIMIT 1
-  `;
-
-  if (existing[0]) {
-    return NextResponse.json({
-      ok: true,
-      duplicate: true,
-      inbox_message_id: Number(existing[0].id),
-      status: existing[0].status,
-      idempotency_key: key,
-    });
-  }
+  const key = idempotencyKey(["inbox_ingest", provider, account, messageId, "v2"]);
+  const kind = classifyInbox(body);
 
   const inserted: any = await q`
     INSERT INTO simon_inbox_messages(
@@ -153,16 +168,34 @@ export async function POST(req: Request) {
       ${leadEmail || null},
       'RECEIVED',
       ${key},
-      ${JSON.stringify(body.metadata || {})}::jsonb
+      ${JSON.stringify({ ...(body.metadata || {}), inbox_kind: kind })}::jsonb
     )
+    ON CONFLICT (provider,account,provider_message_id) DO NOTHING
     RETURNING id
   `;
+
+  if (!inserted[0]) {
+    const existing: any = await q`
+      SELECT id,status FROM simon_inbox_messages
+      WHERE provider=${provider} AND account=${account} AND provider_message_id=${messageId}
+      LIMIT 1
+    `;
+    return NextResponse.json({
+      ok: true,
+      duplicate: true,
+      inbox_message_id: Number(existing[0]?.id),
+      status: existing[0]?.status || "RECEIVED",
+      idempotency_key: key,
+      inbox_kind: kind,
+    });
+  }
 
   const inboxId = Number(inserted[0].id);
   const attachments = Array.isArray(body.attachments) ? body.attachments : [];
 
-  for (const a of attachments) {
-    const attachmentId = String(a.attachment_id || `${a.filename || "attachment"}:${a.size || 0}`);
+  for (let i = 0; i < attachments.length; i++) {
+    const a = attachments[i];
+    const attachmentId = String(a.attachment_id || `${i}:${a.filename || "attachment"}:${a.size || 0}`);
     await q`
       INSERT INTO simon_inbox_attachments(
         inbox_message_id,provider_attachment_id,filename,mime_type,size_bytes,drive_file_id,drive_url,status,metadata
@@ -175,14 +208,14 @@ export async function POST(req: Request) {
         ${a.drive_file_id || null},
         ${a.drive_url || null},
         ${a.drive_file_id ? "FILED" : "DISCOVERED"},
-        '{}'::jsonb
+        ${JSON.stringify({ ordinal: i })}::jsonb
       )
       ON CONFLICT (inbox_message_id,provider_attachment_id) DO NOTHING
     `;
   }
 
   let matchedLeadId: number | null = null;
-  if (leadEmail) {
+  if (kind === "LEAD" && leadEmail) {
     const leads: any = await q`
       SELECT id FROM leads
       WHERE lower(coalesce(email,''))=${leadEmail}
@@ -192,20 +225,27 @@ export async function POST(req: Request) {
     if (leads[0]) matchedLeadId = Number(leads[0].id);
   }
 
-  const draftSubject = body.subject ? `Re: ${body.subject}` : "KMCE follow-up";
-  const draftBody = inferDraft(body.subject || "");
-  await q`
-    INSERT INTO simon_followup_drafts(inbox_message_id,recipient_email,subject,draft_body,status)
-    VALUES(${inboxId},${leadEmail || null},${draftSubject},${draftBody},'DRAFT_ONLY')
-    ON CONFLICT (inbox_message_id) DO NOTHING
-  `;
+  let followUpStatus = "NOT_APPLICABLE";
+  if (kind === "LEAD") {
+    const draftSubject = body.subject ? `Re: ${body.subject}` : "KMCE follow-up";
+    const draftBody = inferDraft(body.subject || "");
+    await q`
+      INSERT INTO simon_followup_drafts(inbox_message_id,recipient_email,subject,draft_body,status)
+      VALUES(${inboxId},${leadEmail || null},${draftSubject},${draftBody},'DRAFT_ONLY')
+      ON CONFLICT (inbox_message_id) DO NOTHING
+    `;
+    followUpStatus = "DRAFT_ONLY";
+  }
+
+  const driveAction = attachments.some(a => !a.drive_file_id) ? "REQUIRED" : "COMPLETE";
+  const airtableAction = kind === "GENERAL" ? "REVIEW" : "QUEUED";
 
   await q`
     INSERT INTO agent_tasks(assigned_agent,title,instruction,status,source,requested_by)
     VALUES(
       'Simon',
-      ${`Review inbox: ${body.subject || messageId}`},
-      ${`Review inbound ${provider} message ${messageId}. Match existing CRM records before creating anything new. Attachments discovered: ${attachments.length}. External sends require founder approval.`},
+      ${`Review ${kind.toLowerCase()} inbox: ${body.subject || messageId}`},
+      ${`Inbound ${provider} message ${messageId} classified as ${kind}. Match existing CRM records before creating anything new. Attachments discovered: ${attachments.length}. Drive filing: ${driveAction}. Airtable sync: ${airtableAction}. External sends require founder approval.`},
       'QUEUED',
       'SIMON_INBOX',
       ${account}
@@ -217,12 +257,13 @@ export async function POST(req: Request) {
     duplicate: false,
     inbox_message_id: inboxId,
     idempotency_key: key,
+    inbox_kind: kind,
     matched_lead_id: matchedLeadId,
     attachments_discovered: attachments.length,
-    follow_up: { status: "DRAFT_ONLY" },
+    follow_up: { status: followUpStatus },
     next_actions: {
-      drive_filing: attachments.some(a => !a.drive_file_id) ? "REQUIRED" : "COMPLETE",
-      airtable_sync: "QUEUED",
+      drive_filing: driveAction,
+      airtable_sync: airtableAction,
       external_send: "BLOCKED_PENDING_FOUNDER_APPROVAL",
     },
   }, { status: 201 });
