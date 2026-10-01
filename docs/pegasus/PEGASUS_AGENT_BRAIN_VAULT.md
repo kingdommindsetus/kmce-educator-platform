@@ -31,6 +31,26 @@ KMCE is the first AI-operated dental education company running on Pegasus. Pegas
 | Canva Infrastructure | Canva Developer Agent Kit | branded editable multi-format designs, SDK/MCP integration patterns |
 | Voice Infrastructure | Voicebox | local-first TTS/voice synthesis for approved voice assets and narrated content |
 
+
+### KMCE Content Intelligence Engine — marketing intelligence operating system
+Repository: https://github.com/kingdommindsetus/KMCE-Content-Intelligence-Engine
+
+Private KMCE-built application providing Market Radar, Competitor Intelligence, Content Opportunities, Content Queue, Faculty Content, KMCE Performance, Revenue Attribution, Simon strategy, and weekly intelligence reporting.
+
+Primary Pegasus consumers: **Simon, Mark, Cammy, Evan, Lucy, Snake, IRIS**.
+
+Canonical flow:
+**MARKET SIGNAL → SIMON ANALYSIS → ORIGINAL KMCE ANGLE → COMMERCIAL DOOR → CONTENT BRIEF → PRODUCTION → FOUNDER APPROVAL → DISTRIBUTION → PERFORMANCE → LEAD/OPPORTUNITY/SALE → REVENUE ATTRIBUTION → IRIS VERIFICATION → SIMON LEARNING**
+
+Integration rule: treat this repository as a specialized department application and capability provider, not a second source of truth for company-wide tasks. Pegasus remains the orchestration/evidence/approval layer. Operational content data should be synchronized into Neon/Pegasus via explicit adapters; do not rely on UI seed data as verified business truth.
+
+Current code inspection:
+- React 19 + Vite frontend with Express server.
+- Simon endpoints for chat, competitor analysis and production-brief generation.
+- Typed commercial doors, content families, opportunity records, queue records, performance metrics and revenue attribution records.
+- Current server includes fallback/sample metrics and generated examples; these are **DEMO DATA**, not verified KMCE production facts.
+- Current Gemini integration is local to this app. When connected to Pegasus, Simon executive commands should be routed through Pegasus governance rather than allowing this app to become an independent executive authority.
+
 ## New final integration batch
 
 ### Penpot — design infrastructure
