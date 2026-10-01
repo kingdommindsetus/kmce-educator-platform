@@ -11,9 +11,8 @@ const FOUNDER_EMAIL=(process.env.KMCE_FOUNDER_EMAIL||"kingdommindsetus@gmail.com
 
 function extractSessionUser(result:any){
   const data=result?.data??result??null;
-  const hasSession=Boolean(data?.session||data?.data?.session);
-  const user=data?.user||data?.data?.user||null;
-  return hasSession&&user?user:null;
+  const nested=data?.data??null;
+  return data?.user||nested?.user||null;
 }
 
 export async function currentUser():Promise<KMCEUser|null>{

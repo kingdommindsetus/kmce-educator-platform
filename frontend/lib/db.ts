@@ -396,8 +396,120 @@ export async function ensureSchema(){
     status TEXT NOT NULL DEFAULT 'DRAFT' CHECK (status IN ('DRAFT','QUEUED','IN_PROGRESS','WAITING_APPROVAL','DONE','CANCELLED')),
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()`;
+
+  await q`CREATE TABLE IF NOT EXISTS dentist_accounts (
+    id BIGSERIAL PRIMARY KEY,
+    email TEXT NOT NULL UNIQUE,
+    practice_name TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','TRIAL','SUSPENDED','CANCELLED')),
+    subscription_status TEXT NOT NULL DEFAULT 'TRIAL' CHECK (subscription_status IN ('TRIAL','ACTIVE','PAST_DUE','CANCELLED')),
+    stripe_customer_id TEXT,
+    stripe_subscription_id TEXT,
+    shopify_store_url TEXT,
+    shopify_access_token TEXT,
+    shopify_shop_id TEXT,
+    subscription_plan TEXT NOT NULL DEFAULT 'starter',
+    subscription_price_cents INTEGER NOT NULL DEFAULT 4999,
+    subscription_interval TEXT NOT NULL DEFAULT 'month',
+    trial_ends_at TIMESTAMPTZ,
+    current_period_start TIMESTAMPTZ,
+    current_period_end TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`;
+  await q`CREATE UNIQUE INDEX IF NOT EXISTS dentist_accounts_email_idx ON dentist_accounts(email)`;
+  await q`CREATE INDEX IF NOT EXISTS dentist_accounts_stripe_customer_idx ON dentist_accounts(stripe_customer_id)`;
+  await q`CREATE INDEX IF NOT EXISTS dentist_accounts_subscription_idx ON dentist_accounts(subscription_status,updated_at DESC)`;
+
+  await q`CREATE TABLE IF NOT EXISTS smile_mockups (
+    id BIGSERIAL PRIMARY KEY,
+    dentist_id BIGINT NOT NULL REFERENCES dentist_accounts(id) ON DELETE CASCADE,
+    patient_name TEXT,
+    patient_email TEXT,
+    patient_phone TEXT,
+    original_image_url TEXT NOT NULL,
+    original_image_storage_path TEXT,
+    mockup_image_url TEXT NOT NULL,
+    mockup_image_storage_path TEXT,
+    treatment_type TEXT NOT NULL DEFAULT 'veneers' CHECK (treatment_type IN ('veneers','whitening','orthodontics','gum_contouring','composite','smile_makeover')),
+    treatment_description TEXT,
+    treatment_options JSONB NOT NULL DEFAULT '[]'::jsonb,
+    ai_generation_status TEXT NOT NULL DEFAULT 'PENDING' CHECK (ai_generation_status IN ('PENDING','PROCESSING','SUCCESS','FAILED')),
+    ai_error_message TEXT,
+    shopify_product_id TEXT,
+    product_title TEXT,
+    product_description TEXT,
+    product_price_cents INTEGER,
+    is_listed_for_sale BOOLEAN NOT NULL DEFAULT false,
+    view_count INTEGER NOT NULL DEFAULT 0,
+    conversion_status TEXT NOT NULL DEFAULT 'BROWSING' CHECK (conversion_status IN ('BROWSING','INTERESTED','CONSULTATION_BOOKED','CONVERTED')),
+    notes TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS smile_mockups_dentist_idx ON smile_mockups(dentist_id,created_at DESC)`;
+  await q`CREATE INDEX IF NOT EXISTS smile_mockups_status_idx ON smile_mockups(ai_generation_status,created_at DESC)`;
+  await q`CREATE INDEX IF NOT EXISTS smile_mockups_shopify_idx ON smile_mockups(shopify_product_id) WHERE shopify_product_id IS NOT NULL`;
+
+  await q`CREATE TABLE IF NOT EXISTS shopify_product_sync (
+    id BIGSERIAL PRIMARY KEY,
+    dentist_id BIGINT NOT NULL REFERENCES dentist_accounts(id) ON DELETE CASCADE,
+    smile_mockup_id BIGINT NOT NULL REFERENCES smile_mockups(id) ON DELETE CASCADE,
+    shopify_product_id TEXT NOT NULL,
+    shopify_handle TEXT NOT NULL,
+    sync_status TEXT NOT NULL DEFAULT 'SYNCED' CHECK (sync_status IN ('SYNCED','PENDING','FAILED','ARCHIVED')),
+    last_sync_at TIMESTAMPTZ,
+    last_sync_error TEXT,
+    product_data_hash TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(dentist_id,shopify_product_id)
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS shopify_product_sync_dentist_idx ON shopify_product_sync(dentist_id,updated_at DESC)`;
+  await q`CREATE INDEX IF NOT EXISTS shopify_product_sync_status_idx ON shopify_product_sync(sync_status)`;
+
+  await q`CREATE TABLE IF NOT EXISTS smile_designer_subscriptions (
+    id BIGSERIAL PRIMARY KEY,
+    dentist_id BIGINT NOT NULL REFERENCES dentist_accounts(id) ON DELETE CASCADE,
+    stripe_subscription_id TEXT NOT NULL UNIQUE,
+    stripe_customer_id TEXT NOT NULL,
+    plan_name TEXT NOT NULL DEFAULT 'starter',
+    price_cents INTEGER NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'usd',
+    interval TEXT NOT NULL DEFAULT 'month',
+    status TEXT NOT NULL CHECK (status IN ('active','past_due','unpaid','canceled','incomplete')),
+    current_period_start TIMESTAMPTZ,
+    current_period_end TIMESTAMPTZ,
+    trial_start TIMESTAMPTZ,
+    trial_end TIMESTAMPTZ,
+    canceled_at TIMESTAMPTZ,
+    canceled_reason TEXT,
+    stripe_data JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS smile_designer_subscriptions_dentist_idx ON smile_designer_subscriptions(dentist_id)`;
+  await q`CREATE INDEX IF NOT EXISTS smile_designer_subscriptions_status_idx ON smile_designer_subscriptions(status,current_period_end DESC)`;
+
+  await q`CREATE TABLE IF NOT EXISTS smile_mockup_gallery (
+    id BIGSERIAL PRIMARY KEY,
+    dentist_id BIGINT NOT NULL REFERENCES dentist_accounts(id) ON DELETE CASCADE,
+    gallery_name TEXT NOT NULL,
+    gallery_slug TEXT NOT NULL,
+    gallery_description TEXT,
+    is_public BOOLEAN NOT NULL DEFAULT false,
+    cover_image_url TEXT,
+    total_mockups INTEGER NOT NULL DEFAULT 0,
+    view_count INTEGER NOT NULL DEFAULT 0,
+    lead_count INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(dentist_id,gallery_slug)
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS smile_mockup_gallery_dentist_idx ON smile_mockup_gallery(dentist_id,updated_at DESC)`;
+  await q`CREATE INDEX IF NOT EXISTS smile_mockup_gallery_public_idx ON smile_mockup_gallery(is_public) WHERE is_public=true`;
 
   await q`CREATE INDEX IF NOT EXISTS nervs_meeting_reports_meeting_idx ON nervs_meeting_reports(meeting_id,speaking_order,id)`;
   await q`CREATE INDEX IF NOT EXISTS nervs_meeting_actions_meeting_idx ON nervs_meeting_actions(meeting_id,status,priority)`;
