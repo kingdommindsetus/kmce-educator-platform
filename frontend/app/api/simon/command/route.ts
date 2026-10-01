@@ -2,7 +2,7 @@ import {NextResponse} from "next/server";
 import {requireFounder} from "../../../../lib/auth";
 import {ensureSchema,sql} from "../../../../lib/db";
 import {triageWorkItem} from "../../../../lib/simon/marie";
-import {createPegasusTask} from "../../../../lib/pegasus";
+import {createPegasusTask,createPegasusWorkflow} from "../../../../lib/pegasus";
 
 export const runtime="nodejs";
 
@@ -36,6 +36,31 @@ function capabilityFor(agent:string,text:string){
   if(agent==="Lucy"&&/(publish|post)/i.test(text))return "social.publish";
   if(agent==="Alice"&&/(publish|price|delete|product)/i.test(text))return "commerce.change";
   return map[agent]||"work.execute";
+}
+
+
+function shouldBuildGrowthWorkflow(text:string){
+  return /(campaign|fill.*seat|launch|promote|marketing|social|content|sell|growth)/i.test(text)
+    && !/(refund|change bank|delete|sign|execute agreement)/i.test(text);
+}
+
+async function buildGrowthWorkflow(input:{objective:string;founderEmail:string;sessionId:number}){
+  const workflow=await createPegasusWorkflow({
+    company_id:"KMCE",
+    workflow_key:"growth-campaign-v1",
+    objective:input.objective,
+    requested_by:input.founderEmail,
+    correlation_id:`simon-session:${input.sessionId}:growth`,
+    steps:[
+      {key:"mark-strategy",agent:"Mark",capability:"marketing.strategy",objective:`Create the marketing strategy for: ${input.objective}`},
+      {key:"cammy-campaign",agent:"Cammy",capability:"campaign.plan",objective:`Turn Mark's strategy into a campaign plan for: ${input.objective}`},
+      {key:"evan-creative",agent:"Evan",capability:"creative.produce",objective:`Create the campaign content/creative package for: ${input.objective}`},
+      {key:"lucy-distribution",agent:"Lucy",capability:"social.distribute",objective:`Prepare channel distribution for: ${input.objective}`,approval_policy:"before_external_action"},
+      {key:"snake-measure",agent:"Snake",capability:"growth.measure",objective:`Measure verified campaign performance for: ${input.objective}`},
+      {key:"iris-verify",agent:"IRIS",capability:"quality.verify",objective:`Verify the campaign workflow, evidence and failures for: ${input.objective}`}
+    ]
+  });
+  return workflow;
 }
 
 async function delegate(input:{
@@ -81,7 +106,19 @@ export async function POST(req:Request){
  let action:any={type:"ASK",status:"COMPLETED"};
  const explicitAgent=agentFrom(input);
 
- if(explicitAgent&&/(have|ask|tell|assign|task|work|put|give)/i.test(input)){
+ if(!explicitAgent&&shouldBuildGrowthWorkflow(input)){
+   const workflow:any=await buildGrowthWorkflow({objective:input,founderEmail:founder.email,sessionId});
+   action={
+     type:"WORKFLOW",
+     status:"QUEUED",
+     target:"Pegasus",
+     workflow_key:"growth-campaign-v1",
+     parent_task_id:Number(workflow.parent.id),
+     correlation_id:workflow.correlation_id,
+     child_tasks:workflow.tasks.map((t:any)=>({id:Number(t.id),agent:t.owner_agent,status:t.status,capability:t.capability}))
+   };
+   response=`I created Pegasus workflow ${workflow.parent.id} for this objective. Mark, Cammy, Evan, Lucy, Snake and IRIS are now represented as governed child tasks. Lucy is held at the Founder approval gate before external distribution.`;
+ }else if(explicitAgent&&/(have|ask|tell|assign|task|work|put|give)/i.test(input)){
    const task:any=await delegate({
      agent:explicitAgent,instruction:input,founderEmail:founder.email,
      sessionId,routedBy:"FOUNDER_EXPLICIT"
