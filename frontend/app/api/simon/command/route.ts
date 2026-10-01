@@ -2,45 +2,158 @@ import {NextResponse} from "next/server";
 import {requireFounder} from "../../../../lib/auth";
 import {ensureSchema,sql} from "../../../../lib/db";
 import {triageWorkItem} from "../../../../lib/simon/marie";
+import {createPegasusTask} from "../../../../lib/pegasus";
+
 export const runtime="nodejs";
-const AGENTS=["Marie","Scout","Claire","Atlas","Sofia","Maven","Gatekeeper","Echo","Booker","Flow","Ledger"];
-function agentFrom(s:string){return AGENTS.find(a=>new RegExp("\\b"+a+"\\b","i").test(s))||null}
+
+const AGENTS=[
+  "Marie","IRIS","Mark","Cammy","Evan","Tube","Lucy","Snake","Alice","Echo","Booker",
+  // Legacy specialist workers retained during migration.
+  "Scout","Claire","Atlas","Sofia","Maven","Gatekeeper","Flow","Ledger"
+];
+
+function agentFrom(s:string){
+  return AGENTS.find(a=>new RegExp("\\b"+a+"\\b","i").test(s))||null;
+}
+
+function approvalPolicyFor(text:string){
+  return /(send|publish|post live|delete|refund|charge|pay|purchase|sign|execute agreement|change price|change bank|production)/i.test(text)
+    ?"before_external_action"
+    :"none";
+}
+
+function capabilityFor(agent:string,text:string){
+  const map:Record<string,string>={
+    Marie:"operations.coordinate",IRIS:"quality.verify",Mark:"marketing.strategy",
+    Cammy:"campaign.plan",Evan:"creative.produce",Tube:"video.produce",
+    Lucy:"social.distribute",Snake:"growth.measure",Alice:"commerce.operate",
+    Echo:"sales.outreach",Booker:"calendar.schedule",Scout:"business.search",
+    Claire:"lead.enrich",Atlas:"lead.qualify",Sofia:"growth.plan",
+    Maven:"campaign.content",Gatekeeper:"approval.review",Flow:"onboarding.coordinate",
+    Ledger:"revenue.record"
+  };
+  if(agent==="Echo"&&/(send|email|outreach)/i.test(text))return "outreach.prepare";
+  if(agent==="Lucy"&&/(publish|post)/i.test(text))return "social.publish";
+  if(agent==="Alice"&&/(publish|price|delete|product)/i.test(text))return "commerce.change";
+  return map[agent]||"work.execute";
+}
+
+async function delegate(input:{
+  agent:string; instruction:string; founderEmail:string; sessionId:number; routedBy:string; triage?:unknown;
+}){
+  const policy=approvalPolicyFor(input.instruction);
+  const correlationId=`simon-session:${input.sessionId}`;
+  const task=await createPegasusTask({
+    company_id:"KMCE",
+    capability:capabilityFor(input.agent,input.instruction),
+    assigned_agent:input.agent,
+    objective:input.instruction,
+    requested_by:input.founderEmail,
+    approval_policy:policy,
+    completion_contract:[
+      {type:"evidence_required",description:"Attach at least one verifiable work-result evidence record before completion."}
+    ],
+    payload:{source:"SIMON",routed_by:input.routedBy,triage:input.triage||null},
+    correlation_id:correlationId,
+    idempotency_key:`simon:${input.sessionId}:${input.agent}:${crypto.randomUUID()}`
+  });
+  return task;
+}
+
 export async function POST(req:Request){
- const founder=await requireFounder(); if(!founder)return NextResponse.json({error:"Founder access required"},{status:403});
- await ensureSchema(); const q=sql(); const body=await req.json().catch(()=>({})); const input=String(body.message||"").trim();
+ const founder=await requireFounder();
+ if(!founder)return NextResponse.json({error:"Founder access required"},{status:403});
+
+ await ensureSchema();
+ const q=sql();
+ const body=await req.json().catch(()=>({}));
+ const input=String(body.message||"").trim();
  if(!input)return NextResponse.json({error:"Message required"},{status:400});
- let sessionId=Number(body.session_id||0); if(!sessionId){const s:any=await q`INSERT INTO simon_sessions(founder_email) VALUES(${founder.email}) RETURNING id`;sessionId=Number(s[0].id)}
- await q`INSERT INTO simon_messages(session_id,role,content) VALUES(${sessionId},'FOUNDER',${input})`;
- let response="",action:any={type:"ASK",status:"COMPLETED"}; const a=agentFrom(input);
- if(a&&/(have|ask|tell|assign|task|work|put|give)/i.test(input)){
-  const instruction=input.trim(),title=instruction.slice(0,90); const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,requested_by) VALUES(${a},${title},${instruction},${founder.email}) RETURNING id`;
-  action={type:"DELEGATE",status:"QUEUED",target:a,task_id:Number(rows[0].id),routed_by:"FOUNDER_EXPLICIT"}; response=`Certainly. I've added that to ${a}'s workload as task ${rows[0].id}. I'll keep watch on it.`;
- }else if(/(draft|write|prepare).*(email|message)|email.*(draft|write|prepare)/i.test(input)){
-  const draft="Subject: KMCE follow-up\n\nHello,\n\nI'm following up on behalf of Kingdom Mindset CE regarding the matter Kimberly referenced. Please let us know a convenient next step.\n\nBest,\nKingdom Mindset CE";
-  action={type:"DRAFT",status:"DRAFT_ONLY",draft}; response="Of course. I've prepared a draft and recorded the request. I have not sent anything. The draft is ready for review.";
- }else{
-  const marie:any=triageWorkItem({text:input,source:"FOUNDER"});
-  if(marie.outcome==="DELEGATE"&&marie.agent){
-    const title=input.slice(0,90); const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES(${marie.agent},${title},${input},'MARIE',${founder.email}) RETURNING id`;
-    action={type:"DELEGATE",status:"QUEUED",target:marie.agent,task_id:Number(rows[0].id),routed_by:"MARIE",triage:marie};
-    response=`Marie routed this to ${marie.agent} as task ${rows[0].id}. Simon will receive the result, not the noise.`;
-  }else if(marie.outcome==="HANDLE"){
-    const title=input.slice(0,90); const rows:any=await q`INSERT INTO agent_tasks(assigned_agent,title,instruction,source,requested_by) VALUES('Marie',${title},${input},'MARIE',${founder.email}) RETURNING id`;
-    action={type:"HANDLE",status:"QUEUED",target:"Marie",task_id:Number(rows[0].id),routed_by:"MARIE",triage:marie};
-    response=`Marie has taken this as internal coordination task ${rows[0].id}.`;
-  }else if(marie.outcome==="ASK_SIMON"){
-    action={type:"ASK_SIMON",status:"NEEDS_SIMON",target:"Simon",routed_by:"MARIE",triage:marie};
-    response="Marie flagged this for Simon because it needs executive prioritization, policy evaluation, or clarification before action.";
-  }else if(marie.outcome==="ESCALATE_KIMBERLY"){
-    action={type:"ESCALATE_KIMBERLY",status:"REQUIRES_FOUNDER",target:"Kimberly",routed_by:"MARIE",triage:marie};
-    response="Marie stopped this at the Founder boundary. No financial, contractual, security, publishing, or external action was executed.";
-  }else{
-    const stages:any=await q`SELECT pipeline_stage,count(*)::int count FROM leads GROUP BY pipeline_stage`; const tasks:any=await q`SELECT assigned_agent,count(*)::int count FROM agent_tasks WHERE status IN ('QUEUED','IN_PROGRESS') GROUP BY assigned_agent`;
-    const total=stages.reduce((n:number,x:any)=>n+Number(x.count),0),pending=stages.find((x:any)=>x.pipeline_stage==="PENDING_APPROVAL")?.count||0,approved=stages.find((x:any)=>x.pipeline_stage==="APPROVED")?.count||0;
-    response=`KMCE currently has ${total} leads recorded. ${pending} are pending approval and ${approved} are approved for Echo. ${tasks.length?"I also have "+tasks.map((x:any)=>x.assigned_agent+" "+x.count).join(", ")+" active assignment(s).":"There are no Simon-created agent assignments waiting."} What would you like me to handle next?`;
-    action={type:"ASK",status:"COMPLETED",routed_by:"MARIE",triage:marie};
-  }
+
+ let sessionId=Number(body.session_id||0);
+ if(!sessionId){
+   const s:any=await q`INSERT INTO simon_sessions(founder_email) VALUES(${founder.email}) RETURNING id`;
+   sessionId=Number(s[0].id);
  }
- await q`INSERT INTO simon_actions(session_id,action_type,target,payload,status,requested_by) VALUES(${sessionId},${action.type},${action.target||null},${JSON.stringify(action)}::jsonb,${action.status},${founder.email})`;
- await q`INSERT INTO simon_messages(session_id,role,content) VALUES(${sessionId},'SIMON',${response})`; return NextResponse.json({session_id:sessionId,response,action});
+ await q`INSERT INTO simon_messages(session_id,role,content) VALUES(${sessionId},'FOUNDER',${input})`;
+
+ let response="";
+ let action:any={type:"ASK",status:"COMPLETED"};
+ const explicitAgent=agentFrom(input);
+
+ if(explicitAgent&&/(have|ask|tell|assign|task|work|put|give)/i.test(input)){
+   const task:any=await delegate({
+     agent:explicitAgent,instruction:input,founderEmail:founder.email,
+     sessionId,routedBy:"FOUNDER_EXPLICIT"
+   });
+   action={
+     type:"DELEGATE",
+     status:task.status,
+     target:explicitAgent,
+     task_id:Number(task.id),
+     pegasus_task_id:Number(task.id),
+     routed_by:"FOUNDER_EXPLICIT",
+     approval_policy:task.approval_policy
+   };
+   response=task.status==="WAITING_APPROVAL"
+     ?`I created Pegasus task ${task.id} for ${explicitAgent}. It is stopped at the Founder approval gate before any external action can run.`
+     :`I created Pegasus task ${task.id} for ${explicitAgent}. It is in the governed work queue, and completion requires evidence.`;
+ }else if(/(draft|write|prepare).*(email|message)|email.*(draft|write|prepare)/i.test(input)){
+   const draft="Subject: KMCE follow-up\n\nHello,\n\nI'm following up on behalf of Kingdom Mindset CE regarding the matter Kimberly referenced. Please let us know a convenient next step.\n\nBest,\nKingdom Mindset CE";
+   action={type:"DRAFT",status:"DRAFT_ONLY",draft};
+   response="Of course. I've prepared a draft and recorded the request. I have not sent anything. The draft is ready for review.";
+ }else{
+   const marie:any=triageWorkItem({text:input,source:"FOUNDER"});
+
+   if(marie.outcome==="DELEGATE"&&marie.agent){
+     const task:any=await delegate({
+       agent:marie.agent,instruction:input,founderEmail:founder.email,
+       sessionId,routedBy:"MARIE",triage:marie
+     });
+     action={
+       type:"DELEGATE",status:task.status,target:marie.agent,
+       task_id:Number(task.id),pegasus_task_id:Number(task.id),
+       routed_by:"MARIE",triage:marie,approval_policy:task.approval_policy
+     };
+     response=task.status==="WAITING_APPROVAL"
+       ?`Marie routed this to ${marie.agent} as Pegasus task ${task.id}, but Pegasus stopped it at the approval gate before execution.`
+       :`Marie routed this to ${marie.agent} as Pegasus task ${task.id}. Simon will receive verified evidence, not just a completion claim.`;
+   }else if(marie.outcome==="HANDLE"){
+     const task:any=await delegate({
+       agent:"Marie",instruction:input,founderEmail:founder.email,
+       sessionId,routedBy:"MARIE",triage:marie
+     });
+     action={
+       type:"HANDLE",status:task.status,target:"Marie",
+       task_id:Number(task.id),pegasus_task_id:Number(task.id),
+       routed_by:"MARIE",triage:marie,approval_policy:task.approval_policy
+     };
+     response=`Marie has taken this as Pegasus coordination task ${task.id}. Completion requires evidence.`;
+   }else if(marie.outcome==="ASK_SIMON"){
+     action={type:"ASK_SIMON",status:"NEEDS_SIMON",target:"Simon",routed_by:"MARIE",triage:marie};
+     response="Marie flagged this for Simon because it needs executive prioritization, policy evaluation, or clarification before action.";
+   }else if(marie.outcome==="ESCALATE_KIMBERLY"){
+     action={type:"ESCALATE_KIMBERLY",status:"REQUIRES_FOUNDER",target:"Kimberly",routed_by:"MARIE",triage:marie};
+     response="Marie stopped this at the Founder boundary. No financial, contractual, security, publishing, or external action was executed.";
+   }else{
+     const stages:any=await q`SELECT pipeline_stage,count(*)::int count FROM leads GROUP BY pipeline_stage`;
+     const tasks:any=await q`
+       SELECT owner_agent,count(*)::int count
+       FROM autonomy_jobs
+       WHERE status IN ('PENDING','RUNNING','WAITING_APPROVAL')
+       GROUP BY owner_agent
+     `;
+     const total=stages.reduce((n:number,x:any)=>n+Number(x.count),0);
+     const pending=stages.find((x:any)=>x.pipeline_stage==="PENDING_APPROVAL")?.count||0;
+     const approved=stages.find((x:any)=>x.pipeline_stage==="APPROVED")?.count||0;
+     response=`KMCE currently has ${total} leads recorded. ${pending} are pending approval and ${approved} are approved for Echo. ${tasks.length?"Pegasus also has "+tasks.map((x:any)=>x.owner_agent+" "+x.count).join(", ")+" active task(s).":"There are no active Pegasus assignments."} What would you like me to handle next?`;
+     action={type:"ASK",status:"COMPLETED",routed_by:"MARIE",triage:marie};
+   }
+ }
+
+ await q`INSERT INTO simon_actions(session_id,action_type,target,payload,status,requested_by)
+          VALUES(${sessionId},${action.type},${action.target||null},${JSON.stringify(action)}::jsonb,${action.status},${founder.email})`;
+ await q`INSERT INTO simon_messages(session_id,role,content) VALUES(${sessionId},'SIMON',${response})`;
+
+ return NextResponse.json({session_id:sessionId,response,action,system:"PEGASUS"});
 }
