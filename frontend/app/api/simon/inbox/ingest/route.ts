@@ -11,6 +11,7 @@ type InboxAttachment = {
   size?: number;
   drive_file_id?: string;
   drive_url?: string;
+  crm_record_id?: string;
 };
 
 type InboxMessage = {
@@ -237,8 +238,22 @@ export async function POST(req: Request) {
     followUpStatus = "DRAFT_ONLY";
   }
 
-  const driveAction = attachments.some(a => !a.drive_file_id) ? "REQUIRED" : "COMPLETE";
-  const airtableAction = kind === "GENERAL" ? "REVIEW" : "QUEUED";
+  const filedAttachments = attachments.filter(a => Boolean(a.drive_file_id));
+  const driveAction =
+    attachments.length === 0
+      ? "NOT_APPLICABLE"
+      : filedAttachments.length === attachments.length
+        ? "COMPLETE_REUSED_OR_FILED"
+        : "REQUIRED";
+  const crmLinked = kind === "FACULTY_DOCUMENT"
+    ? attachments.some(a => Boolean(a.crm_record_id))
+    : false;
+  const airtableAction =
+    kind === "GENERAL"
+      ? "REVIEW"
+      : kind === "FACULTY_DOCUMENT" && crmLinked
+        ? "COMPLETE_REUSED_EXISTING"
+        : "QUEUED";
 
   await q`
     INSERT INTO agent_tasks(assigned_agent,title,instruction,status,source,requested_by)
@@ -261,6 +276,13 @@ export async function POST(req: Request) {
     matched_lead_id: matchedLeadId,
     attachments_discovered: attachments.length,
     follow_up: { status: followUpStatus },
+    document_handling: kind === "FACULTY_DOCUMENT" ? {
+      duplicate_safe: true,
+      attachments_total: attachments.length,
+      attachments_already_filed: filedAttachments.length,
+      existing_crm_record_reused: crmLinked,
+      follow_up_draft_created: false,
+    } : null,
     next_actions: {
       drive_filing: driveAction,
       airtable_sync: airtableAction,
