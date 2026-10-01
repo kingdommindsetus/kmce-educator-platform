@@ -21,7 +21,7 @@ export async function createPegasusTask(input:{
       company_id,objective,completion_contract,approval_policy,correlation_id
     ) VALUES(
       ${input.idempotency_key},${input.capability},${input.assigned_agent},${authority},
-      'PENDING',${JSON.stringify(input.payload||{})}::jsonb,${input.requested_by},
+      ${policy==="none"?"PENDING":"WAITING_APPROVAL"},${JSON.stringify(input.payload||{})}::jsonb,${input.requested_by},
       ${input.company_id||"KMCE"},${input.objective},
       ${JSON.stringify(input.completion_contract||[])}::jsonb,${policy},${input.correlation_id||null}
     )
