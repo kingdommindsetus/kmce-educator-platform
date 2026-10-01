@@ -39,9 +39,33 @@ function capabilityFor(agent:string,text:string){
 }
 
 
+function shouldBuildContentIntelligenceWorkflow(text:string){
+  return /(competitor|market radar|content intelligence|what should.*publish|content opportunity|analy[sz]e.*content|winning hook|content brief|revenue attribution|which content|underperforming content)/i.test(text);
+}
+
 function shouldBuildGrowthWorkflow(text:string){
   return /(campaign|fill.*seat|launch|promote|marketing|social|content|sell|growth)/i.test(text)
+    && !shouldBuildContentIntelligenceWorkflow(text)
     && !/(refund|change bank|delete|sign|execute agreement)/i.test(text);
+}
+
+async function buildContentIntelligenceWorkflow(input:{objective:string;founderEmail:string;sessionId:number}){
+  return createPegasusWorkflow({
+    company_id:"KMCE",
+    workflow_key:"content-intelligence-v1",
+    objective:input.objective,
+    requested_by:input.founderEmail,
+    correlation_id:`simon-session:${input.sessionId}:content-intelligence`,
+    steps:[
+      {key:"simon-intel",agent:"Simon",capability:"content.intelligence.analyze",objective:`Analyze verified market/content signals and classify FACT / OBSERVATION / PATTERN / HYPOTHESIS / RECOMMENDATION for: ${input.objective}`,payload:{provider:"KMCE-Content-Intelligence-Engine",repo:"kingdommindsetus/KMCE-Content-Intelligence-Engine"}},
+      {key:"mark-opportunity",agent:"Mark",capability:"content.opportunity.route",objective:`Convert Simon's intelligence into an original KMCE content opportunity with Commercial Door, audience, offer and CTA for: ${input.objective}`},
+      {key:"cammy-economics",agent:"Cammy",capability:"content.economics.plan",objective:`Define campaign economics, conversion objective and attribution plan for: ${input.objective}`},
+      {key:"evan-brief",agent:"Evan",capability:"content.brief.produce",objective:`Create original KMCE production brief and asset requirements for: ${input.objective}`},
+      {key:"lucy-distribution",agent:"Lucy",capability:"social.distribute",objective:`Prepare approved-channel distribution for: ${input.objective}`,approval_policy:"before_external_action"},
+      {key:"snake-attribution",agent:"Snake",capability:"content.attribution.measure",objective:`Measure attention → intent → lead → opportunity → sale → revenue for: ${input.objective}`},
+      {key:"iris-verify",agent:"IRIS",capability:"content.intelligence.verify",objective:`Verify evidence, attribution quality, unsupported claims and workflow completion for: ${input.objective}`}
+    ]
+  });
 }
 
 async function buildGrowthWorkflow(input:{objective:string;founderEmail:string;sessionId:number}){
@@ -106,7 +130,20 @@ export async function POST(req:Request){
  let action:any={type:"ASK",status:"COMPLETED"};
  const explicitAgent=agentFrom(input);
 
- if(!explicitAgent&&shouldBuildGrowthWorkflow(input)){
+ if(!explicitAgent&&shouldBuildContentIntelligenceWorkflow(input)){
+   const workflow:any=await buildContentIntelligenceWorkflow({objective:input,founderEmail:founder.email,sessionId});
+   action={
+     type:"WORKFLOW",
+     status:"QUEUED",
+     target:"Pegasus",
+     workflow_key:"content-intelligence-v1",
+     parent_task_id:Number(workflow.parent.id),
+     correlation_id:workflow.correlation_id,
+     source_system:"KMCE-Content-Intelligence-Engine",
+     child_tasks:workflow.tasks.map((t:any)=>({id:Number(t.id),agent:t.owner_agent,status:t.status,capability:t.capability}))
+   };
+   response=`I created Pegasus Content Intelligence workflow ${workflow.parent.id}. Simon Intelligence → Mark → Cammy → Evan → Lucy approval gate → Snake attribution → IRIS verification is now governed by Pegasus.`;
+ }else if(!explicitAgent&&shouldBuildGrowthWorkflow(input)){
    const workflow:any=await buildGrowthWorkflow({objective:input,founderEmail:founder.email,sessionId});
    action={
      type:"WORKFLOW",
