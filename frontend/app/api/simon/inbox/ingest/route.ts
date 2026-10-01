@@ -238,15 +238,51 @@ export async function POST(req: Request) {
     followUpStatus = "DRAFT_ONLY";
   }
 
-  const filedAttachments = attachments.filter(a => Boolean(a.drive_file_id));
+  const reusedFacultyDocument =
+    kind === "FACULTY_DOCUMENT" &&
+    (body.metadata?.existing_drive_file_id || body.metadata?.existing_crm_record_id)
+      ? {
+          drive_file_id: String(body.metadata?.existing_drive_file_id || ""),
+          drive_url: String(body.metadata?.existing_drive_url || ""),
+          crm_record_id: String(body.metadata?.existing_crm_record_id || ""),
+        }
+      : null;
+
+  const normalizedAttachments = attachments.map((a) => ({
+    ...a,
+    drive_file_id: a.drive_file_id || reusedFacultyDocument?.drive_file_id || undefined,
+    drive_url: a.drive_url || reusedFacultyDocument?.drive_url || undefined,
+    crm_record_id: a.crm_record_id || reusedFacultyDocument?.crm_record_id || undefined,
+  }));
+
+  if (kind === "FACULTY_DOCUMENT" && reusedFacultyDocument && normalizedAttachments.length) {
+    for (let i = 0; i < normalizedAttachments.length; i++) {
+      const a = normalizedAttachments[i];
+      const attachmentId = String(a.attachment_id || `${i}:${a.filename || "attachment"}:${a.size || 0}`);
+      await q`
+        UPDATE simon_inbox_attachments
+        SET drive_file_id=${a.drive_file_id || null},
+            drive_url=${a.drive_url || null},
+            status=${a.drive_file_id ? "FILED" : "DISCOVERED"},
+            metadata=coalesce(metadata,'{}'::jsonb) || ${JSON.stringify({
+              duplicate_safe_reuse: true,
+              crm_record_id: a.crm_record_id || null,
+            })}::jsonb
+        WHERE inbox_message_id=${inboxId}
+          AND provider_attachment_id=${attachmentId}
+      `;
+    }
+  }
+
+  const filedAttachments = normalizedAttachments.filter(a => Boolean(a.drive_file_id));
   const driveAction =
-    attachments.length === 0
+    normalizedAttachments.length === 0
       ? "NOT_APPLICABLE"
-      : filedAttachments.length === attachments.length
+      : filedAttachments.length === normalizedAttachments.length
         ? "COMPLETE_REUSED_OR_FILED"
         : "REQUIRED";
   const crmLinked = kind === "FACULTY_DOCUMENT"
-    ? attachments.some(a => Boolean(a.crm_record_id))
+    ? normalizedAttachments.some(a => Boolean(a.crm_record_id))
     : false;
   const airtableAction =
     kind === "GENERAL"
