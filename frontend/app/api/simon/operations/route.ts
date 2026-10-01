@@ -27,6 +27,9 @@ export async function GET(){
       approved_by,
       approved_at,
       correlation_id,
+      parent_task_id,
+      workflow_key,
+      sequence_no,
       error_text,
       created_at,
       updated_at
@@ -67,6 +70,13 @@ export async function GET(){
     waiting_approval:tasks.filter((x:any)=>x.status==="WAITING_APPROVAL"),
     failures:tasks.filter((x:any)=>x.status==="FAILED"),
     recent_evidence:evidence,
+    workflows:Object.values(tasks.reduce((acc:any,t:any)=>{
+      if(!t.workflow_key)return acc;
+      const key=t.parent_task_id||t.id;
+      if(!acc[key])acc[key]={parent_task_id:key,workflow_key:t.workflow_key,tasks:[]};
+      acc[key].tasks.push(t);
+      return acc;
+    },{})),
     recent_actions:actions,
     needs_simon:actions.filter((x:any)=>x.action_type==="ASK_SIMON"&&x.status==="NEEDS_SIMON"),
     needs_kimberly:actions.filter((x:any)=>x.action_type==="ESCALATE_KIMBERLY"&&x.status==="REQUIRES_FOUNDER")
