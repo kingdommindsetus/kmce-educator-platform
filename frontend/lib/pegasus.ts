@@ -139,6 +139,7 @@ export async function createPegasusWorkflow(input:{
     });
     tasks.push(task);
   }
+  await reconcilePegasusWorkflow(Number(parent.id),input.requested_by);
   return {parent,tasks,correlation_id:correlation};
 }
 
