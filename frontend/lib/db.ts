@@ -728,5 +728,53 @@ export async function ensureSchema(){
     summary JSONB NOT NULL DEFAULT '{}'::jsonb
   )`;
 
+
+  // Pegasus v1 task/evidence contract. Extends the proven autonomy queue rather than
+  // introducing a second competing task engine.
+  await q`ALTER TABLE autonomy_jobs ADD COLUMN IF NOT EXISTS company_id TEXT NOT NULL DEFAULT 'KMCE'`;
+  await q`ALTER TABLE autonomy_jobs ADD COLUMN IF NOT EXISTS objective TEXT`;
+  await q`ALTER TABLE autonomy_jobs ADD COLUMN IF NOT EXISTS completion_contract JSONB NOT NULL DEFAULT '[]'::jsonb`;
+  await q`ALTER TABLE autonomy_jobs ADD COLUMN IF NOT EXISTS evidence JSONB NOT NULL DEFAULT '[]'::jsonb`;
+  await q`ALTER TABLE autonomy_jobs ADD COLUMN IF NOT EXISTS approval_policy TEXT NOT NULL DEFAULT 'none'`;
+  await q`ALTER TABLE autonomy_jobs ADD COLUMN IF NOT EXISTS approved_by TEXT`;
+  await q`ALTER TABLE autonomy_jobs ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ`;
+  await q`ALTER TABLE autonomy_jobs ADD COLUMN IF NOT EXISTS correlation_id TEXT`;
+  await q`CREATE INDEX IF NOT EXISTS autonomy_jobs_company_status_idx ON autonomy_jobs(company_id,status,updated_at DESC)`;
+  await q`CREATE INDEX IF NOT EXISTS autonomy_jobs_correlation_idx ON autonomy_jobs(correlation_id) WHERE correlation_id IS NOT NULL`;
+
+  await q`CREATE TABLE IF NOT EXISTS pegasus_task_evidence (
+    id BIGSERIAL PRIMARY KEY,
+    task_id BIGINT NOT NULL REFERENCES autonomy_jobs(id) ON DELETE CASCADE,
+    evidence_type TEXT NOT NULL,
+    label TEXT NOT NULL,
+    value TEXT,
+    source_ref TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    recorded_by TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS pegasus_task_evidence_task_idx ON pegasus_task_evidence(task_id,created_at DESC,id DESC)`;
+
+  await q`CREATE TABLE IF NOT EXISTS pegasus_task_transitions (
+    id BIGSERIAL PRIMARY KEY,
+    task_id BIGINT NOT NULL REFERENCES autonomy_jobs(id) ON DELETE CASCADE,
+    from_status TEXT,
+    to_status TEXT NOT NULL,
+    actor TEXT NOT NULL,
+    reason TEXT,
+    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`;
+  await q`CREATE INDEX IF NOT EXISTS pegasus_task_transitions_task_idx ON pegasus_task_transitions(task_id,created_at DESC,id DESC)`;
+
+
+  // Pegasus workflow graph: parent/child task relationships let Simon fan work out
+  // across offices while preserving one executive correlation trail.
+  await q`ALTER TABLE autonomy_jobs ADD COLUMN IF NOT EXISTS parent_task_id BIGINT REFERENCES autonomy_jobs(id) ON DELETE SET NULL`;
+  await q`ALTER TABLE autonomy_jobs ADD COLUMN IF NOT EXISTS workflow_key TEXT`;
+  await q`ALTER TABLE autonomy_jobs ADD COLUMN IF NOT EXISTS sequence_no INTEGER`;
+  await q`CREATE INDEX IF NOT EXISTS autonomy_jobs_parent_idx ON autonomy_jobs(parent_task_id,status,sequence_no,id)`;
+  await q`CREATE INDEX IF NOT EXISTS autonomy_jobs_workflow_idx ON autonomy_jobs(workflow_key,status,sequence_no,id) WHERE workflow_key IS NOT NULL`;
+
   initialized=true;
 }
