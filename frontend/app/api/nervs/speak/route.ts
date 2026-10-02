@@ -1,3 +1,4 @@
+import {timingSafeEqual} from "node:crypto";
 import {NextResponse} from "next/server";
 import {requireFounder} from "../../../../lib/auth";
 
@@ -66,9 +67,21 @@ async function resolveVoiceId(agentId:keyof typeof VOICES,apiKey:string){
   return {voiceId:VOICES[agentId],voiceName:null,source:"registry"};
 }
 
+function hasValidPegasusToken(req:Request){
+  const supplied=String(req.headers.get("x-pegasus-internal")||"");
+  const expected=String(process.env.PEGASUS_INTERNAL_VOICE_SECRET||"");
+  if(!supplied||!expected) return false;
+  const a=Buffer.from(supplied);
+  const b=Buffer.from(expected);
+  return a.length===b.length && timingSafeEqual(a,b);
+}
+
 export async function POST(req:Request){
-  const founder=await requireFounder();
-  if(!founder) return NextResponse.json({error:"Founder access required"},{status:403});
+  const internal=hasValidPegasusToken(req);
+  if(!internal){
+    const founder=await requireFounder();
+    if(!founder) return NextResponse.json({error:"Founder access required"},{status:403});
+  }
 
   const apiKey=process.env.ELEVENLABS_API_KEY;
   if(!apiKey) return NextResponse.json({error:"NERVS voice provider is not configured"},{status:503});
